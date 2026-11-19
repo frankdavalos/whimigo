@@ -11,7 +11,7 @@ type Methods = {
 export type Point = { readonly x: number; readonly y: number };
 
 /** The design frame's width, in design units. */
-const DESIGN_WIDTH = 2752;
+export const DESIGN_WIDTH = 2752;
 
 /** Screen shapes tested beyond each project's own viewport. */
 export const OTHER_VIEWPORTS = {

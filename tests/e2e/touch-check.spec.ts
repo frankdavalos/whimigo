@@ -1,5 +1,5 @@
 import type { Rect } from '../../src/contract';
-import { type Arcade, type Point, expect, test } from './arcade';
+import { type Arcade, DESIGN_WIDTH, type Point, expect, test } from './arcade';
 
 /**
  * The Touch Check (stories 16 and 17). Touches with more than one finger are sent through the
@@ -42,7 +42,7 @@ const bottom = (rect: Rect) => rect.y + rect.height;
 /** Points in the Zones, given in each Zone's own coordinates, converted to the page. */
 async function zonePoints(arcade: Arcade) {
   const [{ zones }, { frame }] = await Promise.all([state(arcade), arcade.layout()]);
-  const unit = frame.width / 2752;
+  const unit = frame.width / DESIGN_WIDTH;
   return (seat: number, local: Point = { x: 120, y: 160 }): Point => {
     const { rect, facing } = zones[seat]!;
     const design =
@@ -76,8 +76,9 @@ test('the Touch Check opens from the Home Screen and counts a tap in a Zone @smo
   arcade,
   page,
 }) => {
-  await arcade.hold('leave', FULL_HOLD_MS);
-  await expect.poll(() => arcade.screen()).toBe('home');
+  // Single touches only: WebKit has no DevTools protocol to send several.
+  await arcade.open();
+  await arcade.start();
   await arcade.tap(TOUCH);
   await expect.poll(() => arcade.screen()).toBe(TOUCH);
   expect((await state(arcade)).zones).toHaveLength(4);
@@ -224,7 +225,7 @@ test.describe('four Zones in either Seating (story 17)', () => {
     arcade,
   }) => {
     const { safe, frame } = await arcade.layout();
-    const unit = frame.width / 2752;
+    const unit = frame.width / DESIGN_WIDTH;
     const controls = Object.values((await arcade.snapshot()).targets).map((target) => target.rect);
 
     const check = async (expected: TouchState['seating']) => {
