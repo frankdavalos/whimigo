@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton and the asset build exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
+Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton, the asset build and the Touch Check exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
 
 ## Summary
 
@@ -254,7 +254,7 @@ These are operating-system behaviours with no web API. The Arcade is designed to
 | A touch limit below 10 | Some budget Android tablets report only 5 | A fifth finger may be dropped, or all touches cancelled | Four Seats at one finger each fit within 5. The Touch Check screen shows what a given tablet really does. Unverified: no Android tablet is available |
 | Edge swipes and OEM three-finger screenshot | Android | Reveals system bars or takes a screenshot | `display: fullscreen` in the manifest; app pinning; switch the OEM gesture off |
 
-The browser reports a fixed "5" for the number of touch points on every iPad, so the Arcade cannot detect a tablet's real limit by asking. The **Touch Check** screen in the Grown-Ups Area shows every live touch and the highest count reached. It is the Phase 0 measuring tool and it stays in the product for exactly that reason.
+The browser reports a fixed "5" for the number of touch points on every iPad, so the Arcade cannot detect a tablet's real limit by asking. The **Touch Check** screen in the Grown-Ups Area (on the placeholder Home Screen until that Area is built) shows every live touch and the highest count reached. It is the Phase 0 measuring tool and it stays in the product for exactly that reason.
 
 ### Seating and Zones
 
