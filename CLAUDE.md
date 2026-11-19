@@ -23,8 +23,10 @@ A private, offline, tablet-first arcade of mini-games for children aged 4–8, p
 - **The design frame is 2752 × 2064**, the iPad Pro's native size. **Everything a child touches is at least 256 design units square** and is built with the kit's UI functions.
 - **No runtime network requests** and no third-party services of any kind. Nothing from a CDN.
 - **Nothing from outside the repository.** Art is SVG written here. Sound is a synthesis recipe written here. There are no audio files and no voice, recorded or synthesized. How to play is shown by a wordless **Demo**.
-- **Keep human work to a minimum.** Through Phase 3, do not plan work that waits on a person to record, draw, pick assets or play-test. The owner sets up hosting once, runs the device checklist on the iPad Pro at each gate, and reviews the result.
+- **Keep human work to a minimum.** Through Phase 3, do not plan work that waits on a person to record, draw, pick assets or play-test. The owner runs the device checklist on the iPad Pro at each gate, and reviews the result.
 - **Do not add a dependency** without a decision recorded in `docs/adr/`. Phaser is the only runtime dependency.
+- **The repository and the site are public.** Never commit personal details: no email addresses, children's names, device identifiers or network details. Commits use the owner's GitHub no-reply address, which is this repository's configured `user.email`; do not change it.
+- **The Arcade is served under `/whimigo/`** on GitHub Pages, not at the root of a domain. Paths, the manifest and the service worker scope must all respect the base path.
 
 ## Working in this repository
 

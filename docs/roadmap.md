@@ -12,7 +12,7 @@ Five phases. Each one ends with something a person can install and use, and with
 
 There are no dates. Each phase is a ZSL PRD, sliced and built as described in [implementation-handoff.md](implementation-handoff.md).
 
-Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-art-and-sound-made-in-code.md)). Art is drawn in code, sound is synthesized, and there is no voice. A person is needed for three things only: setting up hosting once, running the device checklist on the iPad Pro at each gate, and looking at the result and saying what should change.
+Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-art-and-sound-made-in-code.md)). Art is drawn in code, sound is synthesized, and there is no voice. A person is needed for two things only: running the device checklist on the iPad Pro at each gate, and looking at the result and saying what should change.
 
 ## Phase 0: technical proof of concept
 
@@ -21,17 +21,17 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 **What is built**
 
 1. A walking skeleton: the pinned stack, one `Phaser.Game` at the 2752 × 2064 design frame, a "tap to start" screen that unlocks sound, a placeholder Home Screen, the DOM error screen, the test bridge, lint rules, and CI.
-2. Installation and offline: manifest, service worker in prompt mode, everything precached, deployed to the permanent address.
+2. Installation and offline: manifest, service worker in prompt mode, everything precached, deployed to GitHub Pages on every push to `main`.
 3. **Touch Check** screen: every live touch drawn with its slot number, the highest simultaneous count, a cancellation counter, and four **Zones** with tap counters in both **Seatings**.
 4. **Performance check** screen: a fixed load of moving sprites from one atlas with a frame-rate reading, and a loop that adds and removes a Scene with a pack and reports texture and Scene counts. It can also be opened at half render scale, to find out whether a lighter drawing mode is possible ([ADR-0003](adr/0003-fixed-design-frame.md)).
 5. **Sound and suspension check** screen: plays synthesized sounds on demand and shows the audio state and visibility events as they happen. This is where the recipe synthesizer is first written, and where it is confirmed that Phaser will play a sound rendered from a recipe.
 
-**Dependencies.** The hostname (open decision 1) and a GitHub plan that allows Pages on a private repository. The skeleton, the check screens and the deploy workflow can be built before either is settled; the device run cannot.
+**Dependencies.** One check on the iPad Pro before anything is built: that its web filter allows the Arcade's `github.io` address, that a site can be added to the Home Screen, and that the gesture settings and Guided Access can be changed ([ADR-0013](adr/0013-github-pages-default-address.md)). If the address is blocked, hosting is rethought before any code is written.
 
 **Acceptance criteria**
 
 - `npm run check` and `npm run e2e` pass in CI.
-- The Arcade installs on the iPad Pro from the permanent address and starts in aeroplane mode.
+- The Arcade installs on the iPad Pro from its GitHub Pages address and starts in aeroplane mode.
 - Items marked **(P0)** on the [device checklist](testing-strategy.md#real-device-checklist) have been run on the iPad Pro and the results written down. One adult can do this alone in about half an hour.
 - Each gate decision below has an answer, and any ADR it changes is revised.
 

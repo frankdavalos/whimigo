@@ -8,7 +8,8 @@ For the next Claude Code session. It says where the project stands, what to do f
 - The architecture was **accepted** by the owner on 2026-11-19, with three amendments: there is no voice, all sound is synthesized, and human involvement is kept low through Phase 3 (so art is drawn in code too). The test tablet is a 13-inch iPad Pro (M5).
 - No GitHub issues exist. They are created by `/zsl:to-issues`, not by hand.
 - ZSL Superpowers 2.3.0 is installed as the `zsl` plugin and set up for this repository: GitHub Issues, default labels, single-context docs, **direct push to `main`**.
-- The remote is `github.com/frankdavalos/whimigo`: private, with Issues enabled. `main` is pushed.
+- The remote is `github.com/frankdavalos/whimigo`, with Issues enabled. It is public, because GitHub Pages on the free plan needs a public repository.
+- Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`. Whether the iPad's web filter allows that address has **not** been tested yet.
 
 ## Read these first
 
@@ -54,9 +55,15 @@ The result is the `## Agent skills` section of `CLAUDE.md` and the four files in
 
 Direct push rules out `/zsl:tdd-parallel` and the overnight loop, which work only with pull requests. Slices are built one at a time with `/zsl:tdd`.
 
-### Step 4. Settle the one decision Phase 0 needs
+### Step 4. Check the iPad before building anything
 
-The hostname. The host is settled: GitHub Pages behind a subdomain the owner controls, never the default `github.io` address ([ADR-0013](adr/0013-permanent-origin.md)). What remains is for the owner to pick the subdomain, add one DNS record for it, and confirm that their GitHub plan allows Pages on a private repository. It does not block writing the Phase 0 PRD or building its `[AFK]` slices. It blocks the hosting slice and the device run.
+Hosting is settled: GitHub Pages at its default address ([ADR-0013](adr/0013-github-pages-default-address.md)). What is not known is whether the iPad will cooperate. Its web filter is not under the owner's control, and it may be a managed device. A placeholder page is published at the address so the owner can check three things, which take five minutes:
+
+1. Open `https://frankdavalos.github.io/whimigo/` in Safari. Does it load, or does the filter block it?
+2. Add it to the Home Screen. Is that allowed?
+3. Open Settings, Multitasking & Gestures, and Settings, Accessibility, Guided Access. Can they be changed?
+
+If 1 fails, stop: hosting has to be rethought before any code is written. If 2 or 3 fails, carry on, and record it; the Arcade then runs in a Safari tab, or Simultaneous play is capped at three Seats.
 
 ### Step 5. Write the Phase 0 PRD
 
@@ -73,7 +80,7 @@ Things to hold `/zsl:to-prd` to:
 - Every user story needs at least one automatable `AC<n>:`. Write them against what the tests can observe: a rule's outcome, a value from the test bridge, a saved value. See [testing-strategy.md](testing-strategy.md#acceptance-criteria-and-zsl).
 - The actors are a **Player**, a grown-up, and a developer adding a Game.
 - The device checklist is not a user story. It becomes a `[HITL]` slice in the next step.
-- Keep `[HITL]` slices to the two that are unavoidable: pointing the subdomain at GitHub Pages, and running the checklist on the iPad Pro. Everything else, including art and sound, is `[AFK]`.
+- Keep `[HITL]` slices to the one that is unavoidable: running the checklist on the iPad Pro. Everything else, including art and sound, is `[AFK]`.
 - No file paths or code in the PRD; the skill's own rule.
 
 ### Step 6. Slice it
@@ -100,7 +107,7 @@ After the device run, the owner types `/zsl:grill-with-docs` and works through t
 ## Recommended implementation order
 
 1. **Phase 0, slice 1** (walking skeleton). Everything else stands on it.
-2. **Phase 0, wave 2** (install and offline, the three check screens, hosting). In any order, one at a time.
+2. **Phase 0, wave 2** (install and offline, the three check screens, the deploy workflow). In any order, one at a time.
 3. **Phase 0 device run and gate.** The owner, with the iPad Pro; about half an hour.
 4. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). It creates the contract, the `GameHost` and the kit.
 5. **Phase 1, the rest**, in waves as listed below.
@@ -133,10 +140,9 @@ Titles follow the ZSL format. Wording will be refined by `/zsl:to-issues`.
 | `[AFK] 2c — Performance check screen: frame rate under load, Scene add-and-remove counts, half render scale` | 1 |
 | `[AFK] 2d — Sound and suspension check screen, with the recipe synthesizer` | 1 |
 | `[AFK] 2e — Deploy to GitHub Pages on every push to main` | 1 |
-| `[HITL] 2f — Point the chosen subdomain at GitHub Pages and confirm the site is served there over HTTPS` | 2e |
-| `[HITL] 3 — Run the Phase 0 device checklist on the iPad Pro and record the results` | 2a to 2f |
+| `[HITL] 3 — Run the Phase 0 device checklist on the iPad Pro and record the results` | 2a to 2e |
 
-`2f` and `3` are genuine manual actions: adding a DNS record at the owner's domain provider (and upgrading the GitHub plan if Pages is not allowed on a private repository), and handling the physical tablet. `2e` is not: an agent can write the deploy workflow and switch Pages on through the GitHub CLI. The gate decisions themselves are not a slice; they are made in step 8.
+`3` is the only genuine manual action: handling the physical tablet. `2e` is not: an agent writes the deploy workflow and switches Pages on through the GitHub CLI, and there is no DNS to configure. The gate decisions themselves are not a slice; they are made in step 8.
 
 ### The first three GitHub issues
 

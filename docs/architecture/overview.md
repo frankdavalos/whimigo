@@ -17,7 +17,7 @@ Whimigo is a single-page, offline web app that runs one Phaser 4 game instance f
 | Art | SVG authored in the repository and packed at build time. No illustrator | New, by the owner's decision |
 | Test device and design size | A 13-inch iPad Pro (M5). Its native 2752 × 2064 is the design frame | New, by the owner's decision. Android matters little and is unverified |
 | Tests | Vitest for logic, Playwright for the running Arcade, a real-device checklist | Accepted, with scope limits |
-| Hosting | GitHub Pages, behind a subdomain the owner controls, on an origin that never changes | Accepted, with a new constraint |
+| Hosting | GitHub Pages at its default `github.io` address, from a public repository | Accepted. Chosen because the tablet's web filter allows GitHub |
 | Not introduced | Three.js, a native wrapper, a backend, a UI library, a state library, a physics engine beyond what Phaser bundles | As requested |
 
 The single biggest risk is not in the software. iPadOS can cancel every touch on the screen when it sees four or five fingers, and web content cannot stop it. Whether four children can play a **Simultaneous** Game on an iPad is decided on the family's iPad Pro in Phase 0, before any Game is written. See [Risks](#risks).
@@ -288,7 +288,7 @@ Phaser 4 has no device-pixel-ratio support: the canvas has exactly as many pixel
 
 ## Storage
 
-**Progress** and settings together are a few kilobytes with no need for queries. They are stored as one versioned JSON document in `localStorage`, behind a `SaveStore` that the rest of the app talks to ([ADR-0007](../adr/0007-progress-in-localstorage.md)).
+**Progress** and settings together are a few kilobytes with no need for queries. They are stored as one versioned JSON document in `localStorage`, under a key beginning `whimigo:`, behind a `SaveStore` that the rest of the app talks to ([ADR-0007](../adr/0007-progress-in-localstorage.md)).
 
 ```ts
 interface SaveDocument {
@@ -325,7 +325,9 @@ The Arcade is a PWA built with `vite-plugin-pwa`. See [ADR-0008](../adr/0008-pre
 - **Checking for updates.** A long-lived installed app rarely reloads, so the Arcade asks the service worker to check whenever it becomes visible again.
 - **Installing.** On iPadOS: Share, Add to Home Screen, with "Open as Web App" on (the default since iPadOS 26). On Android: Chrome's Install app. There is no install prompt API on iPadOS, so the Grown-Ups Area shows the steps as pictures when the Arcade is running in a browser tab.
 - **Manifest.** `display: fullscreen` (iPadOS falls back to `standalone`), `orientation: landscape` (honoured on Android only), icons at 192 and 512 pixels, plus an `apple-touch-icon`.
-- **The origin is permanent.** Storage and installation both belong to the site's origin. Moving the Arcade to a different address later would silently reset every child's Progress and require reinstalling. The address is chosen once, before the family starts using it ([ADR-0013](../adr/0013-permanent-origin.md)).
+- **Hosting.** GitHub Pages at the account's default address, `https://<account>.github.io/whimigo/`, published by a workflow on every push to `main` ([ADR-0013](../adr/0013-github-pages-default-address.md)). The Arcade therefore lives under the path `/whimigo/`, which is the build's base path and the scope of the manifest and the service worker.
+- **The address matters.** Storage and installation both belong to the site's address. Moving the Arcade later would reset every child's Progress and require reinstalling. The owner has accepted that cost, because the tablet's web filter allows GitHub and might block an address of the owner's own.
+- **The hostname is shared** with any other Pages site under the same account, and browsers key stored data by hostname. The save document's `whimigo:` key prefix keeps the Arcade's data apart.
 
 ## Suspension and resumption
 
@@ -385,7 +387,8 @@ No home-screen mockup was found in the repository. If one exists elsewhere, it s
 |---|---|---|
 | Package manager | npm | The simplest thing that works |
 | Runtime dependencies | `phaser@4.2.1` and nothing else | Pinned exactly, not with a range ([ADR-0012](../adr/0012-pin-phaser-exactly.md)) |
-| Build | Vite 8, `vite-plugin-pwa` 2 | One chunk per Game through dynamic import |
+| Build | Vite 8, `vite-plugin-pwa` 2 | One chunk per Game through dynamic import. Base path `/whimigo/` |
+| Hosting | GitHub Pages, deployed by a GitHub Actions workflow on every push to `main` | The repository is public |
 | Language | TypeScript, strict | Phaser's own type definitions are the reference for its API |
 | Lint and format | ESLint with `typescript-eslint`, Prettier | Carries the import rules and the bans on wall-clock time and `Math.random()` in Games |
 | Unit tests | Vitest 4 | Node environment; no browser, no Phaser |
@@ -470,25 +473,26 @@ A native wrapper is the one alternative worth naming, because it is the only thi
 | 10 | Art drawn in code and synthesized sound fall short of "beautiful and polished" | Medium | The Arcade works but charms less than hoped | A style chosen to suit vector shapes; a written style guide; the owner's review at each phase; hand-made art and recorded sound remain open for Phase 4 | The owner's review |
 | 13 | With no speech and no reading, a Game's rules are not understood from its Demo | Medium | A child does not know what to do | Keep rules simple enough to show; replayable Demo; watch a child try each Game | Phase 1 review |
 | 11 | A four-year-old cannot compete with an eight-year-old | High | Frustration | Luck-based and Cooperative Games in the catalog; a per-Seat handicap later | Play testing |
-| 12 | The hosting address changes after the family starts playing | Low | Progress lost, reinstall needed | A subdomain the owner controls, never the default `github.io` address; the host behind it can change freely | Settled, once the hostname is picked |
+| 12 | The tablet's web filter blocks the `github.io` address | Medium | The Arcade cannot be reached or installed at all | Test the real address on the tablet before anything is built; the owner's own server is the fallback | A five-minute check on the tablet |
+| 15 | The tablet is managed by someone else, and Add to Home Screen, the gesture settings or Guided Access are locked | Medium | No installed app, or no way to tame the four-finger gestures | Check all three on the tablet at the start; play in a Safari tab if installing is blocked; cap Simultaneous play at three Seats if the gestures cannot be switched off | The same check |
+| 16 | The hosting address changes later | Low | Progress lost, reinstall needed | Accepted by the owner | Accepted |
 
 ## Open decisions
 
-Each has a default the design already supports. Only the first needs an answer soon: it is required before the Phase 0 device run.
+Each has a default the design already supports. None needs an answer before work starts.
 
 | # | Decision | Default | Changes what |
 |---|---|---|---|
-| 1 | The exact hostname | A subdomain of a domain the owner already has. The host is settled: GitHub Pages ([ADR-0013](../adr/0013-permanent-origin.md)) | Nothing in the code; must be fixed before real use |
-| 2 | How Players are identified | A **Player** is their **Mascot**; no names, no profiles to create | The save document and the lobby |
-| 3 | Seating presets | Side-by-side and around-the-table, chosen in the lobby | Zone positions only |
-| 4 | Whether to honour silent mode | Yes | One line in `platform/audio` |
-| 5 | Star rules | One Star for finishing a Round, one more for winning or succeeding together | One function in `arcade/` |
+| 1 | How Players are identified | A **Player** is their **Mascot**; no names, no profiles to create | The save document and the lobby |
+| 2 | Seating presets | Side-by-side and around-the-table, chosen in the lobby | Zone positions only |
+| 3 | Whether to honour silent mode | Yes | One line in `platform/audio` |
+| 4 | Star rules | One Star for finishing a Round, one more for winning or succeeding together | One function in `arcade/` |
 
 Settled by the owner on 2026-11-19:
 
 - The test tablet is a 13-inch iPad Pro (M5). Android matters little in practice.
 - The design frame is the iPad Pro's native 2752 × 2064.
-- Hosting is GitHub Pages behind a subdomain the owner controls. The site is public; the repository stays private.
+- Hosting is GitHub Pages at its default address, from a public repository. Losing Progress if the address ever changes is acceptable.
 - There is no voice. All sound is synthesized.
 - Human involvement is kept low through Phase 3, so art is drawn in code as well.
 

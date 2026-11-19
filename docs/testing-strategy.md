@@ -169,7 +169,7 @@ No Android tablet is available, and Android matters little to this project, so t
 
 **Install and offline**
 
-1. Install to the home screen from the permanent address. It opens without browser controls.
+1. Install to the home screen from the GitHub Pages address. It opens without browser controls. If the tablet is managed and will not allow this, record it and carry on in a Safari tab.
 2. Wait for "ready to play offline". Turn on aeroplane mode. Close the app fully and reopen it: the Home Screen appears. **(P0)**
 3. Still offline, open every Game.
 4. Deploy a new version. Reopen while online: the old version runs. Close and reopen: the new version runs. **(P0)**
@@ -179,7 +179,7 @@ No Android tablet is available, and Android matters little to this project, so t
 5. On the Touch Check screen, place fingers one at a time up to ten. Record the highest count shown, and what happens on the next finger.
 6. Hold one finger in each of the four Zones, using both hands. All four register and stay registered.
 7. Tap repeatedly in all four Zones for 30 seconds, the way four children would. Count the cancellations shown.
-8. Repeat 6 and 7 three ways: default settings; with the gesture toggles off in Settings, Multitasking & Gestures; and with Guided Access on. Record which combination, if any, gives zero cancellations.
+8. If the tablet is managed and these settings are locked, record that and skip the variants that need them. Otherwise repeat 6 and 7 three ways: default settings; with the gesture toggles off in Settings, Multitasking & Gestures; and with Guided Access on. Record which combination, if any, gives zero cancellations.
 9. Rest a palm in a Zone and tap with the other hand.
 10. Swipe in from each edge and each corner during a Round. Record what the system does.
 11. Try to pinch-zoom, double-tap-zoom, long-press and select text. None should do anything.
