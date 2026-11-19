@@ -66,7 +66,7 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-/** One cycle of each pitched wave, for a phase from 0 to 1, starting at 0 and rising. */
+/** One cycle of each pitched wave, for a phase from 0 to 1. Each crosses zero going up at 0. */
 const WAVES: Record<Exclude<Note['wave'], 'noise'>, (phase: number) => number> = {
   sine: (phase) => Math.sin(2 * Math.PI * phase),
   triangle: (phase) => 1 - 4 * Math.abs(((phase + 0.25) % 1) - 0.5),
@@ -77,9 +77,9 @@ const WAVES: Record<Exclude<Note['wave'], 'noise'>, (phase: number) => number> =
 /**
  * Renders a valid recipe (see `validateRecipe`) into mono samples at `sampleRate`: pure, with no
  * audio context, so it runs anywhere. There is one sample per tick up to the end of the last
- * note. Each note fades in over its attack and out over its release, reaching silence on its
- * first and last sample, so it starts and ends without a click. A glide moves its pitch
- * evenly in musical steps. Notes are added together; if overlapping notes would go beyond full
+ * note. Each note fades in over its attack and out over its release; with the default fades, or
+ * any fades longer than a sample, it is silent on its first and last sample, so it starts and ends
+ * without a click. A glide moves its pitch smoothly, by the same musical interval each moment. Notes are added together; if overlapping notes would go beyond full
  * scale, the whole sound is scaled down to fit rather than clipped.
  */
 export function renderRecipe(recipe: SoundRecipe, sampleRate: number): Float32Array<ArrayBuffer> {
@@ -89,7 +89,7 @@ export function renderRecipe(recipe: SoundRecipe, sampleRate: number): Float32Ar
     const first = tick(note.at);
     const count = tick(endOf(note)) - first;
     const gain = note.gain ?? NOTE_DEFAULTS.gain;
-    // A fade longer than the note is shortened, keeping the two fades' proportions.
+    // Fades that together outlast the note are shortened, keeping their proportions.
     let attack = tick(note.attack ?? NOTE_DEFAULTS.attack);
     let release = tick(note.release ?? NOTE_DEFAULTS.release);
     const squeeze = Math.min(1, (count - 1) / Math.max(1, attack + release));

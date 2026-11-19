@@ -29,7 +29,8 @@ export interface PhaserAudio {
  * Sound, on Phaser's own audio context. Nothing here ever waits, and nothing throws on play.
  *
  * While the page is hidden sound is suspended. Any tap starts it, or brings it back after the page
- * was hidden or the tablet interrupted it, because a real tap is what browsers require.
+ * was hidden or the tablet interrupted it, because a real tap is what browsers require. Phaser may
+ * also resume it on its own when the page is shown or the window regains focus.
  */
 export interface Audio {
   readonly route: PlaybackRoute;
@@ -78,7 +79,7 @@ export function createAudio(doc: Document, phaser: PhaserAudio | null): Audio {
     });
     onPageHidden(doc, () => {
       // Phaser resumes a suspended context on every frame unless it thinks the game lost focus.
-      // A hidden page has, until the next tap.
+      // A hidden page has, until a tap or the window regaining focus says otherwise.
       phaser.manager.gameLostFocus = true;
       context.suspend().catch(() => undefined);
     });
