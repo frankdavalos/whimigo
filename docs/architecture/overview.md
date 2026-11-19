@@ -391,7 +391,7 @@ No home-screen mockup was found in the repository. If one exists elsewhere, it s
 | Unit tests | Vitest 4 | Node environment; no browser, no Phaser |
 | Browser tests | Playwright | Against the production build |
 | Asset build | One Node script using `sharp` and a rectangle packer | Runs before `dev` and `build` |
-| CI | GitHub Actions: type-check, lint, unit tests, browser tests on every pull request | |
+| CI | GitHub Actions: type-check, lint, unit tests, browser tests on every push to `main` | Agents run the same checks before pushing ([ship style](../agents/ship-style.md)) |
 | Scaffolding | By hand | The official Phaser templates send a usage ping to a third-party server from their `dev` and `build` scripts, which conflicts with the no-analytics requirement |
 
 Phaser 4.2.1 is about 350 KB compressed and cannot be tree-shaken (confirmed). That is acceptable: it is downloaded once and precached.

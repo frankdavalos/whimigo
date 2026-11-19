@@ -31,3 +31,21 @@ A private, offline, tablet-first arcade of mini-games for children aged 4–8, p
 - The only test device is a 13-inch iPad Pro (M5). Android matters little and is unverified.
 - Work follows the ZSL Superpowers loop described in the handoff: PRD, vertical-slice issues, triage, test-driven implementation, review.
 - Commands (`npm run check`, `npm run e2e`) exist once the walking skeleton is built. They are described in the testing strategy.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live in GitHub Issues for `frankdavalos/whimigo`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The six triage roles use their default label names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` at the root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+### Ship style
+
+Direct push to `main`; no pull requests. Agents push without asking, but only when the checks pass. See `docs/agents/ship-style.md`.

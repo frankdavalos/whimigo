@@ -71,7 +71,7 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 11. **Hardening:** corrupt and unavailable storage, a Game that fails to load, the update flow, the leak test across all three Games.
 12. **Device acceptance:** the full checklist on the iPad Pro.
 
-Slices 2 to 5 depend only on 1 and can proceed in parallel with one another. Slices 6 and 8 depend on 1 and are independent of each other. Slice 9 needs 6 and 8.
+Slices 2 to 5 depend only on 1 and can be built in any order. Slices 6 and 8 depend on 1 and are independent of each other. Slice 9 needs 6 and 8.
 
 **Dependencies.** Phase 0 complete. Nothing from outside the repository: art is drawn in code to the style guide and sound is synthesized.
 
@@ -103,7 +103,7 @@ Slices 2 to 5 depend only on 1 and can proceed in parallel with one another. Sli
 5. **Hungry Critters** (Simultaneous, Versus Computer). Adds continuous motion.
 6. **Reaction Rush Versus Computer**, so that every Game can be played alone.
 
-Once the search is extracted in step 2, the five Games are independent of one another and can be built in parallel, one agent per Game. This is where `/zsl:tdd-parallel` earns its keep.
+Once the search is extracted in step 2, the five Games are independent of one another and can be built in any order, one at a time.
 
 **Dependencies.** Phase 1 complete and the contract stable. Open product decisions in [game-catalog.md](product/game-catalog.md#open-product-decisions) settled.
 
@@ -125,7 +125,7 @@ Once the search is extracted in step 2, the five Games are independent of one an
 
 **What is built**
 
-One PRD, through `/zsl:tdd-parallel`:
+One PRD:
 
 - **Achievements:** the optional contract fields, stickers per Mascot, a place to see them.
 - **Accessibility, automated:** every target meets the size and spacing minimums in every Game at every viewport; every state shown by colour also has a shape; the four Seat colours stay distinguishable under simulated colour-vision deficiencies, checked by computed colour difference; reduced motion completes every Game.

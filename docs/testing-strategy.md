@@ -16,7 +16,7 @@ How Whimigo is tested, what is automated, and what can only be checked with a ta
 |---|---|---|---|
 | 1. Logic | Vitest, Node | On every save; under 10 seconds for everything | Are the rules, the **Computer Players** and the shared pure helpers correct? |
 | 2. Conformance | Vitest, Node | With level 1 | Does every Game keep the contract? |
-| 3. Arcade | Playwright, against the production build | On every pull request; a few minutes | Does the real Arcade load, play, pause, save and work offline? |
+| 3. Arcade | Playwright, against the production build | Before every push to `main`, and again in CI after it; a few minutes | Does the real Arcade load, play, pause, save and work offline? |
 | 4. Device | One adult with the checklist and the iPad Pro | At each phase gate, and after any Phaser or iPadOS upgrade | Does it work on the real tablet? |
 
 ## Level 1: logic
@@ -260,6 +260,6 @@ Commands, once the project is scaffolded:
 
 `/zsl:to-prd` refuses a user story that has no automatable acceptance criterion, and `/zsl:verify-coverage` generates tests from those criteria. Criteria should therefore be written against what levels 1 to 3 can observe: a rule's outcome, a **Result**, a `GameHost` state, a saved value, a target's position and size.
 
-Anything on the device checklist is not a user story for `/zsl:tdd-parallel`. It is a `[HITL]` slice: the owner runs the checklist and records what happened. There is one such slice per phase.
+Anything on the device checklist is not a user story. It is a `[HITL]` slice: the owner runs the checklist and records what happened. There is one such slice per phase.
 
 How something looks or sounds is not a user story either. Art and sound are produced by agents inside ordinary slices, against criteria that can be checked (the frame exists in the atlas, the recipe renders, the target is large enough), and judged by the owner's review at the end of the phase.

@@ -4,11 +4,11 @@ For the next Claude Code session. It says where the project stands, what to do f
 
 ## Where things stand
 
-- The repository holds documentation only. There is no code, no `package.json` and no commit yet.
+- The repository holds documentation only. There is no code and no `package.json`.
 - The architecture was **accepted** by the owner on 2026-11-19, with three amendments: there is no voice, all sound is synthesized, and human involvement is kept low through Phase 3 (so art is drawn in code too). The test tablet is a 13-inch iPad Pro (M5).
 - No GitHub issues exist. They are created by `/zsl:to-issues`, not by hand.
-- ZSL Superpowers 2.3.0 is installed as the `zsl` plugin. `/zsl:setup-zsl-superpowers` has **not** been run in this repository. It is a user-invoked skill, so the owner must type it; an agent cannot start it.
-- The remote is `github.com/frankdavalos/whimigo`: private, empty, with Issues enabled.
+- ZSL Superpowers 2.3.0 is installed as the `zsl` plugin and set up for this repository: GitHub Issues, default labels, single-context docs, **direct push to `main`**.
+- The remote is `github.com/frankdavalos/whimigo`: private, with Issues enabled. `main` is pushed.
 
 ## Read these first
 
@@ -35,36 +35,24 @@ Done on 2026-11-19. The ADRs and the overview are marked accepted.
 
 ### Step 2. Make the first commit
 
-The repository has no commits, so the first one cannot be a pull request. Commit the documentation to `main` and push it. Everything after this goes through pull requests.
+Done on 2026-11-19. The documentation is on `main` and pushed. From here on, changes are pushed straight to `main` by the agent that made them, once the checks pass.
 
 ### Step 3. Run the ZSL setup
 
-The owner types:
+Done on 2026-11-19. The owner's answers:
 
-```
-/zsl:setup-zsl-superpowers
-```
-
-Recommended answers:
-
-| Section | Answer | Why |
+| Section | Answer | Note |
 |---|---|---|
-| A. Issue tracker | GitHub | The remote is GitHub and Issues are enabled |
-| B. Triage labels | The defaults | The repository has no labels of its own |
-| C. Domain docs | Single-context | One `CONTEXT.md` at the root, ADRs in `docs/adr/` |
-| D. Ship style | Pull request | `/zsl:tdd-parallel` works only with pull requests |
-| E. Project board | Skip for now | Optional; can be added later without redoing the rest |
-| F. Remote agent environment | Skip | Only needed for the overnight loop |
+| A. Issue tracker | GitHub Issues | |
+| B. Triage labels | The default names | The five missing labels and `backlog` were created |
+| C. Domain docs | Single-context | |
+| D. Ship style | **Direct push to `main`** | Agents push without asking, but only when `npm run check` and `npm run e2e` pass |
+| E. Project board | Skipped | Can be added later |
+| F. Remote agent environment | Skipped | The overnight loop needs pull requests |
 
-The setup adds an `## Agent skills` section to the existing `CLAUDE.md` and creates `docs/agents/`. It should leave the rest of `CLAUDE.md` alone; check that it did.
+The result is the `## Agent skills` section of `CLAUDE.md` and the four files in [docs/agents/](agents/). Read [docs/agents/ship-style.md](agents/ship-style.md) before shipping anything.
 
-Then confirm the labels the skills apply exist in the repository, and create any that are missing:
-
-```
-gh label list
-```
-
-Needed: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `tracking`, `wontfix`, `backlog`, `enhancement`, `bug`.
+Direct push rules out `/zsl:tdd-parallel` and the overnight loop, which work only with pull requests. Slices are built one at a time with `/zsl:tdd`.
 
 ### Step 4. Settle the one decision Phase 0 needs
 
@@ -100,9 +88,9 @@ The expected Phase 0 breakdown is under [Phase 0 slices](#phase-0-slices). Use i
 
 ```
 /zsl:triage                     for each child issue
-/zsl:tdd <issue number>         for slice 1, on its own
-/zsl:tdd-parallel <PRD number>  for the wave-2 [AFK] slices, once slice 1 is merged
+/zsl:tdd <issue number>         for each [AFK] slice, one at a time, in wave order
 /zsl:human-itl <PRD number>     for the [HITL] slices
+/zsl:verify-coverage <PRD number>   once the slices have shipped
 ```
 
 ### Step 8. Record the gate
@@ -111,26 +99,27 @@ After the device run, the owner types `/zsl:grill-with-docs` and works through t
 
 ## Recommended implementation order
 
-1. **Phase 0, slice 1** (walking skeleton). Serial. Everything else stands on it.
-2. **Phase 0, wave 2** (install and offline, the three check screens, hosting). Parallel.
+1. **Phase 0, slice 1** (walking skeleton). Everything else stands on it.
+2. **Phase 0, wave 2** (install and offline, the three check screens, hosting). In any order, one at a time.
 3. **Phase 0 device run and gate.** The owner, with the iPad Pro; about half an hour.
-4. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). Serial. It creates the contract, the `GameHost` and the kit.
+4. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). It creates the contract, the `GameHost` and the kit.
 5. **Phase 1, the rest**, in waves as listed below.
 6. **Phase 1 device acceptance.**
-7. **Phase 2**: Memory Match, then Four in a Row with the search extraction, then the remaining Games in parallel.
+7. **Phase 2**: Memory Match, then Four in a Row with the search extraction, then the remaining Games in any order.
 8. **Phase 3**: one PRD, followed by the owner's review.
 
-### What must be finished before parallel work is safe
+### What must be finished first
 
-| Before running these in parallel | This must be merged | Because |
+Slices are built one at a time and pushed to `main`. A slice's wave number says what it depends on; slices in the same wave can be built in any order. Do not run two agents in the same checkout at once: with direct push there is no merge step to catch a collision.
+
+| Before building | This must be on `main` | Because |
 |---|---|---|
 | Any Phase 0 wave-2 slice | Phase 0 slice 1 | It creates the project, the lint rules, CI, and the list that check screens register in |
 | Any Phase 1 wave-2 slice | Phase 1 slice 1 | It creates `contract.ts`, `GameHost`, `openRound` and the kit's folder structure. Two agents inventing these at once will collide |
 | Color Echo Cooperative | Color Echo Solo **and** Zones | It needs both |
 | The Phase 2 Games after Four in a Row | The search extraction | Dots and Boxes uses it; extracting it later means touching three Games |
-| Any two slices that both change `kit/` or `contract.ts` | Agreement that the changes are additive | Same-wave slices are merged in order; a breaking change in one invalidates the others |
 
-A rule for the whole project: within a wave, a slice may **add** to `kit/` and `contract.ts` but may not change or remove what is already there. A change that breaks an existing signature is its own slice, alone in its wave.
+A rule for the whole project: a slice may **add** to `kit/` and `contract.ts` freely, but a change that breaks an existing signature is its own slice, with every Game it affects updated in the same push.
 
 ## Phase 0 slices
 
@@ -205,7 +194,7 @@ For orientation. The Phase 1 PRD is written after the Phase 0 gate and may diffe
 | `[AFK] 4 — Hardening: storage failures, load failures, leak test across three Games` | 3a to 3d |
 | `[HITL] 5 — Device acceptance on the iPad Pro, and the owner's review` | 4 |
 
-Wave 2 has five slices that all add to `kit/`. If merges become painful, split it into two waves.
+Wave 2 has five slices that all add to `kit/`. Built one at a time, each starts from what the last one pushed.
 
 ## Risks to settle before substantial implementation
 
