@@ -1,0 +1,33 @@
+# Whimigo
+
+A private, offline, tablet-first arcade of mini-games for children aged 4–8, played by one to four children on one shared tablet. Phaser 4, TypeScript, Vite, installed as a PWA. No backend, accounts, ads or analytics.
+
+**Current state:** the architecture was accepted on 2026-11-19. The repository holds documentation only; implementation has not started. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
+
+## Read before working
+
+- [CONTEXT.md](CONTEXT.md): the project's vocabulary. Use these terms exactly in code, tests, commits and issues. A **Game** is a catalog entry, a **Round** is one play of it, a **Session** is a visit; a **Player** is a person, a **Seat** is a position.
+- [docs/architecture/overview.md](docs/architecture/overview.md): the decisions and their reasons.
+- [docs/architecture/game-contract.md](docs/architecture/game-contract.md): the interfaces and the rules for Game code.
+- [docs/testing-strategy.md](docs/testing-strategy.md): what "done" means.
+- [docs/adr/](docs/adr/): read the records that touch what you are changing. If your change contradicts one, say so; do not silently override it.
+
+## Rules that are easy to break
+
+- **This is Phaser 4.** Do not rely on Phaser 3 knowledge. Check `node_modules/phaser/types/phaser.d.ts` and the v4 migration guide before using an API.
+- **Phaser stays pinned at exactly 4.2.1.** Upgrading is its own task.
+- **A Game lives in its own folder** under `src/games/` and imports only its own code, `src/contract.ts` and `src/kit/`. It never imports another Game, `src/arcade/` or `src/platform/`.
+- **Rules are pure.** `logic/` never imports Phaser, a Scene or the DOM.
+- **In Game code, never use** `setTimeout`, `setInterval`, `Date.now()`, `requestAnimationFrame` or `Math.random()`. Use the Scene's clock and tweens, and `round.rng`.
+- **In Game code, never create** Phaser `Text`, `RenderTexture`, `DynamicTexture` or `Shader` objects, a second Scene, or HTML elements.
+- **The design frame is 2752 × 2064**, the iPad Pro's native size. **Everything a child touches is at least 256 design units square** and is built with the kit's UI functions.
+- **No runtime network requests** and no third-party services of any kind. Nothing from a CDN.
+- **Nothing from outside the repository.** Art is SVG written here. Sound is a synthesis recipe written here. There are no audio files and no voice, recorded or synthesized. How to play is shown by a wordless **Demo**.
+- **Keep human work to a minimum.** Through Phase 3, do not plan work that waits on a person to record, draw, pick assets or play-test. The owner sets up hosting once, runs the device checklist on the iPad Pro at each gate, and reviews the result.
+- **Do not add a dependency** without a decision recorded in `docs/adr/`. Phaser is the only runtime dependency.
+
+## Working in this repository
+
+- The only test device is a 13-inch iPad Pro (M5). Android matters little and is unverified.
+- Work follows the ZSL Superpowers loop described in the handoff: PRD, vertical-slice issues, triage, test-driven implementation, review.
+- Commands (`npm run check`, `npm run e2e`) exist once the walking skeleton is built. They are described in the testing strategy.
