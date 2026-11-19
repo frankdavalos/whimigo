@@ -40,6 +40,8 @@ export interface TestBridge {
   /** Opens a check screen directly, skipping the Home Screen. */
   openCheck(id: ScreenId): void;
   audio(): AudioState;
+  /** Asks the audio service to play a loaded sound: whether it started, and how long the call took. */
+  playSound(key: string): { started: boolean; ms: number };
   /** How many frames Phaser's loop has stepped. */
   frames(): number;
   /** Throws from inside the showing screen's next update, in Phaser's frame loop. */
@@ -136,6 +138,11 @@ export function installTestBridge(win: Window, arcade: Arcade, buildId: string):
       arcade.show(id);
     },
     audio: () => arcade.services.audio.state(),
+    playSound(key) {
+      const start = win.performance.now();
+      const started = arcade.services.audio.play(key);
+      return { started, ms: win.performance.now() - start };
+    },
     frames: () => game.loop.frame,
     throwInUpdate() {
       showing().events.once('update', () => {

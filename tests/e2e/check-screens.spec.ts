@@ -4,7 +4,9 @@ import { expect, test } from './arcade';
 const FULL_HOLD_MS = 1000;
 const BLANK = 'blank-check';
 /** Every check screen the Home Screen lists when the test bridge is on, in order. */
-const CHECKS = ['touch-check', BLANK];
+const CHECKS = ['touch-check', 'sound-check', BLANK];
+/** How many sounds each check screen renders while it is open. */
+const SOUNDS_WHILE_OPEN: Readonly<Record<string, number>> = { 'sound-check': 7 };
 
 test.beforeEach(async ({ arcade }) => {
   await arcade.open();
@@ -73,7 +75,10 @@ for (const id of CHECKS) {
     const before = await arcade.counts();
     await arcade.tap(id);
     await expect.poll(() => arcade.screen()).toBe(id);
-    expect((await arcade.counts()).scenes).toBe(before.scenes + 1);
+    expect(await arcade.counts()).toMatchObject({
+      scenes: before.scenes + 1,
+      sounds: before.sounds + (SOUNDS_WHILE_OPEN[id] ?? 0),
+    });
     await arcade.hold('leave', FULL_HOLD_MS);
     await expect.poll(() => arcade.screen()).toBe('home');
     expect(await arcade.counts()).toEqual(before);

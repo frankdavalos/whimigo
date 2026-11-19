@@ -16,7 +16,13 @@ test('the tap-to-start screen and the Home Screen draw their pictures from the A
   await arcade.start();
   const home = await arcade.call('pictures');
   expect(home.shapes).toBe(0);
-  for (const frame of ['arcade/sun', 'arcade/card', 'arcade/check-touch', 'arcade/check-blank']) {
+  for (const frame of [
+    'arcade/sun',
+    'arcade/card',
+    'arcade/check-touch',
+    'arcade/check-sound',
+    'arcade/check-blank',
+  ]) {
     expect(home.images).toContainEqual({ texture: 'arcade', frame });
   }
   expect(home.images.every(fromArcadeAtlas)).toBe(true);
@@ -53,6 +59,31 @@ test('the Touch Check draws its controls, readings and Seats from the Arcade’s
     'arcade/seat-square',
     'arcade/seat-triangle',
     'arcade/seat-star',
+  ]) {
+    expect(images).toContainEqual({ texture: 'arcade', frame });
+  }
+  expect(images.every(fromArcadeAtlas)).toBe(true);
+});
+
+test('the Sound check draws its controls and the audio state from the Arcade’s atlas', async ({
+  arcade,
+}) => {
+  await arcade.open();
+  await arcade.call('openCheck', 'sound-check');
+  await expect.poll(() => arcade.screen()).toBe('sound-check');
+  const { images } = await arcade.call('pictures');
+  for (const frame of [
+    'arcade/hold',
+    'arcade/home',
+    'arcade/card',
+    'arcade/sound-sine',
+    'arcade/sound-triangle',
+    'arcade/sound-square',
+    'arcade/sound-sawtooth',
+    'arcade/sound-noise',
+    'arcade/sound-glide',
+    'arcade/sound-sequence',
+    'arcade/audio-locked',
   ]) {
     expect(images).toContainEqual({ texture: 'arcade', frame });
   }

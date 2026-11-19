@@ -17,7 +17,6 @@ if (errorScreen) installErrorScreen(window, errorScreen);
 guardPage(document);
 
 const e2e = new URLSearchParams(window.location.search).get('e2e') === '1';
-const audio = createAudio(window);
 
 /** The one Phaser.Game. It is never destroyed (ADR-0002). */
 const game = new Phaser.Game({
@@ -31,8 +30,15 @@ const game = new Phaser.Game({
   input: { activePointers: 10, windowEvents: false },
   // Images load straight from their own URLs, not through a fetched blob and an object URL.
   loader: { imageLoadType: 'HTMLImageElement' },
-  audio: audio.context ? { context: audio.context } : { noAudio: true },
+  // Phaser makes the one audio context; without Web Audio the Arcade is silent.
+  audio: { noAudio: typeof window.AudioContext !== 'function' },
 });
+const audio = createAudio(
+  document,
+  game.sound instanceof Phaser.Sound.WebAudioSoundManager
+    ? { manager: game.sound, cache: game.cache.audio }
+    : null,
+);
 
 const arcade = new Arcade(
   game,
