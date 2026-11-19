@@ -2,8 +2,9 @@ import * as Phaser from 'phaser';
 import type { ScreenSnapshot } from '@/contract';
 import { DESIGN_FRAME } from '@/kit/frame';
 import { createStage, type Stage } from '@/kit/stage';
+import { picture } from '@/kit/atlas';
 import { colors } from '@/kit/theme';
-import { playPicture } from './pictures';
+import { loadArcadeArt } from './art';
 import type { ArcadeScreen, ScreenData } from './screen';
 
 const CENTRE = { x: DESIGN_FRAME.width / 2, y: DESIGN_FRAME.height / 2 };
@@ -12,10 +13,14 @@ const CENTRE = { x: DESIGN_FRAME.width / 2, y: DESIGN_FRAME.height / 2 };
 export class StartScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
 
+  preload(): void {
+    loadArcadeArt(this);
+  }
+
   create({ arcade }: ScreenData): void {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
     this.stage.backdrop({ color: colors.sky });
-    playPicture(this.add.graphics(CENTRE), 640);
+    picture(this, CENTRE.x, CENTRE.y, 'arcade/play');
 
     let started = false;
     this.add

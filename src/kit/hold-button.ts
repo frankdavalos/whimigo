@@ -1,5 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { SnapshotTarget } from '@/contract';
+import { picture } from './atlas';
 import { createHold } from './hold';
 import { colors, sizes } from './theme';
 
@@ -7,11 +8,14 @@ export interface HoldButtonOptions {
   /** Centre, in design units. */
   readonly x: number;
   readonly y: number;
-  /** Draws the button's picture, centred on (0, 0), into the given Graphics. */
-  readonly icon: (graphics: Phaser.GameObjects.Graphics, size: number) => void;
+  /** The atlas frame drawn on the button's face. */
+  readonly icon: string;
   /** Called once each time a finger has stayed on the button for the whole hold. */
   readonly onHold: () => void;
 }
+
+/** The face every hold control shares, from the Arcade's atlas, which is loaded at boot. */
+const HOLD_FACE = 'arcade/hold';
 
 /**
  * A control that acts only on a deliberate hold of about half a second, filling a ring while it
@@ -22,10 +26,8 @@ export function holdButton(scene: Phaser.Scene, options: HoldButtonOptions): Sna
   const radius = size / 2;
   const hold = createHold();
 
-  const face = scene.add.graphics({ x: options.x, y: options.y });
-  face.fillStyle(colors.cream).fillCircle(0, 0, radius - sizes.outline);
-  face.lineStyle(sizes.outline, colors.ink).strokeCircle(0, 0, radius - sizes.outline);
-  options.icon(face, size);
+  picture(scene, options.x, options.y, HOLD_FACE);
+  picture(scene, options.x, options.y, options.icon);
 
   const ring = scene.add.graphics({ x: options.x, y: options.y });
   const hit = scene.add

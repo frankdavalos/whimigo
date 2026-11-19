@@ -1,8 +1,8 @@
 import * as Phaser from 'phaser';
 import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
+import { picture } from '@/kit/atlas';
 import { createStage, type Stage } from '@/kit/stage';
 import { colors, sizes } from '@/kit/theme';
-import { sunPicture } from './pictures';
 import type { ArcadeScreen, ScreenData } from './screen';
 
 /**
@@ -17,7 +17,7 @@ export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
     this.stage.backdrop({ color: colors.meadow });
     const { safe } = this.stage;
-    sunPicture(this.add.graphics({ x: safe.x + 160, y: safe.y + 160 }), 320);
+    picture(this, safe.x + 160, safe.y + 160, 'arcade/sun');
 
     const size = sizes.button;
     const spacing = size + sizes.gap * 2;
@@ -26,12 +26,8 @@ export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
     this.targets = {};
     arcade.checks.forEach((check, index) => {
       const x = firstX + index * spacing;
-      const card = this.add.graphics({ x, y });
-      card.fillStyle(colors.cream).fillRoundedRect(-size / 2, -size / 2, size, size, 48);
-      card
-        .lineStyle(sizes.outline, colors.ink)
-        .strokeRoundedRect(-size / 2, -size / 2, size, size, 48);
-      check.icon(card, size);
+      picture(this, x, y, 'arcade/card');
+      picture(this, x, y, check.icon);
       this.add
         .rectangle(x, y, size, size)
         .setInteractive()

@@ -27,6 +27,8 @@ const game = new Phaser.Game({
   banner: false,
   scale: { mode: Phaser.Scale.EXPAND, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 10, windowEvents: false },
+  // Images load straight from their own URLs, not through a fetched blob and an object URL.
+  loader: { imageLoadType: 'HTMLImageElement' },
   audio: audio.context ? { context: audio.context } : { noAudio: true },
 });
 

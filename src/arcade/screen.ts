@@ -21,6 +21,6 @@ export interface ScreenData {
 export interface CheckScreen {
   readonly id: ScreenId;
   readonly scene: new () => ArcadeScreen;
-  /** Draws the check's picture, centred on (0, 0), for its control on the Home Screen. */
-  readonly icon: (graphics: Phaser.GameObjects.Graphics, size: number) => void;
+  /** The frame in the Arcade's atlas drawn on its control on the Home Screen. */
+  readonly icon: string;
 }

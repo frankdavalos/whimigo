@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import type { Rect, SnapshotTarget } from '@/contract';
 import { DESIGN_FRAME, frameOnCanvas } from '@/kit/frame';
 import { RENDER_SCALE } from '@/kit/stage';
@@ -34,6 +35,8 @@ export interface TestBridge {
   snapshot(): PageSnapshot;
   layout(): PageLayout;
   counts(): { scenes: number; textures: number; sounds: number };
+  /** What the showing screen draws: each image's texture and frame, and how many drawn shapes. */
+  pictures(): Pictures;
   /** Opens a check screen directly, skipping the Home Screen. */
   openCheck(id: ScreenId): void;
   audio(): AudioState;
@@ -43,6 +46,12 @@ export interface TestBridge {
   throwInUpdate(): void;
   /** Leaves a rejected promise unhandled. */
   rejectUnhandled(): void;
+}
+
+export interface Pictures {
+  readonly images: readonly { readonly texture: string; readonly frame: string }[];
+  /** Graphics objects, and shape objects with a fill or an outline. */
+  readonly shapes: number;
 }
 
 declare global {
@@ -104,6 +113,24 @@ export function installTestBridge(win: Window, arcade: Arcade, buildId: string):
       textures: game.textures.getTextureKeys().length,
       sounds: game.cache.audio.getKeys().length,
     }),
+    pictures() {
+      const images: { texture: string; frame: string }[] = [];
+      let shapes = 0;
+      const visit = (object: Phaser.GameObjects.GameObject) => {
+        if (object instanceof Phaser.GameObjects.Container) object.list.forEach(visit);
+        else if (object instanceof Phaser.GameObjects.Image) {
+          images.push({ texture: object.texture.key, frame: object.frame.name });
+        } else if (object instanceof Phaser.GameObjects.Graphics) shapes += 1;
+        else if (
+          object instanceof Phaser.GameObjects.Shape &&
+          (object.isFilled || object.isStroked)
+        ) {
+          shapes += 1;
+        }
+      };
+      showing().children.list.forEach(visit);
+      return { images, shapes };
+    },
     openCheck(id) {
       if (!arcade.checks.some((check) => check.id === id)) throw new Error(`No check "${id}"`);
       arcade.show(id);
