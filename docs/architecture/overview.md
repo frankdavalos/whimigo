@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton exists. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
+Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton and the asset build exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
 
 ## Summary
 

@@ -2,7 +2,7 @@
 
 Whimsy + Amigo + Go. A private, offline arcade of short mini-games for children aged 4–8, played by one to four children sharing a tablet.
 
-The architecture was accepted on 2026-11-19. The walking skeleton is built: the Arcade boots to a placeholder Home Screen, with lint boundaries, unit tests, browser tests and CI, and every push to `main` that passes the checks is published to GitHub Pages. There are no Games yet.
+The architecture was accepted on 2026-11-19. The walking skeleton is built: the Arcade boots to a placeholder Home Screen drawn from an atlas the build packs from SVG art, with lint boundaries, unit tests, browser tests and CI, and every push to `main` that passes the checks is published to GitHub Pages. There are no Games yet.
 
 `npm run check` runs the type-check, lint and unit tests; `npm run e2e` builds the Arcade and runs the browser tests against it. See [docs/testing-strategy.md](docs/testing-strategy.md).
 
