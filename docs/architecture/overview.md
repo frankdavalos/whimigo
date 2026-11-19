@@ -17,7 +17,7 @@ Whimigo is a single-page, offline web app that runs one Phaser 4 game instance f
 | Art | SVG authored in the repository and packed at build time. No illustrator | New, by the owner's decision |
 | Test device and design size | A 13-inch iPad Pro (M5). Its native 2752 × 2064 is the design frame | New, by the owner's decision. Android matters little and is unverified |
 | Tests | Vitest for logic, Playwright for the running Arcade, a real-device checklist | Accepted, with scope limits |
-| Hosting | Any static HTTPS host, on an origin that never changes | Accepted, with a new constraint |
+| Hosting | GitHub Pages, behind a subdomain the owner controls, on an origin that never changes | Accepted, with a new constraint |
 | Not introduced | Three.js, a native wrapper, a backend, a UI library, a state library, a physics engine beyond what Phaser bundles | As requested |
 
 The single biggest risk is not in the software. iPadOS can cancel every touch on the screen when it sees four or five fingers, and web content cannot stop it. Whether four children can play a **Simultaneous** Game on an iPad is decided on the family's iPad Pro in Phase 0, before any Game is written. See [Risks](#risks).
@@ -470,7 +470,7 @@ A native wrapper is the one alternative worth naming, because it is the only thi
 | 10 | Art drawn in code and synthesized sound fall short of "beautiful and polished" | Medium | The Arcade works but charms less than hoped | A style chosen to suit vector shapes; a written style guide; the owner's review at each phase; hand-made art and recorded sound remain open for Phase 4 | The owner's review |
 | 13 | With no speech and no reading, a Game's rules are not understood from its Demo | Medium | A child does not know what to do | Keep rules simple enough to show; replayable Demo; watch a child try each Game | Phase 1 review |
 | 11 | A four-year-old cannot compete with an eight-year-old | High | Frustration | Luck-based and Cooperative Games in the catalog; a per-Seat handicap later | Play testing |
-| 12 | The hosting address changes after the family starts playing | Low | Progress lost, reinstall needed | Choose the permanent origin before Phase 0 ends | Product decision |
+| 12 | The hosting address changes after the family starts playing | Low | Progress lost, reinstall needed | A subdomain the owner controls, never the default `github.io` address; the host behind it can change freely | Settled, once the hostname is picked |
 
 ## Open decisions
 
@@ -478,7 +478,7 @@ Each has a default the design already supports. Only the first needs an answer s
 
 | # | Decision | Default | Changes what |
 |---|---|---|---|
-| 1 | The permanent address and host | A subdomain the family controls, on any static host with HTTPS | Nothing in the code; must be fixed before real use |
+| 1 | The exact hostname | A subdomain of a domain the owner already has. The host is settled: GitHub Pages ([ADR-0013](../adr/0013-permanent-origin.md)) | Nothing in the code; must be fixed before real use |
 | 2 | How Players are identified | A **Player** is their **Mascot**; no names, no profiles to create | The save document and the lobby |
 | 3 | Seating presets | Side-by-side and around-the-table, chosen in the lobby | Zone positions only |
 | 4 | Whether to honour silent mode | Yes | One line in `platform/audio` |
@@ -488,6 +488,7 @@ Settled by the owner on 2026-11-19:
 
 - The test tablet is a 13-inch iPad Pro (M5). Android matters little in practice.
 - The design frame is the iPad Pro's native 2752 × 2064.
+- Hosting is GitHub Pages behind a subdomain the owner controls. The site is public; the repository stays private.
 - There is no voice. All sound is synthesized.
 - Human involvement is kept low through Phase 3, so art is drawn in code as well.
 

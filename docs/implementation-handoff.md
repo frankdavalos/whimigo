@@ -56,7 +56,7 @@ Direct push rules out `/zsl:tdd-parallel` and the overnight loop, which work onl
 
 ### Step 4. Settle the one decision Phase 0 needs
 
-The permanent web address and the static host behind it ([ADR-0013](adr/0013-permanent-origin.md)). It does not block writing the Phase 0 PRD or building its `[AFK]` slices. It blocks the hosting slice and the device run.
+The hostname. The host is settled: GitHub Pages behind a subdomain the owner controls, never the default `github.io` address ([ADR-0013](adr/0013-permanent-origin.md)). What remains is for the owner to pick the subdomain, add one DNS record for it, and confirm that their GitHub plan allows Pages on a private repository. It does not block writing the Phase 0 PRD or building its `[AFK]` slices. It blocks the hosting slice and the device run.
 
 ### Step 5. Write the Phase 0 PRD
 
@@ -73,7 +73,7 @@ Things to hold `/zsl:to-prd` to:
 - Every user story needs at least one automatable `AC<n>:`. Write them against what the tests can observe: a rule's outcome, a value from the test bridge, a saved value. See [testing-strategy.md](testing-strategy.md#acceptance-criteria-and-zsl).
 - The actors are a **Player**, a grown-up, and a developer adding a Game.
 - The device checklist is not a user story. It becomes a `[HITL]` slice in the next step.
-- Keep `[HITL]` slices to the two that are unavoidable: connecting the hosting, and running the checklist on the iPad Pro. Everything else, including art and sound, is `[AFK]`.
+- Keep `[HITL]` slices to the two that are unavoidable: pointing the subdomain at GitHub Pages, and running the checklist on the iPad Pro. Everything else, including art and sound, is `[AFK]`.
 - No file paths or code in the PRD; the skill's own rule.
 
 ### Step 6. Slice it
@@ -132,10 +132,11 @@ Titles follow the ZSL format. Wording will be refined by `/zsl:to-issues`.
 | `[AFK] 2b — Touch Check screen: show and count simultaneous touches per Zone` | 1 |
 | `[AFK] 2c — Performance check screen: frame rate under load, Scene add-and-remove counts, half render scale` | 1 |
 | `[AFK] 2d — Sound and suspension check screen, with the recipe synthesizer` | 1 |
-| `[HITL] 2e — Connect static hosting at the permanent address, deploying on merge to main` | 1 |
-| `[HITL] 3 — Run the Phase 0 device checklist on the iPad Pro and record the results` | 2a to 2e |
+| `[AFK] 2e — Deploy to GitHub Pages on every push to main` | 1 |
+| `[HITL] 2f — Point the chosen subdomain at GitHub Pages and confirm the site is served there over HTTPS` | 2e |
+| `[HITL] 3 — Run the Phase 0 device checklist on the iPad Pro and record the results` | 2a to 2f |
 
-`2e` and `3` are genuine manual actions: creating a hosting project and pointing a hostname at it, and handling the physical tablet. The gate decisions themselves are not a slice; they are made in step 8.
+`2f` and `3` are genuine manual actions: adding a DNS record at the owner's domain provider (and upgrading the GitHub plan if Pages is not allowed on a private repository), and handling the physical tablet. `2e` is not: an agent can write the deploy workflow and switch Pages on through the GitHub CLI. The gate decisions themselves are not a slice; they are made in step 8.
 
 ### The first three GitHub issues
 

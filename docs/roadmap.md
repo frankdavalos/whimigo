@@ -26,7 +26,7 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 4. **Performance check** screen: a fixed load of moving sprites from one atlas with a frame-rate reading, and a loop that adds and removes a Scene with a pack and reports texture and Scene counts. It can also be opened at half render scale, to find out whether a lighter drawing mode is possible ([ADR-0003](adr/0003-fixed-design-frame.md)).
 5. **Sound and suspension check** screen: plays synthesized sounds on demand and shows the audio state and visibility events as they happen. This is where the recipe synthesizer is first written, and where it is confirmed that Phaser will play a sound rendered from a recipe.
 
-**Dependencies.** The permanent address (open decision 1). The skeleton and check screens can be built before it is settled; the device run cannot.
+**Dependencies.** The hostname (open decision 1) and a GitHub plan that allows Pages on a private repository. The skeleton, the check screens and the deploy workflow can be built before either is settled; the device run cannot.
 
 **Acceptance criteria**
 
