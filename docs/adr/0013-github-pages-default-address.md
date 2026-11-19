@@ -20,7 +20,7 @@ A browser ties both stored data and the installed app to the site's address. If 
 
 ## Consequences
 
-- **Unverified until tested on the tablet.** "GitHub is allowed" may cover only `github.com`. Pages sites are on `github.io`, which a filter can treat separately, even per site. The first thing done is to open the real address on the tablet.
+- **Reachable from the tablet, confirmed on 2026-11-19.** "GitHub is allowed" might have covered only `github.com`, since Pages sites are on `github.io` and a filter can treat that separately. The owner opened the real address on the tablet and it loaded. A filter's rules can change, so if the Arcade ever stops loading, this is the first thing to check.
 - **The Arcade lives under a path, not at the root.** The build's base path, the manifest's scope and start address, and the service worker's scope are all `/whimigo/`.
 - **The hostname is shared.** Every Pages site under the same account has the same hostname, and a browser keys stored data by hostname. The Arcade's saved document therefore uses a key that begins `whimigo:`, so no sibling site can collide with it. Storage eviction is also shared across those sites.
 - **The repository and the site are public.** Nothing personal goes into either: no email addresses, names of children, device identifiers or network details. Commits use the owner's GitHub no-reply address.

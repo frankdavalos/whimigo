@@ -9,7 +9,7 @@ For the next Claude Code session. It says where the project stands, what to do f
 - No GitHub issues exist. They are created by `/zsl:to-issues`, not by hand.
 - ZSL Superpowers 2.3.0 is installed as the `zsl` plugin and set up for this repository: GitHub Issues, default labels, single-context docs, **direct push to `main`**.
 - The remote is `github.com/frankdavalos/whimigo`, with Issues enabled. It is public, because GitHub Pages on the free plan needs a public repository.
-- Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`. Whether the iPad's web filter allows that address has **not** been tested yet.
+- Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`. The owner confirmed on 2026-11-19 that the iPad's web filter allows that address. Adding it to the Home Screen and changing the gesture settings have not been confirmed yet.
 
 ## Read these first
 
@@ -59,7 +59,7 @@ Direct push rules out `/zsl:tdd-parallel` and the overnight loop, which work onl
 
 Hosting is settled: GitHub Pages at its default address ([ADR-0013](adr/0013-github-pages-default-address.md)). What is not known is whether the iPad will cooperate. Its web filter is not under the owner's control, and it may be a managed device. A placeholder page is published at the address from a `gh-pages` branch, so the owner can check three things, which take five minutes:
 
-1. Open `https://frankdavalos.github.io/whimigo/` in Safari. Does it load, or does the filter block it?
+1. Open `https://frankdavalos.github.io/whimigo/` in Safari. Does it load, or does the filter block it? **Done on 2026-11-19: it loads.**
 2. Add it to the Home Screen. Is that allowed?
 3. Open Settings, Multitasking & Gestures, and Settings, Accessibility, Guided Access. Can they be changed?
 
