@@ -6,7 +6,7 @@ For the next Claude Code session. It says where the project stands, what to do f
 
 - The repository holds documentation only. There is no code and no `package.json`.
 - The architecture was **accepted** by the owner on 2026-11-19, with three amendments: there is no voice, all sound is synthesized, and human involvement is kept low through Phase 3 (so art is drawn in code too). The test tablet is a 13-inch iPad Pro (M5).
-- No GitHub issues exist. They are created by `/zsl:to-issues`, not by hand.
+- The Phase 0 PRD and its slices are on GitHub: PRD [#1](https://github.com/frankdavalos/whimigo/issues/1), labelled `tracking`, with eight sub-issues, [#2](https://github.com/frankdavalos/whimigo/issues/2) to [#9](https://github.com/frankdavalos/whimigo/issues/9). They are listed under [Phase 0 slices](#phase-0-slices). The issues, not this document, are the specification.
 - ZSL Superpowers 2.3.0 is installed as the `zsl` plugin and set up for this repository: GitHub Issues, default labels, single-context docs, **direct push to `main`**.
 - The remote is `github.com/frankdavalos/whimigo`, with Issues enabled. It is public, because GitHub Pages on the free plan needs a public repository.
 - Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`. The owner confirmed on 2026-11-19 that the iPad's web filter allows that address. The same day the owner confirmed that the page installs to the Home Screen and opens as an app, that Guided Access can be switched on, and that four fingers pressed at once all register.
@@ -63,13 +63,15 @@ Hosting is settled: GitHub Pages at its default address ([ADR-0013](adr/0013-git
 2. Add it to the Home Screen. Is that allowed? **Done: it installs and opens as an app.**
 3. Open Settings, Multitasking & Gestures, and Settings, Accessibility, Guided Access. Can they be changed? **Done for Guided Access: it can be switched on. The Multitasking & Gestures toggles are not yet confirmed.**
 
-The placeholder also has four coloured Zones with tap counters and shows the number of touches now, the most at once, and how many were cancelled. Putting four fingers on it gives an early, rough answer to the four-finger question (gate G1) before Phase 0 is built. It is throwaway: the deploy slice (`2e`) switches Pages to the workflow and deletes the `gh-pages` branch.
+The placeholder also has four coloured Zones with tap counters and shows the number of touches now, the most at once, and how many were cancelled. Putting four fingers on it gives an early, rough answer to the four-finger question (gate G1) before Phase 0 is built. It is throwaway: the deploy slice (`2b`, [#4](https://github.com/frankdavalos/whimigo/issues/4)) switches Pages to the workflow and deletes the `gh-pages` branch.
 
 An early result on gate G1: four fingers pressed at once on the placeholder all registered. That is encouraging and not conclusive. It does not cover 30 seconds of sustained tapping, fingers that slide, or whether any touches were cancelled, and those are what the Phase 0 Touch Check measures.
 
 If 1 fails, stop: hosting has to be rethought before any code is written. If 2 or 3 fails, carry on, and record it; the Arcade then runs in a Safari tab, or Simultaneous play is capped at three Seats.
 
 ### Step 5. Write the Phase 0 PRD
+
+Done on 2026-11-19: [#1](https://github.com/frankdavalos/whimigo/issues/1). The notes below are kept for writing the Phase 1 PRD the same way.
 
 `/zsl:to-prd` packages what is already in the conversation and does not interview anyone. Start a fresh session and load the material first, so the PRD is built from these documents and not from guesses:
 
@@ -93,7 +95,7 @@ Things to hold `/zsl:to-prd` to:
 /zsl:to-issues <PRD number>
 ```
 
-The expected Phase 0 breakdown is under [Phase 0 slices](#phase-0-slices). Use it to judge what the skill proposes, not to override it.
+Done on 2026-11-19: eight slices, [#2](https://github.com/frankdavalos/whimigo/issues/2) to [#9](https://github.com/frankdavalos/whimigo/issues/9), listed under [Phase 0 slices](#phase-0-slices). The skill split the asset build out of the Performance check into a slice of its own, which the earlier seven-slice plan did not have.
 
 ### Step 7. Triage and build
 
@@ -110,14 +112,15 @@ After the device run, the owner types `/zsl:grill-with-docs` and works through t
 
 ## Recommended implementation order
 
-1. **Phase 0, slice 1** (walking skeleton). Everything else stands on it.
-2. **Phase 0, wave 2** (install and offline, the three check screens, the deploy workflow). In any order, one at a time.
-3. **Phase 0 device run and gate.** The owner, with the iPad Pro; about half an hour.
-4. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). It creates the contract, the `GameHost` and the kit.
-5. **Phase 1, the rest**, in waves as listed below.
-6. **Phase 1 device acceptance.**
-7. **Phase 2**: Memory Match, then Four in a Row with the search extraction, then the remaining Games in any order.
-8. **Phase 3**: one PRD, followed by the owner's review.
+1. **Phase 0, slice 1** (walking skeleton, #2). Everything else stands on it.
+2. **Phase 0, wave 2** (the asset build #3, the deploy workflow #4). In either order, one at a time.
+3. **Phase 0, wave 3** (install and offline #5, and the three check screens #6 to #8). In any order, one at a time, once the asset build is on `main`.
+4. **Phase 0 device run (#9) and gate.** The owner, with the iPad Pro; about half an hour.
+5. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). It creates the contract, the `GameHost` and the kit.
+6. **Phase 1, the rest**, in waves as listed below.
+7. **Phase 1 device acceptance.**
+8. **Phase 2**: Memory Match, then Four in a Row with the search extraction, then the remaining Games in any order.
+9. **Phase 3**: one PRD, followed by the owner's review.
 
 ### What must be finished first
 
@@ -125,7 +128,8 @@ Slices are built one at a time and pushed to `main`. A slice's wave number says 
 
 | Before building | This must be on `main` | Because |
 |---|---|---|
-| Any Phase 0 wave-2 slice | Phase 0 slice 1 | It creates the project, the lint rules, CI, and the list that check screens register in |
+| Any other Phase 0 slice | Phase 0 slice 1 (#2) | It creates the project, the lint rules, CI, the test bridge, and the list that check screens register in |
+| Install and offline, or any check screen (#5 to #8) | The asset build (#3) | They need the icons, the bitmap digits and the Arcade's atlas |
 | Any Phase 1 wave-2 slice | Phase 1 slice 1 | It creates `contract.ts`, `GameHost`, `openRound` and the kit's folder structure. Two agents inventing these at once will collide |
 | Color Echo Cooperative | Color Echo Solo **and** Zones | It needs both |
 | The Phase 2 Games after Four in a Row | The search extraction | Dots and Boxes uses it; extracting it later means touching three Games |
@@ -134,57 +138,24 @@ A rule for the whole project: a slice may **add** to `kit/` and `contract.ts` fr
 
 ## Phase 0 slices
 
-Titles follow the ZSL format. Wording will be refined by `/zsl:to-issues`.
+The PRD is [#1](https://github.com/frankdavalos/whimigo/issues/1). Its eight sub-issues are the plan; read each one with `gh issue view <n> --comments` before building it.
 
-| Slice | Blocked by |
-|---|---|
-| `[AFK] 1 — Walking skeleton: the Arcade boots to a placeholder Home Screen and passes CI` | None |
-| `[AFK] 2a — Install and play offline: manifest, precaching service worker, update at cold start` | 1 |
-| `[AFK] 2b — Touch Check screen: show and count simultaneous touches per Zone` | 1 |
-| `[AFK] 2c — Performance check screen: frame rate under load, Scene add-and-remove counts, half render scale` | 1 |
-| `[AFK] 2d — Sound and suspension check screen, with the recipe synthesizer` | 1 |
-| `[AFK] 2e — Deploy to GitHub Pages on every push to main` | 1 |
-| `[HITL] 3 — Run the Phase 0 device checklist on the iPad Pro and record the results` | 2a to 2e |
+| Issue | Slice | Blocked by |
+|---|---|---|
+| [#2](https://github.com/frankdavalos/whimigo/issues/2) | `[AFK] 1 — Walking skeleton: the Arcade boots to a placeholder Home Screen and passes CI` | None |
+| [#3](https://github.com/frankdavalos/whimigo/issues/3) | `[AFK] 2a — Asset build: SVG art, bitmap digits and app icons packed into atlases` | #2 |
+| [#4](https://github.com/frankdavalos/whimigo/issues/4) | `[AFK] 2b — Deploy to GitHub Pages on every push to main` | #2 |
+| [#5](https://github.com/frankdavalos/whimigo/issues/5) | `[AFK] 3a — Install and play offline: manifest, precaching service worker, update at cold start` | #3 |
+| [#6](https://github.com/frankdavalos/whimigo/issues/6) | `[AFK] 3b — Touch Check screen: show and count simultaneous touches per Zone` | #3 |
+| [#7](https://github.com/frankdavalos/whimigo/issues/7) | `[AFK] 3c — Performance check screen: frame time under load, Scene add-and-remove, half render scale` | #3 |
+| [#8](https://github.com/frankdavalos/whimigo/issues/8) | `[AFK] 3d — Sound and suspension check screen, with the recipe synthesizer` | #3 |
+| [#9](https://github.com/frankdavalos/whimigo/issues/9) | `[HITL] 4 — Run the Phase 0 device checklist on the iPad Pro and record the results` | #4 to #8 |
 
-`3` is the only genuine manual action: handling the physical tablet. `2e` is not: an agent writes the deploy workflow and switches Pages on through the GitHub CLI, and there is no DNS to configure. The gate decisions themselves are not a slice; they are made in step 8.
+Build them one at a time with `/zsl:tdd`, in wave order: #2; then #3 and #4 in either order; then #5 to #8 in any order. A slice starts only when its blockers are closed.
 
-### The first three GitHub issues
+`#9` is the only genuine manual action: handling the physical tablet. `#4` is not: an agent writes the deploy workflow and switches Pages on through the GitHub CLI, and there is no DNS to configure. The gate decisions themselves are not a slice; they are made in step 8.
 
-To be created by `/zsl:to-issues` after approval, not by hand and not before.
-
-**1. `[AFK] 1 — Walking skeleton: the Arcade boots to a placeholder Home Screen and passes CI`**
-
-What to build: the smallest running Arcade. A hand-made Vite and TypeScript project with `phaser` pinned at exactly 4.2.1. One `Phaser.Game` at the 2752 × 2064 design frame in `EXPAND` mode with ten touch slots and window events off. The page-level touch hygiene from the overview. A "tap to start" screen that unlocks sound and leads to a placeholder Home Screen. The DOM error screen with a reload button. The test bridge behind `?e2e=1`. A list that check screens can register in. Lint rules for the import boundaries. Vitest, Playwright and a CI workflow.
-
-Acceptance:
-- `npm run check` passes: type-check, lint, and at least one unit test.
-- `npm run e2e` passes: the page loads, a tap on "tap to start" leads to the Home Screen, and the bridge reports it.
-- At 4:3, 16:10 and 16:9 viewports the design frame is fully visible.
-- An exception thrown on purpose shows the error screen, and its button returns to the Home Screen.
-- A file in `games/` that imports Phaser from `logic/`, or imports another Game, fails lint.
-- The project makes no network request to any third party in `dev` or `build`.
-
-**2. `[AFK] 2a — Install and play offline: manifest, precaching service worker, update at cold start`**
-
-What to build: `vite-plugin-pwa` in prompt mode. A manifest with `display: fullscreen`, `orientation: landscape`, icons and an `apple-touch-icon`. Precaching of every built file, with the Workbox defaults for file types and the 2 MiB limit overridden. A check for a new version when the page becomes visible. A minimal "ready to play offline" and "update available" indication for an adult.
-
-Acceptance:
-- After one load, with the network off, a reload reaches the Home Screen.
-- Every file the build emits is in the precache list.
-- With a newer build served while the page is open, the page keeps running its own version; after a reload it runs the new one.
-- The manifest passes Chrome's installability check.
-
-**3. `[AFK] 2b — Touch Check screen: show and count simultaneous touches per Zone`**
-
-What to build: a screen that draws a marker under every live touch with its slot number, shows the current and highest simultaneous counts and the number of cancelled touches, and shows the four **Zones** for either **Seating** with a tap counter in each. This is where the first, minimal form of Zone geometry and touch attribution is written, as pure functions with unit tests.
-
-Acceptance:
-- Four touches sent in one event to four Zones raise each Zone's counter by one.
-- A second touch in an occupied Zone is not counted.
-- A touch that slides into another Zone stays with its first Zone.
-- A cancelled touch raises the cancellation count and no tap counter.
-- An eleventh touch is ignored and the screen keeps working.
-- The highest count shown matches the number of touches sent.
+Three acceptance criteria are open questions rather than certainties: 50 Scene add-and-remove cycles leaving the counts unchanged (#7, gate G6), half render scale matching targets and taps (#7, gate G8), and Phaser playing a ready-made sound buffer (#8). If Phaser 4.2.1 cannot meet one, the slice records the finding on its issue, takes the documented fallback, and revises the criterion and the affected ADR in the same push. The walking skeleton (#2) also records what Phaser does when an exception is thrown inside its frame loop.
 
 ## Phase 1 slices
 
