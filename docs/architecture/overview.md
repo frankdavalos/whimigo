@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton, the asset build and the Touch Check exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
+Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton, the asset build, the Touch Check and the Sound check exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
 
 ## Summary
 
@@ -342,9 +342,10 @@ The Arcade is a PWA built with `vite-plugin-pwa`. See [ADR-0008](../adr/0008-pre
 
 - **Everything is synthesized.** There are no audio files and no speech. A sound is a recipe: a few lines of data naming a waveform, a pitch that may glide, and a loudness envelope, optionally several notes in sequence. Recipes live in code beside whatever uses them ([ADR-0014](../adr/0014-synthesized-sound-no-voice.md)).
 - **Why.** Through the first release the project keeps human production work low ([ADR-0016](../adr/0016-art-and-sound-made-in-code.md)). A recipe can be written, reviewed and tuned by a coding agent; a recording cannot. It also removes audio formats, decoding defects and cached-media handling from the design.
-- **How it plays.** When a recipe is loaded it is rendered once into a sound buffer and given to Phaser's Web Audio sound manager, which then plays, pauses and mutes it like any other sound. Games reach sound only through `RoundAudio`. Whether Phaser 4.2.1 accepts a ready-made buffer in its cache is an assumption checked in Phase 0; the fallback is for `platform/audio` to play the buffers itself on the same audio context.
+- **How it plays.** When a recipe is loaded it is rendered once into a sound buffer and given to Phaser's Web Audio sound manager, which then plays, pauses and mutes it like any other sound. Games reach sound only through `RoundAudio`. Whether Phaser 4.2.1 accepts a ready-made buffer in its cache is an assumption checked in Phase 0; the fallback is for `platform/audio` to play the buffers itself on the same audio context. Confirmed on 2026-11-19: it does (its `WebAudioSound` takes the buffer from `game.cache.audio` by key), so the Sound check plays every sound through Phaser's sound manager and the fallback is not built.
 - **No voice.** How to play is shown by a wordless **Demo**: an animated hand performs the first few actions, and a child can replay it from the pause screen. Recorded speech is a possibility for Phase 4.
 - **Unlocking.** Browsers keep audio silent until a real tap. The first screen is a "tap to start" picture, and that tap unlocks sound. Until then, and whenever sound is switched off, sound calls do nothing and return at once, so no Game can stall waiting for a sound.
+- **Hiding and returning.** While the page is hidden, `platform/audio` suspends the audio context and keeps Phaser from resuming it. When the page returns, the next tap anywhere brings sound back, as it does after the tablet interrupts sound. Until then a request to play does nothing.
 - **Silent mode is respected.** If the tablet is set to silent, the Arcade is silent. The Grown-Ups Area says so when sound seems to be missing.
 - **No background music** in the first release. It is the kind of thing that is easy to add and hard to make pleasant for the adults in the room.
 - **Known platform defect.** There is an open WebKit report of installed web apps going silent after being backgrounded on iPadOS 26. Phase 0 checks it on the family's iPad. The fallback, if it reproduces, is to reload the Arcade when it next returns to the Home Screen.

@@ -19,7 +19,7 @@ This follows from keeping human production work low through the first release ([
 
 - Sounds are simple by nature: chimes, blips, whooshes, pops. Nothing will sound like a real animal or a real voice.
 - With no speech and no reading, each Game must be learnable from its Demo alone. A Game whose rules cannot be shown that way is too complicated for this Arcade.
-- Whether Phaser 4.2.1 accepts a ready-made buffer in its audio cache is an assumption, checked on the sound check screen in Phase 0. The fallback is for `platform/audio` to play the buffers itself on the same audio context. Games cannot tell the difference.
+- Whether Phaser 4.2.1 accepts a ready-made buffer in its audio cache is an assumption, checked on the sound check screen in Phase 0. The fallback is for `platform/audio` to play the buffers itself on the same audio context. Games cannot tell the difference. Confirmed on 2026-11-19: Phaser 4.2.1 does accept one, the Sound check plays every sound through Phaser's sound manager, and the fallback is not built.
 - The tablet's silent mode silences the Arcade. That is left as it is.
 - A Game must never wait on a sound, because sound may be off, locked or silenced.
 - If recorded sound is added later, it arrives as files in a Game's pack. MP3 is the format to use, being the one every target browser decodes, and the files must be fetched whole and decoded by Web Audio, not streamed, to avoid Safari's range-request problem with cached media.
