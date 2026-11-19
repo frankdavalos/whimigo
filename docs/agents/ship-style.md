@@ -13,6 +13,19 @@ Changes go straight to `main`. There is no pull request workflow.
 
 Until the walking skeleton exists there are no check commands to run. That slice creates them, and it is the only code slice pushed without them.
 
+### When WebKit cannot launch on the development host
+
+`npm run e2e` includes the `webkit-smoke` project. On a host that lacks the system libraries Playwright's WebKit needs, run that project in the official Playwright container of the pinned version (the `@playwright/test` version in `package.json`), from the repository root:
+
+```sh
+docker run --rm --ipc=host -v "$PWD":/src:ro -e GITHUB_SHA="$(git rev-parse HEAD)" \
+  mcr.microsoft.com/playwright:v1.64.1-noble bash -c '
+    mkdir /work && tar -C /src --exclude=./node_modules --exclude=./dist --exclude=./.git -cf - . | tar -C /work -xf - &&
+    cd /work && npm ci && npm run build && npx playwright test --project=webkit-smoke'
+```
+
+The checkout is mounted read-only and copied, so the container's `node_modules` never replaces the host's. `GITHUB_SHA` gives the build its identifier, since the copy has no git history. Run the Chromium projects on the host as usual. CI runs every project on Ubuntu anyway. Never skip the WebKit project to get a push through.
+
 ## When a skill says "ship the change"
 
 1. Pull latest.

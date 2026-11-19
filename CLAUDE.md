@@ -2,7 +2,7 @@
 
 A private, offline, tablet-first arcade of mini-games for children aged 4–8, played by one to four children on one shared tablet. Phaser 4, TypeScript, Vite, installed as a PWA. No backend, accounts, ads or analytics.
 
-**Current state:** the architecture was accepted on 2026-11-19. Phase 0 has begun: the walking skeleton (issue #2) boots to a placeholder Home Screen, with the test bridge, lint boundaries, Vitest, Playwright and CI. There are no Games yet. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
+**Current state:** the architecture was accepted on 2026-11-19. Phase 0 has begun: the walking skeleton (issue #2) boots to a placeholder Home Screen, with the test bridge, lint boundaries, Vitest, Playwright and CI. Every push to `main` that passes the checks is published to GitHub Pages. There are no Games yet. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
 
 ## Read before working
 
