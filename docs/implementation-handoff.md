@@ -57,11 +57,13 @@ Direct push rules out `/zsl:tdd-parallel` and the overnight loop, which work onl
 
 ### Step 4. Check the iPad before building anything
 
-Hosting is settled: GitHub Pages at its default address ([ADR-0013](adr/0013-github-pages-default-address.md)). What is not known is whether the iPad will cooperate. Its web filter is not under the owner's control, and it may be a managed device. A placeholder page is published at the address so the owner can check three things, which take five minutes:
+Hosting is settled: GitHub Pages at its default address ([ADR-0013](adr/0013-github-pages-default-address.md)). What is not known is whether the iPad will cooperate. Its web filter is not under the owner's control, and it may be a managed device. A placeholder page is published at the address from a `gh-pages` branch, so the owner can check three things, which take five minutes:
 
 1. Open `https://frankdavalos.github.io/whimigo/` in Safari. Does it load, or does the filter block it?
 2. Add it to the Home Screen. Is that allowed?
 3. Open Settings, Multitasking & Gestures, and Settings, Accessibility, Guided Access. Can they be changed?
+
+The placeholder also has four coloured Zones with tap counters and shows the number of touches now, the most at once, and how many were cancelled. Putting four fingers on it gives an early, rough answer to the four-finger question (gate G1) before Phase 0 is built. It is throwaway: the deploy slice (`2e`) switches Pages to the workflow and deletes the `gh-pages` branch.
 
 If 1 fails, stop: hosting has to be rethought before any code is written. If 2 or 3 fails, carry on, and record it; the Arcade then runs in a Safari tab, or Simultaneous play is capped at three Seats.
 
