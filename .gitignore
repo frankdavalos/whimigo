@@ -4,3 +4,6 @@ test-results/
 playwright-report/
 blob-report/
 *.tsbuildinfo
+# Made by the asset build (scripts/assets) before `dev` and `build`; never committed (ADR-0011).
+src/generated/
+public/icons/
