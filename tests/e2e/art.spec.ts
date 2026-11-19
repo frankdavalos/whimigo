@@ -16,7 +16,7 @@ test('the tap-to-start screen and the Home Screen draw their pictures from the A
   await arcade.start();
   const home = await arcade.call('pictures');
   expect(home.shapes).toBe(0);
-  for (const frame of ['arcade/sun', 'arcade/card', 'arcade/check-blank']) {
+  for (const frame of ['arcade/sun', 'arcade/card', 'arcade/check-touch', 'arcade/check-blank']) {
     expect(home.images).toContainEqual({ texture: 'arcade', frame });
   }
   expect(home.images.every(fromArcadeAtlas)).toBe(true);
@@ -28,6 +28,32 @@ test('the hold control draws its face and icon from the Arcade’s atlas', async
   await expect.poll(() => arcade.screen()).toBe('blank-check');
   const { images } = await arcade.call('pictures');
   for (const frame of ['arcade/hold', 'arcade/home']) {
+    expect(images).toContainEqual({ texture: 'arcade', frame });
+  }
+  expect(images.every(fromArcadeAtlas)).toBe(true);
+});
+
+test('the Touch Check draws its controls, readings and Seats from the Arcade’s atlas', async ({
+  arcade,
+}) => {
+  await arcade.open();
+  await arcade.call('openCheck', 'touch-check');
+  await expect.poll(() => arcade.screen()).toBe('touch-check');
+  const { images } = await arcade.call('pictures');
+  for (const frame of [
+    'arcade/hold',
+    'arcade/home',
+    'arcade/reset',
+    'arcade/card',
+    'arcade/seating-around-the-table',
+    'arcade/touch-now',
+    'arcade/touch-most',
+    'arcade/touch-cancelled',
+    'arcade/seat-circle',
+    'arcade/seat-square',
+    'arcade/seat-triangle',
+    'arcade/seat-star',
+  ]) {
     expect(images).toContainEqual({ texture: 'arcade', frame });
   }
   expect(images.every(fromArcadeAtlas)).toBe(true);

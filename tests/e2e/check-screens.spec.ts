@@ -3,6 +3,8 @@ import { expect, test } from './arcade';
 /** Long enough to be sure of a full half-second hold even when frames are slow. */
 const FULL_HOLD_MS = 1000;
 const BLANK = 'blank-check';
+/** Every check screen the Home Screen lists when the test bridge is on, in order. */
+const CHECKS = ['touch-check', BLANK];
 
 test.beforeEach(async ({ arcade }) => {
   await arcade.open();
@@ -13,7 +15,7 @@ test('the Home Screen has one control for each registered check screen, and tapp
 }) => {
   await arcade.start();
   const checks = Object.keys((await arcade.snapshot()).targets);
-  expect(checks).toEqual([BLANK]);
+  expect(checks).toEqual(CHECKS);
   for (const id of checks) {
     await arcade.tap(id);
     await expect.poll(() => arcade.screen()).toBe(id);
@@ -29,49 +31,54 @@ test('a check screen opens directly through the bridge, skipping the Home Screen
   await expect.poll(() => arcade.screen()).toBe(BLANK);
 });
 
-test('a short tap on the leave control does nothing; a full hold goes home', async ({
-  arcade,
-  page,
-}) => {
-  await arcade.start();
-  await arcade.tap(BLANK);
-  await expect.poll(() => arcade.screen()).toBe(BLANK);
+for (const id of CHECKS) {
+  test(`${id}: a short tap on the leave control does nothing; a full hold goes home`, async ({
+    arcade,
+    page,
+  }) => {
+    await arcade.start();
+    await arcade.tap(id);
+    await expect.poll(() => arcade.screen()).toBe(id);
 
-  await arcade.tap('leave');
-  await arcade.brush('leave');
-  await page.waitForTimeout(800);
-  expect(await arcade.screen()).toBe(BLANK);
+    await arcade.tap('leave');
+    await arcade.brush('leave');
+    await page.waitForTimeout(800);
+    expect(await arcade.screen()).toBe(id);
 
-  await arcade.hold('leave', FULL_HOLD_MS);
-  await expect.poll(() => arcade.screen()).toBe('home');
-});
+    await arcade.hold('leave', FULL_HOLD_MS);
+    await expect.poll(() => arcade.screen()).toBe('home');
+  });
 
-test('a hold that slides off the leave control does not leave', async ({ arcade, page }) => {
-  await arcade.call('openCheck', BLANK);
-  await expect.poll(() => arcade.screen()).toBe(BLANK);
-  const leave = await arcade.target('leave');
-  // Sent together, so a slow frame cannot stretch the time the finger spends on the control.
-  await Promise.all([
-    arcade.touch('touchStart', [leave]),
-    arcade.touch('touchMove', [{ x: leave.x + leave.rect.width * 2, y: leave.y }]),
-  ]);
-  await page.waitForTimeout(FULL_HOLD_MS);
-  await arcade.touch('touchEnd', []);
-  expect(await arcade.screen()).toBe(BLANK);
-});
+  test(`${id}: a hold that slides off the leave control does not leave`, async ({
+    arcade,
+    page,
+  }) => {
+    await arcade.call('openCheck', id);
+    await expect.poll(() => arcade.screen()).toBe(id);
+    const leave = await arcade.target('leave');
+    // Sent together, so a slow frame cannot stretch the time the finger spends on the control.
+    await Promise.all([
+      arcade.touch('touchStart', [leave]),
+      arcade.touch('touchMove', [{ x: leave.x + leave.rect.width * 2, y: leave.y }]),
+    ]);
+    await page.waitForTimeout(FULL_HOLD_MS);
+    await arcade.touch('touchEnd', []);
+    expect(await arcade.screen()).toBe(id);
+  });
 
-test('opening and leaving a check screen returns the counts to where they were', async ({
-  arcade,
-}) => {
-  await arcade.start();
-  const before = await arcade.counts();
-  await arcade.tap(BLANK);
-  await expect.poll(() => arcade.screen()).toBe(BLANK);
-  expect((await arcade.counts()).scenes).toBe(before.scenes + 1);
-  await arcade.hold('leave', FULL_HOLD_MS);
-  await expect.poll(() => arcade.screen()).toBe('home');
-  expect(await arcade.counts()).toEqual(before);
-});
+  test(`${id}: opening and leaving it returns the counts to where they were`, async ({
+    arcade,
+  }) => {
+    await arcade.start();
+    const before = await arcade.counts();
+    await arcade.tap(id);
+    await expect.poll(() => arcade.screen()).toBe(id);
+    expect((await arcade.counts()).scenes).toBe(before.scenes + 1);
+    await arcade.hold('leave', FULL_HOLD_MS);
+    await expect.poll(() => arcade.screen()).toBe('home');
+    expect(await arcade.counts()).toEqual(before);
+  });
+}
 
 test('the bridge answers in plain JSON', async ({ arcade }) => {
   await arcade.start();

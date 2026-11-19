@@ -21,3 +21,15 @@ export const sizes = {
 } as const;
 
 export const cssColor = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
+
+/**
+ * Each Seat's colour and shape, in Seat order. The shapes are final; the colours are provisional
+ * until the Phase 1 style guide chooses four that stay distinct under colour blindness. A colour
+ * is never shown without its shape.
+ */
+export const seats = [
+  { color: 0x3b8fd9, shape: 'arcade/seat-circle' },
+  { color: 0xf2a13a, shape: 'arcade/seat-square' },
+  { color: 0x2fae8a, shape: 'arcade/seat-triangle' },
+  { color: 0xc56fb0, shape: 'arcade/seat-star' },
+] as const;

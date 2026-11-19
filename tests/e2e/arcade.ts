@@ -10,6 +10,9 @@ type Methods = {
 
 export type Point = { readonly x: number; readonly y: number };
 
+/** The design frame's width, in design units. */
+const DESIGN_WIDTH = 2752;
+
 /** Screen shapes tested beyond each project's own viewport. */
 export const OTHER_VIEWPORTS = {
   '16:9': { width: 1600, height: 900 },
@@ -61,6 +64,38 @@ export class Arcade {
   async tap(name: string): Promise<void> {
     const { x, y } = await this.target(name);
     await this.page.touchscreen.tap(x, y);
+  }
+
+  /** Converts a point in design units to the page, in CSS pixels. */
+  async toPage(point: Point): Promise<Point> {
+    const { frame } = await this.layout();
+    const unit = frame.width / DESIGN_WIDTH;
+    return { x: frame.x + point.x * unit, y: frame.y + point.y * unit };
+  }
+
+  /**
+   * Hides the page and shows it again, as the home gesture and a return to the app would. The
+   * browser under test stays visible, so the page is told its visibility changed.
+   */
+  async hideAndShow(): Promise<void> {
+    await this.page.evaluate(() => {
+      const become = (state: 'hidden' | 'visible') => {
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          get: () => state,
+        });
+        Object.defineProperty(document, 'hidden', {
+          configurable: true,
+          get: () => state === 'hidden',
+        });
+        document.dispatchEvent(new Event('visibilitychange'));
+      };
+      become('hidden');
+      become('visible');
+      // Back to the browser's own answers.
+      delete (document as { visibilityState?: unknown }).visibilityState;
+      delete (document as { hidden?: unknown }).hidden;
+    });
   }
 
   /** Taps "tap to start" and waits for the Home Screen. */
