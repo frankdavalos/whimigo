@@ -26,7 +26,7 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 4. **Performance check** screen: a fixed load of moving sprites from one atlas with a frame-rate reading, and a loop that adds and removes a Scene with a pack and reports texture and Scene counts. It can also be opened at half render scale, to find out whether a lighter drawing mode is possible ([ADR-0003](adr/0003-fixed-design-frame.md)).
 5. **Sound and suspension check** screen: plays synthesized sounds on demand and shows the audio state and visibility events as they happen. This is where the recipe synthesizer is first written, and where it is confirmed that Phaser will play a sound rendered from a recipe.
 
-**Dependencies.** None that block building. The iPad's web filter allows the Arcade's `github.io` address, confirmed on 2026-11-19 ([ADR-0013](adr/0013-github-pages-default-address.md)). Still to be confirmed on the iPad, and not blocking: that a site can be added to the Home Screen, and that the gesture settings and Guided Access can be changed.
+**Dependencies.** None that block building. The iPad's web filter allows the Arcade's `github.io` address, confirmed on 2026-11-19 ([ADR-0013](adr/0013-github-pages-default-address.md)). Also confirmed that day: the page installs to the Home Screen and opens as an app, Guided Access can be switched on, and four fingers pressed at once all register. That last result is an encouraging early sign for gate G1, not an answer to it.
 
 **Acceptance criteria**
 

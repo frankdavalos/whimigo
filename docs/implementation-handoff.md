@@ -9,7 +9,7 @@ For the next Claude Code session. It says where the project stands, what to do f
 - No GitHub issues exist. They are created by `/zsl:to-issues`, not by hand.
 - ZSL Superpowers 2.3.0 is installed as the `zsl` plugin and set up for this repository: GitHub Issues, default labels, single-context docs, **direct push to `main`**.
 - The remote is `github.com/frankdavalos/whimigo`, with Issues enabled. It is public, because GitHub Pages on the free plan needs a public repository.
-- Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`. The owner confirmed on 2026-11-19 that the iPad's web filter allows that address. Adding it to the Home Screen and changing the gesture settings have not been confirmed yet.
+- Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`. The owner confirmed on 2026-11-19 that the iPad's web filter allows that address. The same day the owner confirmed that the page installs to the Home Screen and opens as an app, that Guided Access can be switched on, and that four fingers pressed at once all register.
 
 ## Read these first
 
@@ -60,10 +60,12 @@ Direct push rules out `/zsl:tdd-parallel` and the overnight loop, which work onl
 Hosting is settled: GitHub Pages at its default address ([ADR-0013](adr/0013-github-pages-default-address.md)). What is not known is whether the iPad will cooperate. Its web filter is not under the owner's control, and it may be a managed device. A placeholder page is published at the address from a `gh-pages` branch, so the owner can check three things, which take five minutes:
 
 1. Open `https://frankdavalos.github.io/whimigo/` in Safari. Does it load, or does the filter block it? **Done on 2026-11-19: it loads.**
-2. Add it to the Home Screen. Is that allowed?
-3. Open Settings, Multitasking & Gestures, and Settings, Accessibility, Guided Access. Can they be changed?
+2. Add it to the Home Screen. Is that allowed? **Done: it installs and opens as an app.**
+3. Open Settings, Multitasking & Gestures, and Settings, Accessibility, Guided Access. Can they be changed? **Done for Guided Access: it can be switched on. The Multitasking & Gestures toggles are not yet confirmed.**
 
 The placeholder also has four coloured Zones with tap counters and shows the number of touches now, the most at once, and how many were cancelled. Putting four fingers on it gives an early, rough answer to the four-finger question (gate G1) before Phase 0 is built. It is throwaway: the deploy slice (`2e`) switches Pages to the workflow and deletes the `gh-pages` branch.
+
+An early result on gate G1: four fingers pressed at once on the placeholder all registered. That is encouraging and not conclusive. It does not cover 30 seconds of sustained tapping, fingers that slide, or whether any touches were cancelled, and those are what the Phase 0 Touch Check measures.
 
 If 1 fails, stop: hosting has to be rethought before any code is written. If 2 or 3 fails, carry on, and record it; the Arcade then runs in a Safari tab, or Simultaneous play is capped at three Seats.
 
