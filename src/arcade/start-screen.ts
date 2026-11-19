@@ -3,6 +3,7 @@ import type { ScreenSnapshot } from '@/contract';
 import { DESIGN_FRAME } from '@/kit/frame';
 import { createStage, type Stage } from '@/kit/stage';
 import { picture } from '@/kit/atlas';
+import { addDigitFont } from '@/kit/digits';
 import { colors } from '@/kit/theme';
 import { loadArcadeArt } from './art';
 import type { ArcadeScreen, ScreenData } from './screen';
@@ -20,6 +21,7 @@ export class StartScreen extends Phaser.Scene implements ArcadeScreen {
   create({ arcade }: ScreenData): void {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
     this.stage.backdrop({ color: colors.sky });
+    addDigitFont(this);
     picture(this, CENTRE.x, CENTRE.y, 'arcade/play');
 
     let started = false;

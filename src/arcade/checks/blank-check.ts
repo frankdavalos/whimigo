@@ -1,17 +1,20 @@
 import * as Phaser from 'phaser';
 import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
+import { drawNumber, type DrawnNumber } from '@/kit/digits';
 import { holdButton } from '@/kit/hold-button';
 import { createStage, type Stage } from '@/kit/stage';
 import { colors, sizes } from '@/kit/theme';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 
 /**
- * A check screen with nothing on it but the leave control. Registered only for automated tests,
- * it proves the list of check screens, hold-to-leave and the bridge before any real check exists.
+ * A check screen with nothing on it but the leave control and a number in bitmap digits.
+ * Registered only for automated tests, it proves the list of check screens, hold-to-leave, the
+ * digits and the bridge before any real check exists.
  */
 class BlankCheckScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
   private leave!: SnapshotTarget;
+  private number!: DrawnNumber;
 
   create({ arcade }: ScreenData): void {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
@@ -23,11 +26,13 @@ class BlankCheckScreen extends Phaser.Scene implements ArcadeScreen {
       icon: 'arcade/home',
       onHold: () => arcade.show('home'),
     });
+    // Every digit once, so a test can see each glyph drawn.
+    this.number = drawNumber(this, safe.x + safe.width / 2, safe.y + safe.height / 2, 1234567890);
     arcade.shown(this);
   }
 
   snapshot(): ScreenSnapshot {
-    return { state: {}, targets: { leave: this.leave } };
+    return { state: { number: this.number.describe() }, targets: { leave: this.leave } };
   }
 }
 
