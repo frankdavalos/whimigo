@@ -6,7 +6,7 @@ export const DESIGN_FRAME: Rect = { x: 0, y: 0, width: 2752, height: 2064 };
 /** Nothing a child must touch sits closer than this to an edge, whatever the device reports. */
 export const SAFE_MARGIN = 88;
 
-/** Safe-area insets in design units, as reported by the device. */
+/** Insets on each side of a rectangle. */
 export interface Insets {
   readonly top: number;
   readonly right: number;
@@ -14,7 +14,10 @@ export interface Insets {
   readonly left: number;
 }
 
-/** The design frame inset on each side by the larger of the reported inset and the fixed margin. */
+/**
+ * The design frame inset on each side by the larger of the reported safe-area inset, in design
+ * units, and the fixed margin.
+ */
 export function safeRect(reported: Insets): Rect {
   const top = Math.max(reported.top, SAFE_MARGIN);
   const right = Math.max(reported.right, SAFE_MARGIN);

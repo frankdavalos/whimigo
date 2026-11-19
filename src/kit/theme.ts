@@ -12,9 +12,7 @@ export const colors = {
 
 /** Sizes in design units (overview, Visual system). */
 export const sizes = {
-  /** Nothing a child touches is smaller than this, square. */
-  minTarget: 256,
-  /** The standard control. */
+  /** The standard control. Nothing a child touches may be smaller than 256 square. */
   button: 344,
   /** The least space between two controls. */
   gap: 64,

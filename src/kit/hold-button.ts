@@ -1,6 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { SnapshotTarget } from '@/contract';
-import { createHold, HOLD_MS } from './hold';
+import { createHold } from './hold';
 import { colors, sizes } from './theme';
 
 export interface HoldButtonOptions {
@@ -11,7 +11,6 @@ export interface HoldButtonOptions {
   readonly icon: (graphics: Phaser.GameObjects.Graphics, size: number) => void;
   /** Called once each time a finger has stayed on the button for the whole hold. */
   readonly onHold: () => void;
-  readonly duration?: number;
 }
 
 /**
@@ -21,7 +20,7 @@ export interface HoldButtonOptions {
 export function holdButton(scene: Phaser.Scene, options: HoldButtonOptions): SnapshotTarget {
   const size = sizes.button;
   const radius = size / 2;
-  const hold = createHold(options.duration ?? HOLD_MS);
+  const hold = createHold();
 
   const face = scene.add.graphics({ x: options.x, y: options.y });
   face.fillStyle(colors.cream).fillCircle(0, 0, radius - sizes.outline);

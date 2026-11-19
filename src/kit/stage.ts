@@ -22,7 +22,8 @@ export interface Stage {
 
 /**
  * Points the Scene's one camera at the design frame, keeps it centred when the screen changes
- * size, and works out the safe rectangle from the insets the device reports in CSS pixels.
+ * size, and works out the safe rectangle from the safe-area insets the device reports, which are
+ * in CSS pixels.
  */
 export function createStage(scene: Phaser.Scene, reportedCssInsets: Insets): Stage {
   const camera = scene.cameras.main;
