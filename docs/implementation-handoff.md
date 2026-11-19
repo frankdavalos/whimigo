@@ -4,7 +4,7 @@ For the next Claude Code session. It says where the project stands, what to do f
 
 ## Where things stand
 
-- The repository holds documentation only. There is no code and no `package.json`.
+- The walking skeleton (issue #2) is built: a hand-made Vite, TypeScript and Phaser 4.2.1 project that boots to a placeholder Home Screen, with the test bridge, lint boundaries, Vitest, Playwright and CI. `npm run check` and `npm run e2e` exist. There are no Games yet.
 - The architecture was **accepted** by the owner on 2026-11-19, with three amendments: there is no voice, all sound is synthesized, and human involvement is kept low through Phase 3 (so art is drawn in code too). The test tablet is a 13-inch iPad Pro (M5).
 - The Phase 0 PRD and its slices are on GitHub: PRD [#1](https://github.com/frankdavalos/whimigo/issues/1), labelled `tracking`, with eight sub-issues, [#2](https://github.com/frankdavalos/whimigo/issues/2) to [#9](https://github.com/frankdavalos/whimigo/issues/9). They are listed under [Phase 0 slices](#phase-0-slices). The issues, not this document, are the specification.
 - ZSL Superpowers 2.3.0 is installed as the `zsl` plugin and set up for this repository: GitHub Issues, default labels, single-context docs, **direct push to `main`**.

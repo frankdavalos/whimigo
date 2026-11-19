@@ -2,7 +2,7 @@
 
 A private, offline, tablet-first arcade of mini-games for children aged 4–8, played by one to four children on one shared tablet. Phaser 4, TypeScript, Vite, installed as a PWA. No backend, accounts, ads or analytics.
 
-**Current state:** the architecture was accepted on 2026-11-19. The repository holds documentation only; implementation has not started. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
+**Current state:** the architecture was accepted on 2026-11-19. Phase 0 has begun: the walking skeleton (issue #2) boots to a placeholder Home Screen, with the test bridge, lint boundaries, Vitest, Playwright and CI. There are no Games yet. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
 
 ## Read before working
 
@@ -17,6 +17,7 @@ A private, offline, tablet-first arcade of mini-games for children aged 4–8, p
 - **This is Phaser 4.** Do not rely on Phaser 3 knowledge. Check `node_modules/phaser/types/phaser.d.ts` and the v4 migration guide before using an API.
 - **Phaser stays pinned at exactly 4.2.1.** Upgrading is its own task.
 - **A Game lives in its own folder** under `src/games/` and imports only its own code, `src/contract.ts` and `src/kit/`. It never imports another Game, `src/arcade/` or `src/platform/`.
+- **Imports that leave a module's folder use the `@/` alias** (`@/kit/frame`, not `../kit/frame`). Lint refuses relative imports that climb out of a module, because the boundary rules can only see aliases.
 - **Rules are pure.** `logic/` never imports Phaser, a Scene or the DOM.
 - **In Game code, never use** `setTimeout`, `setInterval`, `Date.now()`, `requestAnimationFrame` or `Math.random()`. Use the Scene's clock and tweens, and `round.rng`.
 - **In Game code, never create** Phaser `Text`, `RenderTexture`, `DynamicTexture` or `Shader` objects, a second Scene, or HTML elements.
@@ -32,7 +33,7 @@ A private, offline, tablet-first arcade of mini-games for children aged 4–8, p
 
 - The only test device is a 13-inch iPad Pro (M5). Android matters little and is unverified.
 - Work follows the ZSL Superpowers loop described in the handoff: PRD, vertical-slice issues, triage, test-driven implementation, review.
-- Commands (`npm run check`, `npm run e2e`) exist once the walking skeleton is built. They are described in the testing strategy.
+- Commands: `npm run check` (type-check, lint, Vitest) and `npm run e2e` (production build, then Playwright). They are described in the testing strategy.
 
 ## Agent skills
 
