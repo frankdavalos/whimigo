@@ -4,9 +4,11 @@ import { checkScreens } from '@/arcade/checks';
 import { installTestBridge } from '@/arcade/test-bridge';
 import { DESIGN_FRAME } from '@/kit/frame';
 import { RENDER_SCALE } from '@/kit/stage';
+import { resetTouches } from '@/kit/touches';
 import { colors, cssColor } from '@/kit/theme';
 import { createAudio } from '@/platform/audio';
 import { installErrorScreen } from '@/platform/error-screen';
+import { onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
 import { readSafeAreaInsets } from '@/platform/safe-area';
 
@@ -37,5 +39,7 @@ const arcade = new Arcade(
   { audio, safeAreaInsets: () => readSafeAreaInsets(document) },
   checkScreens({ e2e }),
 );
+// Touches that were down while the page was hidden may never be reported lifting.
+onPageShown(document, () => resetTouches(game));
 if (e2e) installTestBridge(window, arcade, __BUILD_ID__);
 arcade.show('start');

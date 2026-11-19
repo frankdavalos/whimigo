@@ -3,6 +3,7 @@ import type { SnapshotTarget } from '@/contract';
 import { picture } from './atlas';
 import { createHold } from './hold';
 import { colors, sizes } from './theme';
+import { onTouchesReset } from './touches';
 
 export interface HoldButtonOptions {
   /** Centre, in design units. */
@@ -37,6 +38,7 @@ export function holdButton(scene: Phaser.Scene, options: HoldButtonOptions): Sna
     .on('pointerout', (pointer: Phaser.Input.Pointer) => hold.release(pointer.id));
   const release = (pointer: Phaser.Input.Pointer) => hold.release(pointer.id);
   scene.input.on('pointerup', release);
+  onTouchesReset(scene, () => hold.cancel());
 
   const update = () => {
     const now = scene.time.now;

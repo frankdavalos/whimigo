@@ -10,6 +10,8 @@ export interface Hold {
   press(pointerId: number, time: number): void;
   /** A finger lifted, was cancelled or left the control. */
   release(pointerId: number): void;
+  /** Forgets the press, whichever finger made it: every touch was reset. */
+  cancel(): void;
   /** True exactly once, on the first update at which the hold is complete. */
   update(time: number): boolean;
   /** How far through the hold the current press is, from 0 to 1. */
@@ -28,6 +30,9 @@ export function createHold(duration: number = HOLD_MS): Hold {
     },
     release(pointerId) {
       if (holder?.pointerId === pointerId) holder = null;
+    },
+    cancel() {
+      holder = null;
     },
     update(time) {
       if (!holder || holder.done || progress(time) < 1) return false;

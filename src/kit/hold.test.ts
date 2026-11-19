@@ -52,4 +52,14 @@ describe('a hold', () => {
     expect(hold.update(1499)).toBe(false);
     expect(hold.update(1500)).toBe(true);
   });
+
+  it('is forgotten when every touch is reset, whichever finger made it', () => {
+    const hold = createHold();
+    hold.press(3, 1000);
+    hold.cancel();
+    expect(hold.update(1600)).toBe(false);
+    expect(hold.progress(1600)).toBe(0);
+    hold.press(4, 2000);
+    expect(hold.update(2500)).toBe(true);
+  });
 });
