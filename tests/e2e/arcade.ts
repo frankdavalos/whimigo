@@ -74,29 +74,37 @@ export class Arcade {
   }
 
   /**
-   * Hides the page and shows it again, as the home gesture and a return to the app would. The
-   * browser under test stays visible, so the page is told its visibility changed.
+   * Tells the page its visibility changed to each of `states` in turn. The browser under test
+   * stays visible, so the page's own answers are overridden while it is hidden.
    */
-  async hideAndShow(): Promise<void> {
-    await this.page.evaluate(() => {
-      const become = (state: 'hidden' | 'visible') => {
-        Object.defineProperty(document, 'visibilityState', {
-          configurable: true,
-          get: () => state,
-        });
-        Object.defineProperty(document, 'hidden', {
-          configurable: true,
-          get: () => state === 'hidden',
-        });
+  private async become(states: readonly ('hidden' | 'visible')[]): Promise<void> {
+    await this.page.evaluate((states) => {
+      for (const state of states) {
+        if (state === 'hidden') {
+          Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            get: () => 'hidden',
+          });
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+        } else {
+          // Back to the browser's own answers.
+          delete (document as { visibilityState?: unknown }).visibilityState;
+          delete (document as { hidden?: unknown }).hidden;
+        }
         document.dispatchEvent(new Event('visibilitychange'));
-      };
-      become('hidden');
-      become('visible');
-      // Back to the browser's own answers.
-      delete (document as { visibilityState?: unknown }).visibilityState;
-      delete (document as { hidden?: unknown }).hidden;
-    });
+      }
+    }, states);
   }
+
+  /** Hides the page, as the home gesture or the screen locking would. */
+  hide = () => this.become(['hidden']);
+
+  /** Shows the page again after `hide`, as a return to the app would. */
+  show = () => this.become(['visible']);
+
+  /** Hides the page and shows it again, `times` times over. */
+  hideAndShow = (times = 1) =>
+    this.become(Array.from({ length: times }, () => ['hidden', 'visible'] as const).flat());
 
   /** Taps "tap to start" and waits for the Home Screen. */
   async start(): Promise<void> {

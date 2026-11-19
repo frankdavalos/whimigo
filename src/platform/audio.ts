@@ -1,5 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { SoundRecipe } from '@/contract';
+import { onPageHidden, type Unsubscribe } from './lifecycle';
 import { renderRecipe, validateRecipe } from './synth';
 
 /**
@@ -17,16 +18,26 @@ export type PlaybackRoute = 'phaser-sound-manager' | 'none';
 
 /** The parts of Phaser's Web Audio sound manager and audio cache that the platform uses. */
 export interface PhaserAudio {
-  readonly manager: Pick<Phaser.Sound.WebAudioSoundManager, 'context' | 'add' | 'removeByKey'>;
+  readonly manager: Pick<
+    Phaser.Sound.WebAudioSoundManager,
+    'context' | 'add' | 'removeByKey' | 'gameLostFocus'
+  >;
   readonly cache: Pick<Phaser.Cache.BaseCache, 'add' | 'remove'>;
 }
 
-/** Sound, on Phaser's own audio context. Nothing here ever waits, and nothing throws on play. */
+/**
+ * Sound, on Phaser's own audio context. Nothing here ever waits, and nothing throws on play.
+ *
+ * While the page is hidden sound is suspended. Any tap starts it, or brings it back after the page
+ * was hidden or the tablet interrupted it, because a real tap is what browsers require.
+ */
 export interface Audio {
   readonly route: PlaybackRoute;
   state(): AudioState;
   /** Call from inside a real tap: it is what browsers require before sound may start. */
   unlock(): void;
+  /** Calls `listener` with the new state each time the audio context changes state. */
+  onStateChange(listener: (state: AudioState) => void): Unsubscribe;
   /** Renders a recipe once and keeps it under `key` until `unload`. Throws if it is not valid. */
   load(key: string, recipe: SoundRecipe): void;
   unload(key: string): void;
@@ -43,6 +54,7 @@ export interface Audio {
 export function createAudio(doc: Document, phaser: PhaserAudio | null): Audio {
   const context = phaser?.manager.context ?? null;
   const sounds = new Map<string, Phaser.Sound.BaseSound>();
+  const listeners = new Set<(state: AudioState) => void>();
   let unlocked = false;
 
   const state = (): AudioState => {
@@ -52,12 +64,37 @@ export function createAudio(doc: Document, phaser: PhaserAudio | null): Audio {
     return context.state;
   };
 
+  const unlock = () => {
+    if (!phaser || !context || doc.visibilityState === 'hidden') return;
+    phaser.manager.gameLostFocus = false;
+    // A refusal leaves sound as it was; it is not an error worth stopping the Arcade for.
+    if (context.state !== 'running') context.resume().catch(() => undefined);
+  };
+
+  if (phaser && context) {
+    context.addEventListener('statechange', () => {
+      const now = state();
+      for (const listener of listeners) listener(now);
+    });
+    onPageHidden(doc, () => {
+      // Phaser resumes a suspended context on every frame unless it thinks the game lost focus.
+      // A hidden page has, until the next tap.
+      phaser.manager.gameLostFocus = true;
+      context.suspend().catch(() => undefined);
+    });
+    // In the capture phase, so that no screen can keep a tap from it.
+    for (const type of ['touchend', 'pointerup']) {
+      doc.addEventListener(type, unlock, { capture: true });
+    }
+  }
+
   return {
     route: phaser ? 'phaser-sound-manager' : 'none',
     state,
-    unlock() {
-      // A refusal leaves sound locked; it is not an error worth stopping the Arcade for.
-      context?.resume().catch(() => undefined);
+    unlock,
+    onStateChange(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
     load(key, recipe) {
       const problems = validateRecipe(recipe);

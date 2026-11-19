@@ -6,8 +6,10 @@ import { createStage, type Stage } from '@/kit/stage';
 import { tapButton } from '@/kit/tap-button';
 import { colors, sizes } from '@/kit/theme';
 import type { Audio, AudioState } from '@/platform/audio';
+import { onPageHidden, onPageShown } from '@/platform/lifecycle';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 import { type CheckSound, checkSounds } from './sound-check-sounds';
+import { LOG_CAP, logEvent, type SoundLog, type SoundLogEntry } from './sound-log';
 
 const SOUNDS = Object.keys(checkSounds) as CheckSound[];
 const keyOf = (sound: CheckSound) => `sound-check/${sound}`;
@@ -22,7 +24,8 @@ const SPACING = sizes.button + 96;
 /**
  * The Sound check: the measuring tool for gate G4, kept in the product. One control plays each
  * sound in its set, and a picture shows the audio state. Its sounds are rendered when it opens and
- * discarded when it is left.
+ * discarded when it is left. Its snapshot carries a capped log of each change of audio state and
+ * each time the page is hidden or shown, with the time since it opened, held in memory only.
  *
  * The leave control stands halfway down the left of the safe rectangle, where every check screen
  * has it. The audio state picture and the two rows of sound controls are centred in the rest.
@@ -33,6 +36,7 @@ class SoundCheckScreen extends Phaser.Scene implements ArcadeScreen {
   private targets: Record<string, SnapshotTarget> = {};
   private statePicture!: Phaser.GameObjects.Image;
   private last: { sound: CheckSound; started: boolean } | null = null;
+  private log: SoundLog = [];
 
   create({ arcade }: ScreenData): void {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
@@ -41,9 +45,22 @@ class SoundCheckScreen extends Phaser.Scene implements ArcadeScreen {
     const audio = (this.audio = arcade.services.audio);
     this.last = null;
 
+    const opened = performance.now();
+    const record = (event: SoundLogEntry['event']) => {
+      this.log = logEvent(this.log, event, performance.now() - opened);
+    };
+    this.log = [];
+    record(audio.state());
+    const stopListening = [
+      audio.onStateChange(record),
+      onPageHidden(document, () => record('hidden')),
+      onPageShown(document, () => record('visible')),
+    ];
+
     for (const sound of SOUNDS) audio.load(keyOf(sound), checkSounds[sound]);
     this.events.once('shutdown', () => {
       for (const sound of SOUNDS) audio.unload(keyOf(sound));
+      for (const stop of stopListening) stop();
     });
 
     // The middle of the safe rectangle to the right of the leave control's column.
@@ -92,6 +109,8 @@ class SoundCheckScreen extends Phaser.Scene implements ArcadeScreen {
         sounds: SOUNDS.map((name) => ({ name, key: keyOf(name), icon: iconOf(name) })),
         last: this.last,
         playing: audio.playing(),
+        log: this.log,
+        logCap: LOG_CAP,
       },
       targets: this.targets,
     };

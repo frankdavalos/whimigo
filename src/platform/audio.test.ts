@@ -147,4 +147,71 @@ describe('the audio service', () => {
     expect(audio.play('check/beep')).toBe(false);
     expect(audio.playing()).toEqual([]);
   });
+
+  it('is suspended while the page is hidden, and Phaser is kept from resuming it meanwhile', () => {
+    const { phaser, context, manager } = fakePhaser();
+    const page = fakeDocument();
+    const audio = createAudio(page.doc, phaser);
+    audio.unlock();
+    page.become('hidden');
+    expect(context.state).toBe('suspended');
+    expect(audio.state()).toBe('suspended');
+    // Phaser resumes a suspended context on every frame unless the game has lost focus.
+    expect(manager.gameLostFocus).toBe(true);
+  });
+
+  it('comes back on the first tap after the page is shown again, and then plays', () => {
+    const { phaser, context, manager } = fakePhaser();
+    const page = fakeDocument();
+    const audio = createAudio(page.doc, phaser);
+    audio.load('check/beep', beep);
+    audio.unlock();
+    page.become('hidden');
+    page.become('visible');
+    expect(audio.state()).toBe('suspended');
+    expect(audio.play('check/beep')).toBe(false);
+
+    page.tap();
+    expect(context.state).toBe('running');
+    expect(manager.gameLostFocus).toBe(false);
+    expect(audio.play('check/beep')).toBe(true);
+  });
+
+  it('reports interrupted when the tablet takes sound away, and a tap brings it back', () => {
+    const { phaser, context } = fakePhaser();
+    const page = fakeDocument();
+    const audio = createAudio(page.doc, phaser);
+    audio.unlock();
+    context.to('interrupted');
+    expect(audio.state()).toBe('interrupted');
+    page.tap();
+    expect(audio.state()).toBe('running');
+  });
+
+  it('any tap unlocks sound, and one the browser refuses leaves it locked', () => {
+    const { phaser, context } = fakePhaser();
+    const page = fakeDocument();
+    const audio = createAudio(page.doc, phaser);
+    context.allowed = false;
+    page.tap();
+    expect(audio.state()).toBe('locked');
+    context.allowed = true;
+    page.tap();
+    expect(audio.state()).toBe('running');
+  });
+
+  it('tells its listeners each change of state, until they stop listening', () => {
+    const { phaser } = fakePhaser();
+    const page = fakeDocument();
+    const audio = createAudio(page.doc, phaser);
+    const heard: string[] = [];
+    const stop = audio.onStateChange((state) => heard.push(state));
+    audio.unlock();
+    page.become('hidden');
+    page.become('visible');
+    page.tap();
+    stop();
+    page.become('hidden');
+    expect(heard).toEqual(['running', 'suspended', 'running']);
+  });
 });

@@ -12,9 +12,33 @@ interface SoundState {
   sounds: { name: string; key: string; icon: string }[];
   last: { sound: string; started: boolean } | null;
   playing: string[];
+  log: { event: string; at: number }[];
+  logCap: number;
 }
 
 const state = async (arcade: Arcade) => (await arcade.snapshot()).state as SoundState;
+
+/** A tap in the frame's corner, away from every control. */
+async function tapAway(arcade: Arcade) {
+  const { frame } = await arcade.layout();
+  await arcade.page.touchscreen.tap(frame.x + frame.width - 10, frame.y + frame.height - 10);
+}
+
+/** Opens the Sound check straight from the bridge, with no tap, so sound is still locked. */
+async function openLocked(arcade: Arcade) {
+  await arcade.open();
+  await arcade.call('openCheck', SOUND);
+  await expect.poll(() => arcade.screen()).toBe(SOUND);
+}
+
+/** Opens the Arcade, unlocks sound with the tap to start, and opens the Sound check. */
+async function openWithSound(arcade: Arcade) {
+  await arcade.open();
+  await arcade.start();
+  await expect.poll(() => arcade.audio()).toBe('running');
+  await arcade.tap(SOUND);
+  await expect.poll(() => arcade.screen()).toBe(SOUND);
+}
 
 test('the Sound check opens from the Home Screen with one control for each sound and the leave control @smoke', async ({
   arcade,
@@ -37,11 +61,7 @@ test('the Sound check opens from the Home Screen with one control for each sound
 test('tapping each sound’s control makes the bridge report that sound requested and playback started', async ({
   arcade,
 }) => {
-  await arcade.open();
-  await arcade.start();
-  await expect.poll(() => arcade.audio()).toBe('running');
-  await arcade.tap(SOUND);
-  await expect.poll(() => arcade.screen()).toBe(SOUND);
+  await openWithSound(arcade);
   for (const { name, key } of (await state(arcade)).sounds) {
     await arcade.tap(name);
     await expect
@@ -53,9 +73,7 @@ test('tapping each sound’s control makes the bridge report that sound requeste
 });
 
 test('the snapshot reports that Phaser’s sound manager plays the sounds', async ({ arcade }) => {
-  await arcade.open();
-  await arcade.call('openCheck', SOUND);
-  await expect.poll(() => arcade.screen()).toBe(SOUND);
+  await openLocked(arcade);
   expect((await state(arcade)).route).toBe('phaser-sound-manager');
 });
 
@@ -63,9 +81,7 @@ test('a request to play before sound is unlocked returns at once, plays nothing 
   arcade,
   page,
 }) => {
-  await arcade.open();
-  await arcade.call('openCheck', SOUND);
-  await expect.poll(() => arcade.screen()).toBe(SOUND);
+  await openLocked(arcade);
   expect(await arcade.audio()).toBe('locked');
   const { sounds } = await state(arcade);
 
@@ -77,8 +93,7 @@ test('a request to play before sound is unlocked returns at once, plays nothing 
   expect((await state(arcade)).playing).toEqual([]);
 
   // A tap away from every control unlocks sound; nothing requested earlier plays then.
-  const { frame } = await arcade.layout();
-  await page.touchscreen.tap(frame.x + frame.width - 10, frame.y + frame.height - 10);
+  await tapAway(arcade);
   await expect.poll(() => arcade.audio()).toBe('running');
   await page.waitForTimeout(300);
   expect(await state(arcade)).toMatchObject({ playing: [], last: null });
@@ -86,18 +101,75 @@ test('a request to play before sound is unlocked returns at once, plays nothing 
 
 test('the audio state is shown as a picture, and matches what the bridge reports', async ({
   arcade,
-  page,
 }) => {
-  await arcade.open();
-  await arcade.call('openCheck', SOUND);
-  await expect.poll(() => arcade.screen()).toBe(SOUND);
+  await openLocked(arcade);
   await expect.poll(async () => (await state(arcade)).picture).toBe('arcade/audio-locked');
   expect((await state(arcade)).audio).toBe('locked');
 
-  const { frame } = await arcade.layout();
-  await page.touchscreen.tap(frame.x + frame.width - 10, frame.y + frame.height - 10);
+  await tapAway(arcade);
   await expect.poll(async () => (await state(arcade)).picture).toBe('arcade/audio-running');
   expect((await state(arcade)).audio).toBe('running');
   const { images } = await arcade.call('pictures');
   expect(images).toContainEqual({ texture: 'arcade', frame: 'arcade/audio-running' });
+});
+
+test.describe('putting the tablet away and bringing it back (story 24)', () => {
+  test('hiding and showing the page logs hidden then visible; sound is not running while hidden, and the next tap brings it back', async ({
+    arcade,
+    page,
+  }) => {
+    await openWithSound(arcade);
+    const opened = await state(arcade);
+    expect(opened.log).toEqual([{ event: 'running', at: expect.any(Number) }]);
+
+    await arcade.hide();
+    await expect.poll(() => arcade.audio()).toBe('suspended');
+    // It stays that way while hidden, though the headless browser keeps drawing frames.
+    await page.waitForTimeout(500);
+    expect(await arcade.audio()).toBe('suspended');
+    await expect.poll(async () => (await state(arcade)).picture).toBe('arcade/audio-suspended');
+
+    await arcade.show();
+    await tapAway(arcade);
+    await expect.poll(() => arcade.audio()).toBe('running');
+    await arcade.tap('sine');
+    await expect
+      .poll(async () => (await state(arcade)).last)
+      .toEqual({ sound: 'sine', started: true });
+
+    const { log } = await state(arcade);
+    const events = log.map((entry) => entry.event);
+    expect(events.filter((event) => event === 'hidden' || event === 'visible')).toEqual([
+      'hidden',
+      'visible',
+    ]);
+    const hidden = events.indexOf('hidden');
+    const visible = events.indexOf('visible');
+    expect(events.slice(hidden, visible)).toContain('suspended');
+    expect(events.slice(visible)).toContain('running');
+    const times = log.map((entry) => entry.at);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+    expect(times[visible]! - times[hidden]!).toBeGreaterThanOrEqual(500);
+  });
+
+  test('the log holds at most its stated number of entries, lives in memory only and is sent nowhere', async ({
+    arcade,
+    page,
+  }) => {
+    await openWithSound(arcade);
+    const requests: string[] = [];
+    page.on('request', (request) => requests.push(request.url()));
+
+    const { logCap } = await state(arcade);
+    expect(logCap).toBe(50);
+    await arcade.hideAndShow(logCap);
+    const { log } = await state(arcade);
+    expect(log).toHaveLength(logCap);
+    // The newest are kept.
+    const pageEvents = log.filter((entry) => entry.event === 'hidden' || entry.event === 'visible');
+    expect(pageEvents.at(-1)!.event).toBe('visible');
+
+    expect(requests).toEqual([]);
+    expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
+  });
 });
