@@ -5,7 +5,7 @@ import type * as Phaser from 'phaser';
  * id, and each set's atlas is loaded as the texture of that name, so a frame key alone says
  * where to find it: 'arcade/home' is the frame 'arcade/home' of the texture 'arcade'.
  */
-export const atlasOf = (frame: string): string => frame.slice(0, frame.indexOf('/'));
+export const atlasOf = (frame: string): string => frame.split('/')[0] ?? frame;
 
 /** Draws an atlas frame centred on (x, y), at its size in design units. */
 export function picture(
