@@ -4,7 +4,7 @@ import { expect, test } from './arcade';
 const FULL_HOLD_MS = 1000;
 const BLANK = 'blank-check';
 /** Every check screen the Home Screen lists when the test bridge is on, in order. */
-const CHECKS = ['touch-check', 'sound-check', BLANK];
+const CHECKS = ['touch-check', 'sound-check', 'performance-check', BLANK];
 /** How many sounds each check screen renders while it is open. */
 const SOUNDS_WHILE_OPEN: Readonly<Record<string, number>> = { 'sound-check': 7 };
 

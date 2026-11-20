@@ -4,6 +4,7 @@ import { DESIGN_FRAME, frameOnCanvas } from '@/kit/frame';
 import { RENDER_SCALE } from '@/kit/stage';
 import type { AudioState } from '@/platform/audio';
 import type { Arcade } from './arcade';
+import { type Counts, countsOf } from './counts';
 import type { ScreenId } from './screen';
 
 /** A screen's snapshot with every target converted to page coordinates (CSS pixels). */
@@ -34,7 +35,7 @@ export interface TestBridge {
   screen(): ScreenId | null;
   snapshot(): PageSnapshot;
   layout(): PageLayout;
-  counts(): { scenes: number; textures: number; sounds: number };
+  counts(): Counts;
   /** What the showing screen draws: each image's texture and frame, and how many drawn shapes. */
   pictures(): Pictures;
   /** Opens a check screen directly, skipping the Home Screen. */
@@ -110,11 +111,7 @@ export function installTestBridge(win: Window, arcade: Arcade, buildId: string):
         safe: screen ? toPage(screen.stage.safe) : null,
       };
     },
-    counts: () => ({
-      scenes: game.scene.scenes.length,
-      textures: game.textures.getTextureKeys().length,
-      sounds: game.cache.audio.getKeys().length,
-    }),
+    counts: () => countsOf(game),
     pictures() {
       const images: { texture: string; frame: string }[] = [];
       let shapes = 0;

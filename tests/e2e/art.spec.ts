@@ -21,6 +21,7 @@ test('the tap-to-start screen and the Home Screen draw their pictures from the A
     'arcade/card',
     'arcade/check-touch',
     'arcade/check-sound',
+    'arcade/check-performance',
     'arcade/check-blank',
   ]) {
     expect(home.images).toContainEqual({ texture: 'arcade', frame });
@@ -88,4 +89,28 @@ test('the Sound check draws its controls and the audio state from the Arcade’s
     expect(images).toContainEqual({ texture: 'arcade', frame });
   }
   expect(images.every(fromArcadeAtlas)).toBe(true);
+});
+
+test('the Performance check draws its controls, readings and card from the Arcade’s atlas, and its load from one other', async ({
+  arcade,
+}) => {
+  await arcade.open();
+  await arcade.call('openCheck', 'performance-check');
+  await expect.poll(() => arcade.screen()).toBe('performance-check');
+  const { images } = await arcade.call('pictures');
+  for (const frame of [
+    'arcade/hold',
+    'arcade/home',
+    'arcade/card',
+    'arcade/perf-loop',
+    'arcade/perf-fps',
+    'arcade/perf-work',
+    'arcade/perf-cycles',
+    'arcade/sharpness',
+  ]) {
+    expect(images).toContainEqual({ texture: 'arcade', frame });
+  }
+  const others = images.filter((image) => !fromArcadeAtlas(image));
+  expect(new Set(others.map((image) => image.texture)).size).toBe(1);
+  expect(others.every((image) => image.frame.startsWith('standin/'))).toBe(true);
 });
