@@ -31,13 +31,16 @@ jobs:
 
   # The browser tests draw a 2752 x 2064 canvas in software, so they run in jobs side by side, each
   # making its own production build and testing it: one job for each Playwright project, and one
-  # for the Performance check. Every test that opens it, by file or by title, draws its standard
-  # load, and needs the browser to draw steadily: a frame rate, 50 add-and-remove cycles in time,
-  # a short tap that stays short. Beside other browser tests they were starved of CPU, so they run
-  # one at a time in a job of their own.
+  # more for each Chromium project's tests that open the Performance check. Its standard load
+  # needs the browser to draw steadily: a frame rate, 50 add-and-remove cycles in time, a short
+  # press that stays short. Beside other browser tests those tests were starved of CPU, so they run
+  # one at a time, in jobs of their own. They are each test with "performance-check" in its file
+  # or title, and the render-scale test that presses every target of every screen.
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      ISOLATED: performance-check|every named target of every screen
     strategy:
       # Every job reports, whichever fails first.
       fail-fast: false
@@ -45,19 +48,25 @@ jobs:
         include:
           - job: chromium-tablet-4x3
             browser: chromium
-            args: --project=chromium-tablet-4x3 --grep-invert=performance-check
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED"
           - job: chromium-small-tablet
             browser: chromium
-            args: --project=chromium-small-tablet --grep-invert=performance-check
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED"
           - job: chromium-tablet-16x10
             browser: chromium
-            args: --project=chromium-tablet-16x10 --grep-invert=performance-check
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED"
           - job: webkit-smoke
             browser: webkit
             args: --project=webkit-smoke
-          - job: performance-check
+          - job: one-at-a-time-chromium-tablet-4x3
             browser: chromium
-            args: --project=chromium-tablet-4x3 --project=chromium-small-tablet --project=chromium-tablet-16x10 --workers=1 --grep=performance-check
+            args: --project=chromium-tablet-4x3 --workers=1 --grep="$ISOLATED"
+          - job: one-at-a-time-chromium-small-tablet
+            browser: chromium
+            args: --project=chromium-small-tablet --workers=1 --grep="$ISOLATED"
+          - job: one-at-a-time-chromium-tablet-16x10
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --workers=1 --grep="$ISOLATED"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -106,15 +115,15 @@ jobs:
           set -eu
           lists=$(find checksums -name build-checksums.txt | sort)
           count=$(printf '%s\n' "$lists" | wc -l)
-          if [ "$count" -ne 5 ]; then
-            echo "::error::expected a checksum list from each of the 5 browser-test jobs, found ${count}"
+          if [ "$count" -ne 7 ]; then
+            echo "::error::expected a checksum list from each of the 7 browser-test jobs, found ${count}"
             exit 1
           fi
           first=$(printf '%s\n' "$lists" | head -n 1)
           for list in $lists; do
             diff -u "$first" "$list"
           done
-          echo "all 5 browser-test jobs tested the same $(wc -l < "$first") files"
+          echo "all 7 browser-test jobs tested the same $(wc -l < "$first") files"
 
   deploy:
     needs: [check, e2e, same-build]

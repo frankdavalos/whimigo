@@ -103,23 +103,29 @@ describe('the CI workflow', () => {
       if (args) jobs.get(current)!.push(...args.split(' '));
     }
     const projects = config.projects!.map((project) => project.name!);
-    // One job for each project, running all of its tests but those that open the Performance check.
+    const chromium = projects.filter((project) => project !== 'webkit-smoke');
+    // The tests that open the Performance check, whose load needs the browser to draw steadily.
+    expect(e2e).toContain('ISOLATED: performance-check|every named target of every screen');
+    // One job for each project, running all of its tests but those.
     for (const project of projects) {
-      const args = jobs.get(project);
-      expect(args, `a job for ${project}`).toBeDefined();
-      expect(args!.filter((arg) => arg.startsWith('--project='))).toEqual([`--project=${project}`]);
-      if (project !== 'webkit-smoke') {
-        expect(args).toContain('--grep-invert=performance-check');
-      }
+      expect(jobs.get(project), `a job for ${project}`).toEqual(
+        project === 'webkit-smoke'
+          ? [`--project=${project}`]
+          : [`--project=${project}`, '--grep-invert="$ISOLATED"'],
+      );
     }
-    // And one job running exactly those tests for each of those projects, one at a time.
-    const alone = jobs.get('performance-check');
-    expect(alone).toEqual([
-      ...projects.filter((project) => project !== 'webkit-smoke').map((p) => `--project=${p}`),
-      '--workers=1',
-      '--grep=performance-check',
+    // And one job for each Chromium project running exactly those, one at a time.
+    for (const project of chromium) {
+      expect(jobs.get(`one-at-a-time-${project}`), `one at a time, ${project}`).toEqual([
+        `--project=${project}`,
+        '--workers=1',
+        '--grep="$ISOLATED"',
+      ]);
+    }
+    expect([...jobs.keys()]).toEqual([
+      ...projects,
+      ...chromium.map((project) => `one-at-a-time-${project}`),
     ]);
-    expect([...jobs.keys()]).toEqual([...projects, 'performance-check']);
     expect(e2e).toContain('fail-fast: false');
   });
 
@@ -142,8 +148,9 @@ describe('the CI workflow', () => {
     expect(same).toContain('needs: e2e');
     expect(same).toContain('pattern: build-checksums-*');
     expect(same.some((line) => line.startsWith('diff -u '))).toBe(true);
-    // One checksum list from each browser-test job: each project's, and the Performance check's.
-    expect(same).toContain(`if [ "$count" -ne ${config.projects!.length + 1} ]; then`);
+    // One checksum list from each browser-test job: each project's, and each one-at-a-time job's.
+    const oneAtATime = config.projects!.filter((project) => project.name !== 'webkit-smoke').length;
+    expect(same).toContain(`if [ "$count" -ne ${config.projects!.length + oneAtATime} ]; then`);
     // No other job publishes.
     const publishers = workflow.match(/actions\/deploy-pages@/g) ?? [];
     expect(publishers).toHaveLength(1);
