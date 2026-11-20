@@ -29,24 +29,34 @@ jobs:
       - run: npm ci
       - run: npm run check
 
-  # The browser tests draw a 2752 x 2064 canvas in software, so each Playwright project runs in a
-  # job of its own, side by side, each making its own production build and testing it.
+  # The browser tests draw a 2752 x 2064 canvas in software, so they run in jobs side by side, each
+  # making its own production build and testing it: one job for each Playwright project, and one
+  # for the Performance check. Its tests need the browser to draw steadily (a frame rate, and 50
+  # add-and-remove cycles in time), so they run one at a time in a job of their own rather than
+  # beside the other browser tests, which starved them of CPU.
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
-      # Every project reports, whichever fails first.
+      # Every job reports, whichever fails first.
       fail-fast: false
       matrix:
         include:
-          - project: chromium-tablet-4x3
+          - job: chromium-tablet-4x3
             browser: chromium
-          - project: chromium-small-tablet
+            args: --project=chromium-tablet-4x3 --grep-invert=performance-check.spec.ts
+          - job: chromium-small-tablet
             browser: chromium
-          - project: chromium-tablet-16x10
+            args: --project=chromium-small-tablet --grep-invert=performance-check.spec.ts
+          - job: chromium-tablet-16x10
             browser: chromium
-          - project: webkit-smoke
+            args: --project=chromium-tablet-16x10 --grep-invert=performance-check.spec.ts
+          - job: webkit-smoke
             browser: webkit
+            args: --project=webkit-smoke
+          - job: performance-check
+            browser: chromium
+            args: --project=chromium-tablet-4x3 --project=chromium-small-tablet --project=chromium-tablet-16x10 --workers=1 tests/e2e/performance-check.spec.ts
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -56,18 +66,18 @@ jobs:
       - run: npm ci
       - name: Install the project's browser and its system libraries
         run: npx playwright install --with-deps ${{ matrix.browser }}
-      - run: npm run e2e -- --project=${{ matrix.project }}
-      # Each project tested its own build. `same-build` checks they are byte for byte the same build,
-      # so the one published is the one every project tested.
+      - run: npm run e2e -- ${{ matrix.args }}
+      # Each job tested its own build. `same-build` checks they are byte for byte the same build, so
+      # the one published is the one every job tested.
       - name: List the tested build's files and their checksums
         run: cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum > ../build-checksums.txt
       - uses: actions/upload-artifact@v7
         with:
-          name: build-checksums-${{ matrix.project }}
+          name: build-checksums-${{ matrix.job }}
           path: build-checksums.txt
           retention-days: 1
       - name: Keep the tested build for GitHub Pages
-        if: github.ref == 'refs/heads/main' && matrix.project == 'chromium-tablet-4x3'
+        if: github.ref == 'refs/heads/main' && matrix.job == 'chromium-tablet-4x3'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist/
@@ -75,7 +85,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-${{ matrix.project }}
+          name: playwright-report-${{ matrix.job }}
           path: |
             playwright-report/
             test-results/
@@ -90,20 +100,20 @@ jobs:
         with:
           pattern: build-checksums-*
           path: checksums
-      - name: Every project tested the same build
+      - name: Every browser-test job tested the same build
         run: |
           set -eu
           lists=$(find checksums -name build-checksums.txt | sort)
           count=$(printf '%s\n' "$lists" | wc -l)
-          if [ "$count" -ne 4 ]; then
-            echo "::error::expected a checksum list from each of the 4 projects, found ${count}"
+          if [ "$count" -ne 5 ]; then
+            echo "::error::expected a checksum list from each of the 5 browser-test jobs, found ${count}"
             exit 1
           fi
           first=$(printf '%s\n' "$lists" | head -n 1)
           for list in $lists; do
             diff -u "$first" "$list"
           done
-          echo "all 4 projects tested the same $(wc -l < "$first") files"
+          echo "all 5 browser-test jobs tested the same $(wc -l < "$first") files"
 
   deploy:
     needs: [check, e2e, same-build]

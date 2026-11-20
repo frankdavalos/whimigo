@@ -84,18 +84,43 @@ describe('the commands for each level of testing', () => {
 });
 
 describe('the CI workflow', () => {
-  it('runs npm run check, and npm run e2e for every Playwright project, on every push to main', () => {
+  it('runs npm run check, and npm run e2e for every Playwright project and every test, on every push to main', () => {
     expect(block('on', 0)).toEqual(['push:', 'branches: [main]']);
     expect(runs(job('check')).filter((step) => step.startsWith('npm run '))).toEqual([
       'npm run check',
     ]);
-    // The browser tests run one project to a job, side by side, each through npm run e2e.
+    // The browser tests run in jobs side by side, each through npm run e2e.
     const e2e = job('e2e');
     expect(runs(e2e).filter((step) => step.startsWith('npm run '))).toEqual([
-      'npm run e2e -- --project=${{ matrix.project }}',
+      'npm run e2e -- ${{ matrix.args }}',
     ]);
-    const matrix = e2e.flatMap((line) => /^- project: (.+)$/.exec(line)?.[1] ?? []);
-    expect(matrix).toEqual(config.projects!.map((project) => project.name));
+    const jobs = new Map<string, string[]>();
+    let current = '';
+    for (const line of e2e) {
+      const name = /^- job: (.+)$/.exec(line)?.[1];
+      if (name) jobs.set((current = name), []);
+      const args = /^args: (.+)$/.exec(line)?.[1];
+      if (args) jobs.get(current)!.push(...args.split(' '));
+    }
+    const projects = config.projects!.map((project) => project.name!);
+    const performance = 'tests/e2e/performance-check.spec.ts';
+    // One job for each project, running all of its tests but the Performance check's.
+    for (const project of projects) {
+      const args = jobs.get(project);
+      expect(args, `a job for ${project}`).toBeDefined();
+      expect(args!.filter((arg) => arg.startsWith('--project='))).toEqual([`--project=${project}`]);
+      if (project !== 'webkit-smoke') {
+        expect(args).toContain('--grep-invert=performance-check.spec.ts');
+      }
+    }
+    // And one job running the Performance check's tests for each of those projects, one at a time.
+    const alone = jobs.get('performance-check');
+    expect(alone).toEqual([
+      ...projects.filter((project) => project !== 'webkit-smoke').map((p) => `--project=${p}`),
+      '--workers=1',
+      performance,
+    ]);
+    expect([...jobs.keys()]).toEqual([...projects, 'performance-check']);
     expect(e2e).toContain('fail-fast: false');
   });
 
@@ -111,14 +136,15 @@ describe('the CI workflow', () => {
       tested.indexOf('- run: npm run e2e -- --project=${{ matrix.project }}'),
     );
     expect(tested.slice(keep, keep + 3)).toContain(
-      "if: github.ref == 'refs/heads/main' && matrix.project == 'chromium-tablet-4x3'",
+      "if: github.ref == 'refs/heads/main' && matrix.job == 'chromium-tablet-4x3'",
     );
     // Every project's build is the same build, byte for byte, or nothing is published.
     const same = job('same-build');
     expect(same).toContain('needs: e2e');
     expect(same).toContain('pattern: build-checksums-*');
     expect(same.some((line) => line.startsWith('diff -u '))).toBe(true);
-    expect(same).toContain(`if [ "$count" -ne ${config.projects!.length} ]; then`);
+    // One checksum list from each browser-test job: each project's, and the Performance check's.
+    expect(same).toContain(`if [ "$count" -ne ${config.projects!.length + 1} ]; then`);
     // No other job publishes.
     const publishers = workflow.match(/actions\/deploy-pages@/g) ?? [];
     expect(publishers).toHaveLength(1);

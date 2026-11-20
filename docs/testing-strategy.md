@@ -16,7 +16,7 @@ How Whimigo is tested, what is automated, and what can only be checked with a ta
 |---|---|---|---|
 | 1. Logic | Vitest, Node | On every save; under 10 seconds for everything | Are the rules, the **Computer Players** and the shared pure helpers correct? |
 | 2. Conformance | Vitest, Node | With level 1 | Does every Game keep the contract? |
-| 3. Arcade | Playwright, against the production build | Before every push to `main`, and again in CI after it; about 25 minutes on four local workers. In CI each Playwright project runs in a job of its own, side by side, and a check that every job tested the same build guards what is published | Does the real Arcade load, play, pause, save and work offline? |
+| 3. Arcade | Playwright, against the production build | Before every push to `main`, and again in CI after it; about 25 minutes on four local workers. In CI each Playwright project runs in a job of its own, side by side, and the Performance check's tests run one at a time in another, since they need the browser to draw steadily; a check that every job tested the same build guards what is published | Does the real Arcade load, play, pause, save and work offline? |
 | 4. Device | One adult with the checklist and the iPad Pro | At each phase gate, and after any Phaser or iPadOS upgrade | Does it work on the real tablet? |
 
 ## Level 1: logic
