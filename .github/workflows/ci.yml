@@ -19,7 +19,10 @@ concurrency:
 jobs:
   check-and-e2e:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # The browser tests draw a 2752 x 2064 canvas in software on two workers. The render-scale
+    # test that presses every target of every screen at both scales takes about 6.5 minutes per
+    # project, so the whole job takes about 35 minutes.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
