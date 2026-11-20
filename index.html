@@ -41,7 +41,8 @@
       #error-screen {
         position: fixed;
         inset: 0;
-        z-index: 1;
+        /* Above the status page, should an error happen while it shows. */
+        z-index: 2;
         display: flex;
         flex-direction: column;
         align-items: center;

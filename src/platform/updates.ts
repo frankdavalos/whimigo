@@ -34,7 +34,7 @@ export interface Updates {
 
 /** Set in the tab's session just before reloading to apply a version, so it happens only once. */
 const APPLYING = 'whimigo:applying-update';
-/** How long a waiting version may take to activate before the Arcade starts without it. */
+/** How long a waiting version may take to activate before the page reloads regardless. */
 const ACTIVATION_MS = 5000;
 
 /** The tab's session storage, which a browser may refuse; then the reload is not guarded. */
@@ -46,14 +46,17 @@ function sessionOf(win: Window): Storage | null {
   }
 }
 
-/** Resolves true once `worker` is active, false if it is discarded or slow. */
+/**
+ * Resolves true once `worker` is active, or has had a few seconds to become so; false if it is
+ * discarded, which leaves the version the page has.
+ */
 function activation(win: Window, worker: ServiceWorker): Promise<boolean> {
   return new Promise((resolve) => {
     worker.addEventListener('statechange', () => {
       if (worker.state === 'activated') resolve(true);
       if (worker.state === 'redundant') resolve(false);
     });
-    win.setTimeout(() => resolve(false), ACTIVATION_MS);
+    win.setTimeout(() => resolve(true), ACTIVATION_MS);
   });
 }
 
