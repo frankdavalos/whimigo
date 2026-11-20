@@ -32,11 +32,7 @@
       #arcade {
         position: fixed;
         inset: 0;
-        /*
-         * Clip the canvas. While an iPad turns from landscape to portrait, the canvas is briefly
-         * still landscape width; unclipped, iPadOS widens the page to fit it, this box widens with
-         * the page, and Phaser keeps the canvas at that width, so the picture stays too wide.
-         */
+        /* While the screen turns, the canvas can briefly be larger than its box: never past it. */
         overflow: hidden;
       }
       #arcade canvas {

@@ -122,3 +122,62 @@ test('the safe rectangle is the design frame less 88 units each side when no ins
   expect(safe!.width / unit).toBeCloseTo(DESIGN.width - 176, 0);
   expect(safe!.height / unit).toBeCloseTo(DESIGN.height - 176, 0);
 });
+
+/**
+ * When an installed iPad app turns from landscape to portrait, the window reports its new size
+ * before the Arcade's box has taken it (device checklist items 13 and 14). Phaser measured the old
+ * width then, and its own recheck, which runs from its frame loop, never caught up, so the picture
+ * stayed zoomed with its corners cut off.
+ */
+test.describe('when the window turns before the Arcade’s box does, as an installed iPad app’s does', () => {
+  test.use({ viewport: { width: 1376, height: 1000 } });
+
+  test('the canvas follows the box once the box takes its new size, without waiting on Phaser’s frame loop', async ({
+    arcade,
+    page,
+  }) => {
+    await arcade.open();
+    await arcade.start();
+    // Stop Phaser's frame loop for good (an exception in an update does that), so its own recheck
+    // of the box cannot run and only the Arcade's following of the box can resize the canvas.
+    await arcade.call('throwInUpdate');
+    await expect(page.locator('#error-screen')).toBeVisible();
+
+    // The box keeps its landscape width while the window turns to portrait, then takes the new one.
+    await page.evaluate(() => {
+      const box = document.getElementById('arcade')!;
+      box.style.right = 'auto';
+      box.style.width = '1376px';
+    });
+    await page.setViewportSize({ width: 1032, height: 1344 });
+    // As on the iPad: Phaser has sized the canvas from the box while the box was still too wide.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const canvas = document.querySelector('#arcade canvas')!.getBoundingClientRect();
+          return [Math.round(canvas.width), Math.round(canvas.height)];
+        }),
+      )
+      .toEqual([1376, 1344]);
+    await page.evaluate(() => {
+      const box = document.getElementById('arcade')!;
+      box.style.right = '';
+      box.style.width = '';
+    });
+
+    const canvasFitsBox = () =>
+      page.evaluate((epsilon) => {
+        const element = document.querySelector('#arcade canvas') as HTMLCanvasElement;
+        const canvas = element.getBoundingClientRect();
+        const box = document.getElementById('arcade')!.getBoundingClientRect();
+        return (
+          box.width === 1032 &&
+          Math.abs(canvas.width - box.width) <= epsilon &&
+          Math.abs(canvas.height - box.height) <= epsilon &&
+          // Expanded downwards: the design frame's full width across a portrait screen.
+          element.width === 2752
+        );
+      }, EPSILON);
+    await expect.poll(canvasFitsBox, { timeout: 5000 }).toBe(true);
+  });
+});
