@@ -7,6 +7,7 @@ import { renderScaleFor } from '@/kit/render-scale';
 import { resetTouches } from '@/kit/touches';
 import { colors, cssColor } from '@/kit/theme';
 import { createAudio } from '@/platform/audio';
+import { runningAs } from '@/platform/display-mode';
 import { installErrorScreen } from '@/platform/error-screen';
 import { onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
@@ -47,7 +48,14 @@ const updates = createUpdates(window, { script: `${base}sw.js`, scope: base });
 
 const arcade = new Arcade(
   game,
-  { buildId: __BUILD_ID__, audio, safeAreaInsets: () => readSafeAreaInsets(document), updates },
+  {
+    buildId: __BUILD_ID__,
+    audio,
+    safeAreaInsets: () => readSafeAreaInsets(document),
+    updates,
+    runningAs: () => runningAs(window),
+    grownUpsPage: document.getElementById('grown-ups')!,
+  },
   checkScreens({ e2e }),
 );
 // Touches that were down while the page was hidden may never be reported lifting.

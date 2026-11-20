@@ -41,7 +41,7 @@ async function show(arcade: Arcade, scale: Scale, screen: string): Promise<void>
 /** Every screen a test can show: the tap-to-start screen, the Home Screen and each check screen. */
 async function everyScreen(arcade: Arcade): Promise<string[]> {
   await show(arcade, 1, 'home');
-  return ['start', 'home', ...Object.keys((await arcade.snapshot()).targets)];
+  return ['start', 'home', ...(await arcade.checks())];
 }
 
 interface ZoneState {

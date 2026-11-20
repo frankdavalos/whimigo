@@ -65,12 +65,20 @@ test('a newer build waits while the page is open; after a reload, the page runs 
   await arcade.start();
 
   await test.step('the newer build is deployed and found; the page keeps its own version', async () => {
+    await arcade.tap('grown-ups');
+    const status = page.locator('#grown-ups');
+    await expect(status.getByText('No update waiting', { exact: true })).toBeVisible();
+
     server.serve(next);
     await arcade.hideAndShow();
     await expect.poll(() => arcade.call('updateWaiting')).toBe(true);
+    await expect(status.getByText(/^An update is waiting\./)).toBeVisible();
     expect(await page.evaluate(() => window.whimigo?.buildId)).toBe(current);
+    await expect(status.getByText(current, { exact: true })).toBeVisible();
     expect(await readBuildJson(), 'files still come from the running version').toBe(current);
-    expect(await arcade.screen()).toBe('home');
+
+    await status.getByRole('button', { name: 'Back' }).tap();
+    await expect.poll(() => arcade.screen()).toBe('home');
     await arcade.tap('touch-check');
     await expect.poll(() => arcade.screen()).toBe('touch-check');
   });

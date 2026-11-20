@@ -16,8 +16,10 @@ test('the Home Screen has one control for each registered check screen, and tapp
   arcade,
 }) => {
   await arcade.start();
-  const checks = Object.keys((await arcade.snapshot()).targets);
+  const checks = await arcade.checks();
   expect(checks).toEqual(CHECKS);
+  // Beside them, the control that opens the status page for grown-ups.
+  expect(Object.keys((await arcade.snapshot()).targets)).toEqual([...CHECKS, 'grown-ups']);
   for (const id of checks) {
     await arcade.tap(id);
     await expect.poll(() => arcade.screen()).toBe(id);

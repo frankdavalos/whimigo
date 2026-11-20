@@ -70,6 +70,54 @@
         width: 60%;
         height: 60%;
       }
+
+      /* The status page, the seed of the Grown-Ups Area (ADR-0005): real text, for adults only. */
+      #grown-ups {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        box-sizing: border-box;
+        overflow: auto;
+        padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+        background: #fff6e0;
+        color: #2f3a56;
+        font:
+          20px/1.5 system-ui,
+          sans-serif;
+      }
+      #grown-ups[hidden] {
+        display: none;
+      }
+      #grown-ups h1 {
+        margin: 0 0 16px;
+        font-size: 32px;
+      }
+      #grown-ups dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 8px 24px;
+        margin: 0 0 32px;
+      }
+      #grown-ups dt {
+        font-weight: bold;
+      }
+      #grown-ups dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      #grown-ups button {
+        min-width: 160px;
+        min-height: 64px;
+        border: 3px solid #2f3a56;
+        border-radius: 16px;
+        background: #ffc94a;
+        color: inherit;
+        font: inherit;
+        font-weight: bold;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
     </style>
   </head>
   <body>
@@ -94,6 +142,22 @@
         </svg>
       </button>
     </div>
+    <section id="grown-ups" hidden aria-labelledby="grown-ups-title">
+      <h1 id="grown-ups-title">For grown-ups</h1>
+      <dl>
+        <dt>Version</dt>
+        <dd data-reading="build"></dd>
+        <dt>Offline</dt>
+        <dd data-reading="offline"></dd>
+        <dt>Updates</dt>
+        <dd data-reading="update"></dd>
+        <dt>Running as</dt>
+        <dd data-reading="running-as"></dd>
+        <dt>Safe-area insets</dt>
+        <dd data-reading="insets"></dd>
+      </dl>
+      <button type="button">Back</button>
+    </section>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

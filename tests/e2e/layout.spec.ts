@@ -36,7 +36,7 @@ async function eachScreen(
   check('start', await arcade.layout(), await arcade.snapshot());
   await arcade.start();
   check('home', await arcade.layout(), await arcade.snapshot());
-  const checks = Object.keys((await arcade.snapshot()).targets);
+  const checks = await arcade.checks();
   for (const id of checks) {
     await arcade.call('openCheck', id);
     await expect.poll(() => arcade.screen()).toBe(id);

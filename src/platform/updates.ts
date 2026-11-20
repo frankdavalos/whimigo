@@ -1,4 +1,4 @@
-import { onPageShown } from './lifecycle';
+import { onPageShown, type Unsubscribe } from './lifecycle';
 
 export interface UpdatesOptions {
   /** The service worker's script, beneath the base path. */
@@ -28,6 +28,8 @@ export interface Updates {
    */
   start(): Promise<void>;
   state(): UpdateState;
+  /** Calls `listener` with the new state each time it changes. */
+  onChange(listener: (state: UpdateState) => void): Unsubscribe;
 }
 
 /** Set in the tab's session just before reloading to apply a version, so it happens only once. */
@@ -59,6 +61,13 @@ export function createUpdates(win: Window, options: UpdatesOptions): Updates {
   const container = 'serviceWorker' in win.navigator ? win.navigator.serviceWorker : null;
   let offlineReady = false;
   let updateWaiting = false;
+  const listeners = new Set<(state: UpdateState) => void>();
+  const state = (): UpdateState => ({ offlineReady, updateWaiting });
+  const set = (next: UpdateState) => {
+    if (next.offlineReady === offlineReady && next.updateWaiting === updateWaiting) return;
+    ({ offlineReady, updateWaiting } = next);
+    for (const listener of listeners) listener(state());
+  };
 
   /** Whether the page is reloading to run a version that was waiting. */
   async function applyWaitingVersion(workers: ServiceWorkerContainer): Promise<boolean> {
@@ -81,6 +90,29 @@ export function createUpdates(win: Window, options: UpdatesOptions): Updates {
     return true;
   }
 
+  /** Registers the worker, then follows what it does and looks for new versions. */
+  async function register(workers: ServiceWorkerContainer): Promise<void> {
+    const registration = await workers.register(options.script, { scope: options.scope });
+    const refresh = () =>
+      set({
+        offlineReady,
+        updateWaiting: registration.waiting !== null && registration.active !== null,
+      });
+    registration.addEventListener('updatefound', () => {
+      registration.installing?.addEventListener('statechange', refresh);
+    });
+    workers.addEventListener('controllerchange', refresh);
+    refresh();
+    // Resolves once a worker is active, which it becomes only after caching every file.
+    void workers.ready.then(() => set({ offlineReady: true, updateWaiting }));
+    // A long-lived installed app rarely reloads, so it looks for a new version on each return.
+    onPageShown(win.document, () => {
+      registration.update().catch(() => {
+        // Offline, or the server is unreachable: the next return tries again.
+      });
+    });
+  }
+
   return {
     async start() {
       if (!container) return;
@@ -89,32 +121,15 @@ export function createUpdates(win: Window, options: UpdatesOptions): Updates {
       } catch {
         // Whatever went wrong, the Arcade starts on the version it has.
       }
-      let registration: ServiceWorkerRegistration;
-      try {
-        registration = await container.register(options.script, { scope: options.scope });
-      } catch {
+      // Registering fetches the worker's script, so it never holds up the first screen.
+      register(container).catch(() => {
         // Without a service worker the Arcade still plays; it is just not ready offline.
-        return;
-      }
-      // A long-lived installed app rarely reloads, so it looks for a new version on each return.
-      onPageShown(win.document, () => {
-        registration.update().catch(() => {
-          // Offline, or the server is unreachable: the next return tries again.
-        });
-      });
-      const refresh = () => {
-        updateWaiting = registration.waiting !== null && registration.active !== null;
-      };
-      registration.addEventListener('updatefound', () => {
-        registration.installing?.addEventListener('statechange', refresh);
-      });
-      container.addEventListener('controllerchange', refresh);
-      refresh();
-      // Resolves once a worker is active, which it becomes only after caching every file.
-      void container.ready.then(() => {
-        offlineReady = true;
       });
     },
-    state: () => ({ offlineReady, updateWaiting }),
+    state,
+    onChange(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
   };
 }

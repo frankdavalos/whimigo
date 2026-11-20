@@ -61,7 +61,7 @@ test('moving between screens adds no history entries', async ({ arcade, page }) 
   const length = () => page.evaluate(() => history.length);
   const before = await length();
   await arcade.start();
-  const checks = Object.keys((await arcade.snapshot()).targets);
+  const checks = await arcade.checks();
   expect(checks.length).toBeGreaterThan(0);
   for (const id of checks) {
     await arcade.tap(id);
@@ -69,5 +69,9 @@ test('moving between screens adds no history entries', async ({ arcade, page }) 
     await arcade.hold('leave', 1000);
     await expect.poll(() => arcade.screen()).toBe('home');
   }
+  await arcade.tap('grown-ups');
+  await expect.poll(() => arcade.screen()).toBe('grown-ups');
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await expect.poll(() => arcade.screen()).toBe('home');
   expect(await length()).toBe(before);
 });

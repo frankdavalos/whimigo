@@ -115,7 +115,7 @@ test('after one load has finished caching, with the network off, a reload reache
   await arcade.page.reload();
   await expect.poll(() => arcade.screen()).toBe('start');
   await arcade.start();
-  const checks = Object.keys((await arcade.snapshot()).targets);
+  const checks = await arcade.checks();
   expect(checks.length).toBeGreaterThan(0);
   for (const id of checks) {
     await arcade.call('openCheck', id);

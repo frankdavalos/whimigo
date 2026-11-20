@@ -56,6 +56,14 @@ export class Arcade {
   audio = () => this.call('audio');
   layout = () => this.call('layout');
 
+  /**
+   * The check screens the Home Screen lists, in order, read while it shows. Its controls are
+   * named by the screen they open; the one that opens the status page is not a check screen.
+   */
+  async checks(): Promise<string[]> {
+    return ((await this.snapshot()).state as { checks: string[] }).checks;
+  }
+
   async target(name: string): Promise<Point & { rect: Rect }> {
     const snapshot = await this.snapshot();
     const target = snapshot.targets[name];
