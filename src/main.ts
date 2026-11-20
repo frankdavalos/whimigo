@@ -11,6 +11,7 @@ import { installErrorScreen } from '@/platform/error-screen';
 import { onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
 import { readSafeAreaInsets } from '@/platform/safe-area';
+import { createUpdates } from '@/platform/updates';
 
 const errorScreen = document.getElementById('error-screen');
 if (errorScreen) installErrorScreen(window, errorScreen);
@@ -49,4 +50,8 @@ const arcade = new Arcade(
 // Touches that were down while the page was hidden may never be reported lifting.
 onPageShown(document, () => resetTouches(game));
 if (e2e) installTestBridge(window, arcade, __BUILD_ID__);
-arcade.show('start');
+
+const base = import.meta.env.BASE_URL;
+const updates = createUpdates(window, { script: `${base}sw.js`, scope: base });
+// The development server has no service worker.
+void (import.meta.env.PROD ? updates.start() : Promise.resolve()).then(() => arcade.show('start'));
