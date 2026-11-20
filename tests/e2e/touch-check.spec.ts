@@ -369,36 +369,23 @@ test.describe('four Zones in either Seating (story 17)', () => {
     }
   });
 
-  /**
-   * Story 17 AC8 also asks for each Zone's counter to sit beside its Seat's colour. Nothing the
-   * bridge reports says which colour a Zone is drawn in, so this cannot pass until the snapshot
-   * reports each Zone's fill.
-   */
-  test.skip(
-    'each Zone is drawn in its Seat’s colour, in either Seating',
-    {
-      annotation: {
-        type: 'skip',
-        description: 'gap: PRD story 17 — see #10; un-skip when implemented',
-      },
-    },
-    async ({ arcade }) => {
-      for (const seating of ['around-the-table', 'side-by-side']) {
-        if (seating === 'side-by-side') {
-          await arcade.tap('seating');
-          await expect.poll(async () => (await state(arcade)).seating).toBe(seating);
-        }
-        // The snapshot would report the colour each Zone is filled with.
-        const { zones } = (await arcade.snapshot()).state as {
-          zones: (ZoneState & { fill?: { color: number } })[];
-        };
-        expect(zones.map((zone) => zone.fill?.color)).toEqual(
-          zones.map((zone) => seats[zone.seat]!.color),
-        );
-        expect(new Set(zones.map((zone) => zone.fill?.color)).size).toBe(4);
+  /** Story 17 AC8 also asks for each Zone's counter to sit beside its Seat's colour (#10). */
+  test('each Zone is drawn in its Seat’s colour, in either Seating', async ({ arcade }) => {
+    for (const seating of ['around-the-table', 'side-by-side']) {
+      if (seating === 'side-by-side') {
+        await arcade.tap('seating');
+        await expect.poll(async () => (await state(arcade)).seating).toBe(seating);
       }
-    },
-  );
+      // The snapshot reports the colour each Zone is filled with.
+      const { zones } = (await arcade.snapshot()).state as {
+        zones: (ZoneState & { fill?: { color: number } })[];
+      };
+      expect(zones.map((zone) => zone.fill?.color)).toEqual(
+        zones.map((zone) => seats[zone.seat]!.color),
+      );
+      expect(new Set(zones.map((zone) => zone.fill?.color)).size).toBe(4);
+    }
+  });
 
   test('each Zone’s counter is drawn in bitmap digits inside the Zone, turned to its facing, beside its Seat’s shape', async ({
     arcade,

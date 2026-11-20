@@ -227,8 +227,10 @@ class TouchCheckScreen extends Phaser.Scene implements ArcadeScreen {
             marker: { x: marker.ring.x, y: marker.ring.y, text: marker.slot.describe().text },
           };
         }),
-        zones: this.zones.map(({ zone, badge, counter }) => ({
+        zones: this.zones.map(({ zone, fill, badge, counter }) => ({
           ...zone,
+          // As drawn: the Seat's colour, more opaque while the Zone is held.
+          fill: { color: fill.fillColor, alpha: fill.fillAlpha },
           held: readings.held.includes(zone.seat),
           taps: readings.taps[zone.seat],
           lastTouch: readings.lastTouch[zone.seat],
