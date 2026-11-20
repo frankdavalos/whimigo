@@ -121,7 +121,7 @@ After the device run, the owner types `/zsl:grill-with-docs` and works through t
 1. **Phase 0, slice 1** (walking skeleton, #2). Everything else stands on it.
 2. **Phase 0, wave 2** (the asset build #3, the deploy workflow #4). In either order, one at a time.
 3. **Phase 0, wave 3** (install and offline #5, and the three check screens #6 to #8). In any order, one at a time, once the asset build is on `main`.
-4. **Phase 0 device run (#9) and gate.** The owner, with the iPad Pro; about half an hour.
+4. **Phase 0 device run (#9) and gate.** The owner, with the iPad Pro; about half an hour. Run on 2026-11-20: [results](device-runs/2026-11-20-ipad-pro.md). Items 13 and 14 (turning to portrait) are to be repeated after a fix; the gate decisions follow.
 5. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). It creates the contract, the `GameHost` and the kit.
 6. **Phase 1, the rest**, in waves as listed below.
 7. **Phase 1 device acceptance.**
