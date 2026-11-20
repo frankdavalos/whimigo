@@ -10,7 +10,7 @@ The project is not created from the official Phaser templates. Their `dev` and `
 
 ## Consequences
 
-- The features with open defects in 4.2.1 are avoided by rule: `Text`, `RenderTexture`, `DynamicTexture`, `Shader`, camera-zoom scaling, and destroying the `Phaser.Game`.
+- The features with open defects in 4.2.1 are avoided by rule: `Text`, `RenderTexture`, `DynamicTexture`, `Shader`, camera-zoom scaling, and destroying the `Phaser.Game`. Camera-zoom scaling here means zooming in to draw at the device's pixel ratio (Phaser issue #7351). The kit's render scale zooms every camera out instead, which on 2026-11-19 was confirmed to place and hit-test every target correctly in 4.2.1 (gate G8, [ADR-0003](0003-fixed-design-frame.md)).
 - If a defect must be fixed locally, `patch-package` is the mechanism, and the patch is recorded here.
 - Phaser 3 knowledge is not a safe guide. The installed type definitions and the v4 migration guide are the reference.
 - Phaser is the only runtime dependency.

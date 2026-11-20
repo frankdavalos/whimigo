@@ -321,7 +321,7 @@ export interface Zone {
 }
 ```
 
-Zone positions for each **Seating** and Seat count are decided once, in the kit. A Game asks for its Zones; it does not compute them.
+Zone positions for each **Seating** and Seat count are decided once, in the kit. A Game asks for its Zones; it does not compute them. The kit's `zonesFor(area, seats, seating)` lays them out inside the area it is given. The Touch Check gives it the part of the safe rectangle between its two columns of controls; for a Game, which has no controls beside its Zones, the area is meant to be the whole safe rectangle, and that is settled when `GameHost` is built.
 
 | Seats | `side-by-side` | `around-the-table` |
 |---|---|---|

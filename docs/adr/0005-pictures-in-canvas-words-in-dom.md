@@ -10,7 +10,7 @@ The split follows the audience: children cannot read and need one consistent, to
 
 ## Consequences
 
-- One bitmap font is generated once from the display typeface and committed. It covers digits and basic Latin letters.
+- One bitmap font is generated once from the display typeface and committed. It covers digits and basic Latin letters. Until the display typeface is chosen it does not exist: Phase 0 draws its digits, and a decimal point, from provisional frames in the Arcade's atlas, put together at run time, as the Phase 0 PRD specified (2026-11-19).
 - The DOM screens are full-screen and never shown during a Round, so they do not interfere with touch handling (see [ADR-0001](0001-phaser-centric-arcade-no-react.md)).
 - The error screen works even when Phaser or WebGL has failed.
 - Adding a language affects only the Grown-Ups Area's HTML and possibly the bitmap font's character set. There is no speech to translate ([ADR-0014](0014-synthesized-sound-no-voice.md)).
