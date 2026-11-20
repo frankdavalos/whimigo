@@ -6,8 +6,8 @@ import { PRECACHE_BUDGET_BYTES } from '../../scripts/precache';
 import { expect, test } from './arcade';
 
 /**
- * Installing and playing offline (stories 11 and 12, ADR-0008). Chromium only: the installability
- * check and the network switch are the Chromium DevTools protocol's.
+ * Installing and playing offline (stories 11 and 12, ADR-0008). The installability check is the
+ * Chromium DevTools protocol's; playing offline is also a WebKit smoke test.
  */
 
 const BASE = '/whimigo/';
@@ -104,7 +104,7 @@ test('once the service worker has finished caching, every file the build emits i
   expect(total, 'the precache total, in bytes').toBeLessThanOrEqual(PRECACHE_BUDGET_BYTES);
 });
 
-test('after one load has finished caching, with the network off, a reload reaches the Home Screen and every check screen opens', async ({
+test('after one load has finished caching, with the network off, a reload reaches the Home Screen and every check screen opens @smoke', async ({
   arcade,
   context,
 }) => {

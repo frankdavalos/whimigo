@@ -44,7 +44,7 @@ test('when the page becomes visible again, it asks the service worker to check f
   await expect.poll(() => server.requests('sw.js')).toBe(checks + 1);
 });
 
-test('a newer build waits while the page is open; after a reload, the page runs it, reloading once before tap to start', async ({
+test('a newer build waits while the page is open; after a reload, the page runs it, reloading once before tap to start @smoke', async ({
   arcade,
   server,
   next,

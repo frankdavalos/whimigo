@@ -87,7 +87,7 @@ A test reads `round().targets['cell-4']`, taps that point with a real touch, and
 | Chromium, tablet 4:3 | 1376 × 1032, touch (the 13-inch iPad Pro's size in CSS pixels) | The main run |
 | Chromium, small tablet | 1133 × 744, touch (the iPad mini's size in CSS pixels) | Layout on the smallest supported screen |
 | Chromium, tablet 16:10 | 1280 × 800, touch | Layout on the common Android shape |
-| WebKit, tablet 4:3 | 1024 × 768, touch | Smoke only: boots, opens a Game, finishes a Round |
+| WebKit, tablet 4:3 | 1024 × 768, touch | Smoke only: boots, opens a Game, finishes a Round; plays offline and takes an update at a cold start |
 
 Playwright's WebKit is not Safari and does not behave like an iPad. It catches gross engine differences and nothing more.
 
