@@ -18,3 +18,4 @@ Each Game's artwork is kept as SVG beside the Game (the pipeline also accepts PN
 - SVG features that render differently between rasterisers (filters, embedded text, fonts) are avoided. Text in art is converted to outlines.
 - Atlases are generated, not committed. The script runs before `dev` and `build`.
 - If the design frame changes ([ADR-0003](0003-fixed-design-frame.md)), vector art is re-rasterised at no cost; PNG art would have to be redrawn.
+- Each Game has one atlas page of at most 4096 × 4096; a set that needs a second page fails the build with its name. Confirmed on 2026-11-20 (gate G3): art rasterised for the design frame is sharp on the iPad Pro, and a stand-in Game-sized set covering 1.15 times the frame's area packs into one 2048 × 3774 page, so one page per Game stays. Decoded, that page is about 31 MB of texture memory; the 5 MB per-Game budget is download size.

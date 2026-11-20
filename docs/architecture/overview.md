@@ -419,7 +419,8 @@ The only test tablet is a 13-inch iPad Pro with an M5, which is far faster than 
 
 Rules that follow from confirmed engine behaviour:
 
-- One atlas per Game; avoid interleaving many textures. Atlas pages are at most 4096 × 4096.
+- One atlas per Game; avoid interleaving many textures. Atlas pages are at most 4096 × 4096, and a Game has one page. Confirmed on 2026-11-20 (gate G3): art rasterised for the design frame is sharp on the iPad Pro, and a stand-in Game-sized set covering 1.15 times the frame's area packs into one 2048 × 3774 page, under half a page's area. A set that needs a second page fails the build with its name.
+- Download size is not texture memory. Decoded, a page takes four bytes a pixel: the stand-in page about 31 MB, a full 4096 × 4096 page about 67 MB. Only one Game's pack is loaded at a time, so there is no separate texture-memory budget.
 - Backdrops are flat fills or small tiling frames, never full-screen images. One image the size of the design frame is about 23 MB of texture memory.
 - No `Text`, `RenderTexture`, `DynamicTexture` or `Shader` objects in Games.
 - One `Phaser.Game` for the life of the page. Destroying and recreating it leaks through a listener Phaser never removes.
