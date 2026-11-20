@@ -37,6 +37,8 @@ interface Path {
 }
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+/** The two steps of the R2 sequence: the reciprocals of the plastic number and of its square. */
+const R2 = { x: 0.7548776662466927, y: 0.5698402909980532 };
 const SLOWEST = 0.15;
 const FASTEST = 0.6;
 
@@ -49,10 +51,11 @@ const FASTEST = 0.6;
 export function createStandardLoad(frames: readonly LoadFrame[], area: Rect): StandardLoad {
   const paths: Path[] = Array.from({ length: LOAD_SPRITES }, (_, index) => {
     const angle = index * GOLDEN_ANGLE;
-    const speed = SLOWEST + (FASTEST - SLOWEST) * fraction(index * 0.754877666);
+    const speed = SLOWEST + (FASTEST - SLOWEST) * fraction(index * Math.SQRT2);
     return {
       frame: frames[index % frames.length]!,
-      start: { x: fraction(index * 0.618033989), y: fraction(index * 0.381966011 + 0.5) },
+      // A low-discrepancy sequence spreads the starting points evenly over the area.
+      start: { x: fraction(0.5 + index * R2.x), y: fraction(0.5 + index * R2.y) },
       speed: { x: speed * Math.cos(angle), y: speed * Math.sin(angle) },
     };
   });

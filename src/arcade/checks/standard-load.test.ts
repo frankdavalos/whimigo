@@ -40,6 +40,18 @@ describe('the standard load', () => {
     }
   });
 
+  it('starts spread over the whole area', () => {
+    // Every cell of a four-by-four grid over the area holds some sprites' centres.
+    const cells = new Set(
+      after(0, 16).map(({ x, y }) => {
+        const column = Math.min(3, Math.floor(((x - area.x) / area.width) * 4));
+        const row = Math.min(3, Math.floor(((y - area.y) / area.height) * 4));
+        return `${column},${row}`;
+      }),
+    );
+    expect(cells.size).toBe(16);
+  });
+
   it('keeps every sprite wholly inside its area', () => {
     for (const total of [0, 1000, 5000, 60_000, 600_000]) {
       for (const sprite of after(total, 1000)) {
