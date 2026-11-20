@@ -404,13 +404,13 @@ Phaser 4.2.1 is about 350 KB compressed and cannot be tree-shaken (confirmed). T
 
 ## Performance and memory
 
-Proposed budgets, to be confirmed or changed by Phase 0 measurements.
+Proposed budgets, to be confirmed or changed by measurements. Phase 0 confirmed the work-per-frame budget on 2026-11-20 (gate G2); the others are still proposed.
 
 The only test tablet is a 13-inch iPad Pro with an M5, which is far faster than an ordinary family tablet and will not reveal a performance problem a slower one would have. So the frame-rate budget is stated as time spent per frame, which leaves a visible margin, and not as "it felt smooth". The margin is a rule of thumb, not a measurement of any other tablet.
 
 | Budget | Target |
 |---|---|
-| Work per frame in a Round, on the iPad Pro | Under 3 milliseconds, well inside the 8.3 available at 120 frames per second, leaving room for Low Power Mode, heat and older iPads. The Performance check measures it under a standard load of 200 moving token-sized sprites from one atlas, four times the pictures of the busiest planned Round: the time from Phaser's `prestep` event to its `postrender` event, averaged over at least a second |
+| Work per frame in a Round, on the iPad Pro | Under 3 milliseconds, well inside the 16.7 available at the 60 frames per second WebKit gives an installed web app on the iPad Pro (and inside the 8.3 available should it ever run at 120), leaving room for Low Power Mode, heat and older iPads. The Performance check measures it under a standard load of 200 moving token-sized sprites from one atlas, four times the pictures of the busiest planned Round: the time from Phaser's `prestep` event to its `postrender` event, averaged over at least a second. Confirmed on 2026-11-20 (gate G2): about 0.33 ms at a steady 60 frames per second, and about 0.65 ms at a steady 30 in Low Power Mode. This is CPU time; a steady frame rate with no dropped frames is the only sign that drawing keeps up. 60 frames per second is accepted as the normal rate; the Arcade does not try to reach 120 |
 | Cold start, offline, to the Home Screen | Under 3 seconds |
 | Opening a Game from the Home Screen | Under 1.5 seconds |
 | A Game's chunk and assets | At most 5 MB |
@@ -423,7 +423,7 @@ Rules that follow from confirmed engine behaviour:
 - Backdrops are flat fills or small tiling frames, never full-screen images. One image the size of the design frame is about 23 MB of texture memory.
 - No `Text`, `RenderTexture`, `DynamicTexture` or `Shader` objects in Games.
 - One `Phaser.Game` for the life of the page. Destroying and recreating it leaks through a listener Phaser never removes.
-- Time by elapsed milliseconds, never by frame count, so 30, 60 and 120 frames per second all play the same. The iPad Pro's display runs at up to 120 Hz and drops to about 30 in Low Power Mode, so all three really occur.
+- Time by elapsed milliseconds, never by frame count, so 30, 60 and 120 frames per second all play the same. The iPad Pro's display runs at up to 120 Hz, but Safari and installed web apps normally hold animation frames to 60, and a page cannot ask for more; Low Power Mode drops them to 30 (both seen on 2026-11-20). 120 remains possible if WebKit lifts that cap, so all three can occur.
 
 ## Accessibility
 
