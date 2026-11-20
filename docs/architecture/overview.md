@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton, the asset build, the Touch Check and the Sound check exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
+Status: **accepted** on 2026-11-19. Phase 0 is being built; the walking skeleton, the asset build, the Touch Check, the Sound check and the Performance check exist. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md).
 
 ## Summary
 
@@ -159,7 +159,7 @@ A Round in progress is never saved. Rounds last one to three minutes, so if the 
 
 ## Game lifecycle
 
-A Game is registered at build time (its manifest is in `catalog.ts`), loaded when opened, and unloaded when closed. Phaser's Scene Manager can add and remove Scenes at run time and can remove every asset listed in a pack in one call; both are confirmed in the 4.2.1 source. The whole Arcade runs in one long-lived `Phaser.Game`, which is never destroyed ([ADR-0002](../adr/0002-one-game-instance-lazy-scenes.md)).
+A Game is registered at build time (its manifest is in `catalog.ts`), loaded when opened, and unloaded when closed. Phaser's Scene Manager can add and remove Scenes at run time and can remove every asset listed in a pack in one call; both are confirmed in the 4.2.1 source. The whole Arcade runs in one long-lived `Phaser.Game`, which is never destroyed ([ADR-0002](../adr/0002-one-game-instance-lazy-scenes.md)). Confirmed on 2026-11-19 by an automated test (gate G6): the Performance check adds a Scene and loads the stand-in pack, then removes the Scene and the pack's textures, 50 times, and the Scene, texture and sound counts end where they began with no stand-in texture left, so per-Game unloading stays.
 
 ```mermaid
 stateDiagram-v2
@@ -280,7 +280,7 @@ Phaser 4 has no device-pixel-ratio support: the canvas has exactly as many pixel
 - **Why this size:** the owner's decision ([ADR-0003](../adr/0003-fixed-design-frame.md)). The iPad Pro is the tablet the Arcade is made for and it has power to spare. Art made for the largest screen scales down cleanly to smaller ones; the reverse would not be true.
 - **The cost:** every tablet draws the full frame, whatever its screen. An 11-inch iPad draws about 60% more pixels than it shows, which it can afford. A typical 1920 × 1200 Android tablet would draw about three times as many, with texture memory to match. Android matters little to this project, so that cost is accepted without being measured.
 - **Smaller iPads:** nothing extra is needed. An iPad mini draws about twice the pixels it shows, which it handles easily. What changes there is physical size: everything is about 56% as large as on the iPad Pro. Sizes are therefore judged at the smallest supported screen, the 8.3-inch mini.
-- **A lighter mode, kept possible but switched off:** the kit holds one hidden number, the render scale, fixed at 1. At 0.5 the canvas has half the pixels each way and every Scene's camera is zoomed to match; Games work only in design units, so they do not change. Whether this works in Phaser 4.2.1 is an assumption, and Phase 0 tests it automatically by tapping the same targets at both scales. If it works, giving a slow tablet a lighter mode later is a change in one place. If it does not, slow tablets simply get the full frame.
+- **A lighter mode, kept possible but switched off:** the kit holds one hidden number, the render scale, fixed at 1. At 0.5 the canvas has half the pixels each way and every Scene's camera is zoomed to match; Games work only in design units, so they do not change. Whether this works in Phaser 4.2.1 is an assumption, and Phase 0 tests it automatically by tapping the same targets at both scales. If it works, giving a slow tablet a lighter mode later is a change in one place. If it does not, slow tablets simply get the full frame. Confirmed on 2026-11-19 by that test (gate G8): at 0.5 every named target of the Home Screen and of every check screen is within one CSS pixel of where it is at 1, a press there does the same thing, and four touches in four Touch Check Zones count one each. Only a test can ask for it, with `scale=0.5` beside the test bridge's `e2e=1` in the address; the mode stays switched off.
 - After Phase 1 the frame size itself is expensive to change.
 - **Safe area:** `stage.safe` is the design frame inset by the larger of the reported safe-area inset and a fixed 88 units (about 8 mm on the iPad Pro). The fixed margin exists because iPadOS currently has an open defect in which installed web apps report an inset of zero while still drawing a status bar.
 - **Resize:** the design frame never changes, so Games ignore resizing. Only the backdrop follows the screen, and the kit does that.
@@ -410,7 +410,7 @@ The only test tablet is a 13-inch iPad Pro with an M5, which is far faster than 
 
 | Budget | Target |
 |---|---|
-| Work per frame in a Round, on the iPad Pro | Under 3 milliseconds, well inside the 8.3 available at 120 frames per second, leaving room for Low Power Mode, heat and older iPads |
+| Work per frame in a Round, on the iPad Pro | Under 3 milliseconds, well inside the 8.3 available at 120 frames per second, leaving room for Low Power Mode, heat and older iPads. The Performance check measures it under a standard load of 200 moving token-sized sprites from one atlas, four times the pictures of the busiest planned Round: the time from Phaser's `prestep` event to its `postrender` event, averaged over at least a second |
 | Cold start, offline, to the Home Screen | Under 3 seconds |
 | Opening a Game from the Home Screen | Under 1.5 seconds |
 | A Game's chunk and assets | At most 5 MB |

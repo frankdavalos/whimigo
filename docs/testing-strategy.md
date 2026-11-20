@@ -189,7 +189,7 @@ No Android tablet is available, and Android matters little to this project, so t
 12. Nothing a child must touch is hidden by the status bar, the home indicator, a camera cut-out or window controls.
 13. Rotate to portrait and back. The rotate picture appears and the Round resumes.
 14. On iPadOS, try Windowed Apps mode. Record whether the Arcade is usable.
-15. Vector art and bitmap digits look sharp, pixel for pixel, with no visible softness. **(P0)**
+15. Vector art and bitmap digits look sharp, pixel for pixel, with no visible softness. On the Performance check's sharpness card, the one-unit line pairs, grids and checks show as distinct lines, not grey. **(P0)**
 
 **Sound (P0)**
 
@@ -207,7 +207,7 @@ No Android tablet is available, and Android matters little to this project, so t
 
 **Performance (P0)**
 
-24. The performance check screen reports under 3 milliseconds of work per frame with its standard load, and motion is smooth at the display's full rate.
+24. The performance check screen reports under 3 milliseconds of work per frame (the reading beside the hourglass) with its standard load, and motion is smooth at the display's full rate. Run its add-and-remove loop once: it counts to 50.
 25. Open and close Games for five minutes. The app is not closed by the system and does not slow down.
 26. Turn on Low Power Mode. Games play at the same speed, only less smoothly.
 
