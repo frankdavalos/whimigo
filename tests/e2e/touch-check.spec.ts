@@ -376,7 +376,12 @@ test.describe('four Zones in either Seating (story 17)', () => {
    */
   test.skip(
     'each Zone is drawn in its Seat’s colour, in either Seating',
-    { annotation: { type: 'skip', description: 'gap: PRD story 17 — unfiled' } },
+    {
+      annotation: {
+        type: 'skip',
+        description: 'gap: PRD story 17 — see #10; un-skip when implemented',
+      },
+    },
     async ({ arcade }) => {
       for (const seating of ['around-the-table', 'side-by-side']) {
         if (seating === 'side-by-side') {
