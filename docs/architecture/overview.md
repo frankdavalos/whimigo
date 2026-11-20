@@ -159,7 +159,7 @@ A Round in progress is never saved. Rounds last one to three minutes, so if the 
 
 ## Game lifecycle
 
-A Game is registered at build time (its manifest is in `catalog.ts`), loaded when opened, and unloaded when closed. Phaser's Scene Manager can add and remove Scenes at run time and can remove every asset listed in a pack in one call; both are confirmed in the 4.2.1 source. The whole Arcade runs in one long-lived `Phaser.Game`, which is never destroyed ([ADR-0002](../adr/0002-one-game-instance-lazy-scenes.md)). Confirmed on 2026-11-19 by an automated test (gate G6): the Performance check adds a Scene and loads the stand-in pack, then removes the Scene and the pack's textures, 50 times, and the Scene, texture and sound counts end where they began with no stand-in texture left, so per-Game unloading stays.
+A Game is registered at build time (its manifest is in `catalog.ts`), loaded when opened, and unloaded when closed. Phaser's Scene Manager can add and remove Scenes at run time and can remove every asset listed in a pack in one call; both are confirmed in the 4.2.1 source. The whole Arcade runs in one long-lived `Phaser.Game`, which is never destroyed ([ADR-0002](../adr/0002-one-game-instance-lazy-scenes.md)). Confirmed on 2026-11-19 by an automated test (gate G6): the Performance check adds a Scene and loads the stand-in pack, then removes the Scene and the pack's textures, 50 times, and the Scene, texture and sound counts end where they began with no stand-in texture left, so per-Game unloading stays. On 2026-11-20 the same loop ran to 50 on the iPad Pro, and the owner confirmed the gate.
 
 ```mermaid
 stateDiagram-v2

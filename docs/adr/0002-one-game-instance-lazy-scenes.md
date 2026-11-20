@@ -17,3 +17,4 @@ The Arcade creates a single `Phaser.Game` at start-up and never destroys it. A G
 - A Game cannot crash-proof the Arcade: an uncaught error in one Game takes the page down, and recovery is a reload.
 - Games share global texture and sound caches, so asset keys must be namespaced by Game id.
 - A Game must own nothing outside its Scene, or it will leak when the Scene is removed.
+- Confirmed on 2026-11-19 by an automated test (gate G6): adding a Scene with the stand-in pack and removing both, 50 times, leaves the Scene, texture and sound counts where they began, with no stand-in texture left, so per-Game unloading stays. On 2026-11-20 the same loop ran to 50 on the iPad Pro; the counts were not read there. The counts show Phaser's bookkeeping, not memory; opening and closing real Games is measured against the overview's budget from Phase 1.
