@@ -31,9 +31,10 @@ jobs:
 
   # The browser tests draw a 2752 x 2064 canvas in software, so they run in jobs side by side, each
   # making its own production build and testing it: one job for each Playwright project, and one
-  # for the Performance check. Its tests need the browser to draw steadily (a frame rate, and 50
-  # add-and-remove cycles in time), so they run one at a time in a job of their own rather than
-  # beside the other browser tests, which starved them of CPU.
+  # for the Performance check. Every test that opens it, by file or by title, draws its standard
+  # load, and needs the browser to draw steadily: a frame rate, 50 add-and-remove cycles in time,
+  # a short tap that stays short. Beside other browser tests they were starved of CPU, so they run
+  # one at a time in a job of their own.
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -44,19 +45,19 @@ jobs:
         include:
           - job: chromium-tablet-4x3
             browser: chromium
-            args: --project=chromium-tablet-4x3 --grep-invert=performance-check.spec.ts
+            args: --project=chromium-tablet-4x3 --grep-invert=performance-check
           - job: chromium-small-tablet
             browser: chromium
-            args: --project=chromium-small-tablet --grep-invert=performance-check.spec.ts
+            args: --project=chromium-small-tablet --grep-invert=performance-check
           - job: chromium-tablet-16x10
             browser: chromium
-            args: --project=chromium-tablet-16x10 --grep-invert=performance-check.spec.ts
+            args: --project=chromium-tablet-16x10 --grep-invert=performance-check
           - job: webkit-smoke
             browser: webkit
             args: --project=webkit-smoke
           - job: performance-check
             browser: chromium
-            args: --project=chromium-tablet-4x3 --project=chromium-small-tablet --project=chromium-tablet-16x10 --workers=1 tests/e2e/performance-check.spec.ts
+            args: --project=chromium-tablet-4x3 --project=chromium-small-tablet --project=chromium-tablet-16x10 --workers=1 --grep=performance-check
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

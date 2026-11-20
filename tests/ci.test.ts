@@ -103,22 +103,21 @@ describe('the CI workflow', () => {
       if (args) jobs.get(current)!.push(...args.split(' '));
     }
     const projects = config.projects!.map((project) => project.name!);
-    const performance = 'tests/e2e/performance-check.spec.ts';
-    // One job for each project, running all of its tests but the Performance check's.
+    // One job for each project, running all of its tests but those that open the Performance check.
     for (const project of projects) {
       const args = jobs.get(project);
       expect(args, `a job for ${project}`).toBeDefined();
       expect(args!.filter((arg) => arg.startsWith('--project='))).toEqual([`--project=${project}`]);
       if (project !== 'webkit-smoke') {
-        expect(args).toContain('--grep-invert=performance-check.spec.ts');
+        expect(args).toContain('--grep-invert=performance-check');
       }
     }
-    // And one job running the Performance check's tests for each of those projects, one at a time.
+    // And one job running exactly those tests for each of those projects, one at a time.
     const alone = jobs.get('performance-check');
     expect(alone).toEqual([
       ...projects.filter((project) => project !== 'webkit-smoke').map((p) => `--project=${p}`),
       '--workers=1',
-      performance,
+      '--grep=performance-check',
     ]);
     expect([...jobs.keys()]).toEqual([...projects, 'performance-check']);
     expect(e2e).toContain('fail-fast: false');
