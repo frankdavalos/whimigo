@@ -19,7 +19,8 @@ For the next Claude Code session. It says where the project stands, what to do f
 
 - **Phase 0 is complete (2026-11-20).** The owner ran the device checklist on the iPad Pro, iPadOS 27.2 ([record](device-runs/2026-11-20-ipad-pro.md)), and answered gates G1 to G8 the same day with `/zsl:grill-with-docs`: every answer is yes. Four Seats play Simultaneously on iPadOS; 60 frames per second is accepted, with the 3 ms work-per-frame budget kept; one atlas page per Game; resume-on-tap for sound, with no reload fallback; the 88-unit margin stays; per-Game unloading stays; Phaser 4.2.1 is dependable, with the portrait sizing workaround (`e14e3f5`) to recheck on any upgrade; the lighter render mode stays switched off. The answers, and where each is recorded, are under [Gate results](roadmap.md#gate-results) in the roadmap.
 - **Phase 0's issues are all closed.** The owner cleared the device-run slice [#9](https://github.com/frankdavalos/whimigo/issues/9) with `/zsl:human-itl` and closed the PRD [#1](https://github.com/frankdavalos/whimigo/issues/1) on 2026-11-20. The coverage gap [#10](https://github.com/frankdavalos/whimigo/issues/10) (each Zone drawn in its Seat's colour) is closed too.
-- **Next:** the Phase 1 PRD, by repeating steps 5 to 7 with the Phase 1 section of the roadmap. It is not yet written. The one question it carried from #7 was settled by the owner on 2026-11-20: a Game's atlas is the texture named by its bare id, and every other key starts with `${id}/` ([game contract](architecture/game-contract.md#asset-keys), [ADR-0011](adr/0011-svg-sources-atlas-per-game.md)). The stand-in pack's texture, which had been `standin/atlas`, is now `standin`.
+- **The Phase 1 PRD is written and sliced.** PRD [#11](https://github.com/frankdavalos/whimigo/issues/11), labelled `tracking`, has twelve sub-issues, [#12](https://github.com/frankdavalos/whimigo/issues/12) to [#23](https://github.com/frankdavalos/whimigo/issues/23), listed under [Phase 1 slices](#phase-1-slices); every acceptance criterion in the PRD is in exactly one of them. When it was sliced on 2026-11-20 the owner accepted the PRD's "gaps" as written, settled the typeface (none is bundled: canvas glyphs are drawn in the repository and the Grown-Ups Area uses the device's typeface; [ADR-0005](adr/0005-pictures-in-canvas-words-in-dom.md), [overview](architecture/overview.md#visual-system)), and added the dependencies the PRD's first slice table lacked, so wave 2 is no longer flat. The atlas key rule the PRD carried from #7 was settled the same day: a Game's atlas is the texture named by its bare id, and every other key starts with `${id}/` ([game contract](architecture/game-contract.md#asset-keys), [ADR-0011](adr/0011-svg-sources-atlas-per-game.md)); the stand-in pack's texture is now `standin`.
+- **Next:** `/zsl:triage` for each slice, then `/zsl:tdd` for the `[AFK]` slices one at a time in the order of the table below.
 
 ## Read these first
 
@@ -142,7 +143,7 @@ Slices are built one at a time and pushed to `main`. A slice's wave number says 
 |---|---|---|
 | Any other Phase 0 slice | Phase 0 slice 1 (#2) | It creates the project, the lint rules, CI, the test bridge, and the list that check screens register in |
 | Install and offline, or any check screen (#5 to #8) | The asset build (#3) | They need the icons, the bitmap digits and the Arcade's atlas |
-| Any Phase 1 wave-2 slice | Phase 1 slice 1 | It creates `contract.ts`, `GameHost`, `openRound` and the kit's folder structure. Two agents inventing these at once will collide |
+| Any other Phase 1 slice | Phase 1 slice 1 ([#12](https://github.com/frankdavalos/whimigo/issues/12)) | It creates `contract.ts`, `GameHost`, `openRound` and the kit's folder structure. Two agents inventing these at once will collide |
 | Color Echo Cooperative | Color Echo Solo **and** Zones | It needs both |
 | The Phase 2 Games after Four in a Row | The search extraction | Dots and Boxes uses it; extracting it later means touching three Games |
 
@@ -171,24 +172,28 @@ Three acceptance criteria are open questions rather than certainties: 50 Scene a
 
 ## Phase 1 slices
 
-For orientation. The Phase 1 PRD is written after the Phase 0 gate and may differ.
+The PRD is [#11](https://github.com/frankdavalos/whimigo/issues/11). Its twelve sub-issues are the plan; read each one with `gh issue view <n> --comments` before building it. Wave numbers are dependency depth; the PRD's own slice table uses the older names in the last column.
 
-| Slice | Blocked by |
-|---|---|
-| `[AFK] 1 — Play a two-Player Round of Tic-Tac-Toe from the Home Screen to a Result and back` | Phase 0 |
-| `[AFK] 2a — Pause and leave a Round: hold-to-pause, pause on app hidden, exit` | 1 |
-| `[AFK] 2b — Lobby: Mascots join Seats, choose Difficulty, choices remembered; style guide and first Mascots` | 1 |
-| `[AFK] 2c — Progress: Stars saved per Mascot and shown` | 1 |
-| `[AFK] 2d — Color Echo, Solo: synthesized tones, Demo, motion presets` | 1 |
-| `[AFK] 2e — Zones and Seating, with Reaction Rush for two to four Seats` | 1 |
-| `[AFK] 3a — Tic-Tac-Toe Versus Computer at three Difficulties` | 2b |
-| `[AFK] 3b — Color Echo, Turn-Based` | 2b, 2d |
-| `[AFK] 3c — Color Echo, Cooperative` | 2d, 2e |
-| `[AFK] 3d — Grown-Ups Area: gate, settings, update, reset, Touch Check` | 2c |
-| `[AFK] 4 — Hardening: storage failures, load failures, leak test across three Games` | 3a to 3d |
-| `[HITL] 5 — Device acceptance on the iPad Pro, and the owner's review` | 4 |
+| Issue | Slice | Blocked by | PRD slice |
+|---|---|---|---|
+| [#12](https://github.com/frankdavalos/whimigo/issues/12) | `[AFK] 1 — Play a two-Player Round of Tic-Tac-Toe from the Home Screen to a Result and back` | Phase 0 | 1 |
+| [#13](https://github.com/frankdavalos/whimigo/issues/13) | `[AFK] 2 — Pause and leave a Round: hold-to-pause, and pause when the page is hidden or turned` | #12 | 2a |
+| [#14](https://github.com/frankdavalos/whimigo/issues/14) | `[AFK] 3a — Progress: Stars from each Result, saved per Mascot and shown` | #13 | 2c |
+| [#15](https://github.com/frankdavalos/whimigo/issues/15) | `[AFK] 3b — Color Echo, Solo: synthesized tones, the Demo, motion presets and reduced motion` | #13 | 2d |
+| [#16](https://github.com/frankdavalos/whimigo/issues/16) | `[AFK] 4a — Lobby: Mascots join Seats; Play Style, Difficulty and Seating chosen and remembered; style guide` | #14 | 2b |
+| [#17](https://github.com/frankdavalos/whimigo/issues/17) | `[AFK] 4b — Zones and Seating, with Reaction Rush for two to four Seats` | #13, #15 | 2e |
+| [#18](https://github.com/frankdavalos/whimigo/issues/18) | `[AFK] 5a — Tic-Tac-Toe Versus Computer at three Difficulties` | #16 | 3a |
+| [#19](https://github.com/frankdavalos/whimigo/issues/19) | `[AFK] 5b — Color Echo, Turn-Based for two to four Seats` | #16, #15 | 3b |
+| [#20](https://github.com/frankdavalos/whimigo/issues/20) | `[AFK] 5c — Color Echo, Cooperative, each Seat's pads in its Zone` | #15, #17 | 3c |
+| [#21](https://github.com/frankdavalos/whimigo/issues/21) | `[AFK] 5d — Grown-Ups Area: gate, sound and motion settings, update, reset, status, check screens` | #16, #15 | 3d |
+| [#22](https://github.com/frankdavalos/whimigo/issues/22) | `[AFK] 6 — Hardening: storage and load failures, errors, offline, budgets, leak test across three Games` | #18 to #21 | 4 |
+| [#23](https://github.com/frankdavalos/whimigo/issues/23) | `[HITL] 7 — Device acceptance on the iPad Pro, and the owner's review` | #12 to #22 | 5 |
 
-Wave 2 has five slices that all add to `kit/`. Built one at a time, each starts from what the last one pushed.
+Build them one at a time with `/zsl:tdd`, a slice only once its blockers are closed: #12, #13, then #14 and #15 in either order, then #16 and #17, then #18 to #21 in any order, then #22. `#23` is cleared by the owner with `/zsl:human-itl`.
+
+Why the order differs from the first plan: several wave-2 criteria observe what a sibling builds. Remembered choices in the lobby need Progress's save document; leaving from the pause screen with no Stars needs both pausing and Progress; the Demo replayed from the pause screen needs pausing; Reaction Rush's Demo and the check that timed Rounds hold while paused need Color Echo; the Grown-Ups Area's reset and motion setting need the lobby and Color Echo. The PRD's slice table records the revision.
+
+Some criteria are written over every Game in the Catalog, every screen or every Play Style (layout, conformance, Demos, touch feedback, unloading). The slice that builds the mechanism writes that test to iterate the list, so each later Game is held to it on its first push.
 
 ## Risks to settle before substantial implementation
 

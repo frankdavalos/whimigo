@@ -18,7 +18,7 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 
 **Purpose.** Answer, on the family's 13-inch iPad Pro (M5), the questions that could change the architecture. Phase 0 is not throwaway: the project skeleton, the deployment, and the check screens all stay.
 
-**Status: complete, 2026-11-20.** The device run is [recorded](device-runs/2026-11-20-ipad-pro.md), and the owner answered all eight gates the same day: every answer is yes. The answers are under [Gate results](#gate-results). The device-run slice ([#9](https://github.com/frankdavalos/whimigo/issues/9)) and the PRD ([#1](https://github.com/frankdavalos/whimigo/issues/1)) were closed the same day. The Phase 1 PRD is not yet written.
+**Status: complete, 2026-11-20.** The device run is [recorded](device-runs/2026-11-20-ipad-pro.md), and the owner answered all eight gates the same day: every answer is yes. The answers are under [Gate results](#gate-results). The device-run slice ([#9](https://github.com/frankdavalos/whimigo/issues/9)) and the PRD ([#1](https://github.com/frankdavalos/whimigo/issues/1)) were closed the same day. The Phase 1 PRD is [#11](https://github.com/frankdavalos/whimigo/issues/11), sliced into [#12](https://github.com/frankdavalos/whimigo/issues/12) to [#23](https://github.com/frankdavalos/whimigo/issues/23) on 2026-11-20; the slices and their order are in the [handoff](implementation-handoff.md#phase-1-slices).
 
 **What is built**
 
@@ -86,7 +86,7 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 11. **Hardening:** corrupt and unavailable storage, a Game that fails to load, the update flow, the leak test across all three Games.
 12. **Device acceptance:** the full checklist on the iPad Pro.
 
-Slices 2 to 5 depend only on 1 and can be built in any order. Slices 6 and 8 depend on 1 and are independent of each other. Slice 9 needs 6 and 8.
+Slices 2 to 5 depend only on 1 and can be built in any order. Slices 6 and 8 depend on 1 and are independent of each other. Slice 9 needs 6 and 8. When the PRD was sliced on 2026-11-20 these dependencies were tightened, because some criteria observe what a sibling builds: Progress comes before the lobby, pausing before Progress and Color Echo, and Color Echo Solo before Reaction Rush. The [handoff](implementation-handoff.md#phase-1-slices) has the order.
 
 **Dependencies.** Phase 0 complete. Nothing from outside the repository: art is drawn in code to the style guide and sound is synthesized.
 
