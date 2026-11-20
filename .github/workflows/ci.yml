@@ -17,12 +17,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check-and-e2e:
+  check:
     runs-on: ubuntu-24.04
-    # The browser tests draw a 2752 x 2064 canvas in software on two workers. The render-scale
-    # test that presses every target of every screen at both scales takes about 6.5 minutes per
-    # project, so the whole job takes about 35 minutes.
-    timeout-minutes: 60
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -30,13 +27,47 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Install Playwright browsers and their system libraries
-        run: npx playwright install --with-deps chromium webkit
       - run: npm run check
-      - run: npm run e2e
-      # The very dist/ that the browser tests ran against, so what is published is what passed.
+
+  # The browser tests draw a 2752 x 2064 canvas in software, so each Playwright project runs in a
+  # job of its own, side by side, each making its own production build and testing it.
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      # Every project reports, whichever fails first.
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium-tablet-4x3
+            browser: chromium
+          - project: chromium-small-tablet
+            browser: chromium
+          - project: chromium-tablet-16x10
+            browser: chromium
+          - project: webkit-smoke
+            browser: webkit
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install the project's browser and its system libraries
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run e2e -- --project=${{ matrix.project }}
+      # Each project tested its own build. `same-build` checks they are byte for byte the same build,
+      # so the one published is the one every project tested.
+      - name: List the tested build's files and their checksums
+        run: cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum > ../build-checksums.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-checksums-${{ matrix.project }}
+          path: build-checksums.txt
+          retention-days: 1
       - name: Keep the tested build for GitHub Pages
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && matrix.project == 'chromium-tablet-4x3'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist/
@@ -44,14 +75,38 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: |
             playwright-report/
             test-results/
           retention-days: 7
 
+  same-build:
+    needs: e2e
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: build-checksums-*
+          path: checksums
+      - name: Every project tested the same build
+        run: |
+          set -eu
+          lists=$(find checksums -name build-checksums.txt | sort)
+          count=$(printf '%s\n' "$lists" | wc -l)
+          if [ "$count" -ne 4 ]; then
+            echo "::error::expected a checksum list from each of the 4 projects, found ${count}"
+            exit 1
+          fi
+          first=$(printf '%s\n' "$lists" | head -n 1)
+          for list in $lists; do
+            diff -u "$first" "$list"
+          done
+          echo "all 4 projects tested the same $(wc -l < "$first") files"
+
   deploy:
-    needs: check-and-e2e
+    needs: [check, e2e, same-build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

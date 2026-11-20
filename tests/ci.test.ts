@@ -84,25 +84,41 @@ describe('the commands for each level of testing', () => {
 });
 
 describe('the CI workflow', () => {
-  it('runs npm run check and then npm run e2e on every push to main', () => {
+  it('runs npm run check, and npm run e2e for every Playwright project, on every push to main', () => {
     expect(block('on', 0)).toEqual(['push:', 'branches: [main]']);
-    const steps = runs(job('check-and-e2e'));
-    expect(steps.filter((step) => step.startsWith('npm run '))).toEqual([
+    expect(runs(job('check')).filter((step) => step.startsWith('npm run '))).toEqual([
       'npm run check',
-      'npm run e2e',
     ]);
+    // The browser tests run one project to a job, side by side, each through npm run e2e.
+    const e2e = job('e2e');
+    expect(runs(e2e).filter((step) => step.startsWith('npm run '))).toEqual([
+      'npm run e2e -- --project=${{ matrix.project }}',
+    ]);
+    const matrix = e2e.flatMap((line) => /^- project: (.+)$/.exec(line)?.[1] ?? []);
+    expect(matrix).toEqual(config.projects!.map((project) => project.name));
+    expect(e2e).toContain('fail-fast: false');
   });
 
   it('publishes only from main, only after npm run check and npm run e2e have passed in the same run', () => {
     const deploy = job('deploy');
-    expect(deploy).toContain('needs: check-and-e2e');
+    expect(deploy).toContain('needs: [check, e2e, same-build]');
     expect(deploy).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/main'");
     expect(deploy.some((line) => line.startsWith('uses: actions/deploy-pages@'))).toBe(true);
-    // The build published is the one the browser tests ran against, kept only on main.
-    const tested = job('check-and-e2e');
+    // The build published is one the browser tests ran against, kept only on main, from one project.
+    const tested = job('e2e');
     const keep = tested.indexOf('- name: Keep the tested build for GitHub Pages');
-    expect(keep).toBeGreaterThan(tested.indexOf('- run: npm run e2e'));
-    expect(tested.slice(keep, keep + 3)).toContain("if: github.ref == 'refs/heads/main'");
+    expect(keep).toBeGreaterThan(
+      tested.indexOf('- run: npm run e2e -- --project=${{ matrix.project }}'),
+    );
+    expect(tested.slice(keep, keep + 3)).toContain(
+      "if: github.ref == 'refs/heads/main' && matrix.project == 'chromium-tablet-4x3'",
+    );
+    // Every project's build is the same build, byte for byte, or nothing is published.
+    const same = job('same-build');
+    expect(same).toContain('needs: e2e');
+    expect(same).toContain('pattern: build-checksums-*');
+    expect(same.some((line) => line.startsWith('diff -u '))).toBe(true);
+    expect(same).toContain(`if [ "$count" -ne ${config.projects!.length} ]; then`);
     // No other job publishes.
     const publishers = workflow.match(/actions\/deploy-pages@/g) ?? [];
     expect(publishers).toHaveLength(1);
