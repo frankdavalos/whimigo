@@ -18,7 +18,7 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 
 **Purpose.** Answer, on the family's 13-inch iPad Pro (M5), the questions that could change the architecture. Phase 0 is not throwaway: the project skeleton, the deployment, and the check screens all stay.
 
-**Status: complete, 2026-11-20.** The device run is [recorded](device-runs/2026-11-20-ipad-pro.md), and the owner answered all eight gates the same day: every answer is yes. The answers are under [Gate results](#gate-results). What remains is bookkeeping for the owner: clearing the device-run slice ([#9](https://github.com/frankdavalos/whimigo/issues/9)) with `/zsl:human-itl`, then closing the PRD ([#1](https://github.com/frankdavalos/whimigo/issues/1)). The Phase 1 PRD is not yet written.
+**Status: complete, 2026-11-20.** The device run is [recorded](device-runs/2026-11-20-ipad-pro.md), and the owner answered all eight gates the same day: every answer is yes. The answers are under [Gate results](#gate-results). The device-run slice ([#9](https://github.com/frankdavalos/whimigo/issues/9)) and the PRD ([#1](https://github.com/frankdavalos/whimigo/issues/1)) were closed the same day. The Phase 1 PRD is not yet written.
 
 **What is built**
 
