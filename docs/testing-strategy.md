@@ -75,6 +75,8 @@ A canvas has no buttons for a test to find. The Arcade exposes a small object on
 | `round()` | The current Round's snapshot from `round.expose`: its state, and its named targets converted to page coordinates |
 | `counts()` | Numbers of Scenes, textures and cached sounds |
 | `save()` | The current save document |
+| `offlineReady()` | Whether the service worker has finished caching every file |
+| `updateWaiting()` | Whether a newer version has been downloaded and waits for the next cold start |
 
 A test reads `round().targets['cell-4']`, taps that point with a real touch, and then asserts on `round().state` or `screen()`. Nothing in a test depends on art, layout or animation timing.
 
@@ -128,7 +130,11 @@ Playwright's own touchscreen is single-point. Multi-finger tests use the Chromiu
 **Offline and updates**
 
 - After the first load, with the network switched off, a reload reaches the Home Screen and every Game opens.
-- With a newer build deployed while a Session is running, the running page keeps its files; the new version is used after a reload.
+- Every file the build emits is in the precache, and the total is at most 60 MB.
+- With a newer build deployed while a Session is running, the running page keeps its files; the new version is used after a reload, which reloads once more before the tap-to-start screen and never again.
+- When the page becomes visible again, it asks the service worker to check for a new version.
+
+The update tests serve the build under test from a small server of their own under `/whimigo/`, then switch it to a second build at the same address while the page is open. Playwright's global setup makes that second build once per run: the same code with another build identifier, built with outbound network access denied. Installability is checked in the full Chromium with a profile on disk, because the headless shell reports nothing and an incognito context always reports one error.
 
 **Layout**
 
