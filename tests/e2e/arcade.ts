@@ -25,9 +25,12 @@ export class Arcade {
 
   constructor(readonly page: Page) {}
 
-  /** Opens the Arcade with the test bridge on, and waits for the tap-to-start screen. */
-  async open(): Promise<void> {
-    await this.page.goto('./?e2e=1');
+  /**
+   * Opens the Arcade with the test bridge on, and waits for the tap-to-start screen. `search` adds
+   * to the address's query, as `&scale=0.5` does.
+   */
+  async open(search = ''): Promise<void> {
+    await this.page.goto(`./?e2e=1${search}`);
     await expect.poll(() => this.screen()).toBe('start');
   }
 

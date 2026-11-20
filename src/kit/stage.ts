@@ -1,13 +1,8 @@
 import type * as Phaser from 'phaser';
 import type { Rect } from '@/contract';
 import { DESIGN_FRAME, safeRect, type Insets } from './frame';
+import { renderScaleOf } from './render-scale';
 import { cssColor } from './theme';
-
-/**
- * The hidden render scale: canvas pixels per design unit. Fixed at 1. At 0.5 the canvas would
- * have half the pixels each way and every camera would be zoomed to match (ADR-0003).
- */
-export const RENDER_SCALE = 1;
 
 /** A theme colour for the backdrop. Tiling frames arrive with the atlas. */
 export type BackdropFill = { readonly color: number };
@@ -21,21 +16,22 @@ export interface Stage {
 }
 
 /**
- * Points the Scene's one camera at the design frame, keeps it centred when the screen changes
- * size, and works out the safe rectangle from the safe-area insets the device reports, which are
- * in CSS pixels.
+ * Points the Scene's one camera at the design frame, zoomed to the render scale, and keeps it
+ * centred when the screen changes size; works out the safe rectangle from the safe-area insets the
+ * device reports, which are in CSS pixels.
  */
 export function createStage(scene: Phaser.Scene, reportedCssInsets: Insets): Stage {
   const camera = scene.cameras.main;
+  const renderScale = renderScaleOf(scene.game);
   const centre = () =>
     camera
-      .setZoom(RENDER_SCALE)
+      .setZoom(renderScale)
       .centerOn(DESIGN_FRAME.x + DESIGN_FRAME.width / 2, DESIGN_FRAME.y + DESIGN_FRAME.height / 2);
   centre();
   scene.scale.on('resize', centre);
   scene.events.once('shutdown', () => scene.scale.off('resize', centre));
 
-  const unitsPerCssPixel = scene.scale.displayScale.x / RENDER_SCALE;
+  const unitsPerCssPixel = scene.scale.displayScale.x / renderScale;
   const inUnits = (css: number) => css * unitsPerCssPixel;
   return {
     safe: safeRect({

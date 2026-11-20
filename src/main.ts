@@ -3,7 +3,7 @@ import { Arcade } from '@/arcade/arcade';
 import { checkScreens } from '@/arcade/checks';
 import { installTestBridge } from '@/arcade/test-bridge';
 import { DESIGN_FRAME } from '@/kit/frame';
-import { RENDER_SCALE } from '@/kit/stage';
+import { renderScaleFor } from '@/kit/render-scale';
 import { resetTouches } from '@/kit/touches';
 import { colors, cssColor } from '@/kit/theme';
 import { createAudio } from '@/platform/audio';
@@ -17,13 +17,14 @@ if (errorScreen) installErrorScreen(window, errorScreen);
 guardPage(document);
 
 const e2e = new URLSearchParams(window.location.search).get('e2e') === '1';
+const renderScale = renderScaleFor(window.location.search);
 
 /** The one Phaser.Game. It is never destroyed (ADR-0002). */
 const game = new Phaser.Game({
   type: Phaser.WEBGL,
   parent: 'arcade',
-  width: DESIGN_FRAME.width * RENDER_SCALE,
-  height: DESIGN_FRAME.height * RENDER_SCALE,
+  width: DESIGN_FRAME.width * renderScale,
+  height: DESIGN_FRAME.height * renderScale,
   backgroundColor: cssColor(colors.sky),
   banner: false,
   scale: { mode: Phaser.Scale.EXPAND, autoCenter: Phaser.Scale.CENTER_BOTH },

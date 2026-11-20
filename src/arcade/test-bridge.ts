@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import type { Rect, SnapshotTarget } from '@/contract';
 import { DESIGN_FRAME, frameOnCanvas } from '@/kit/frame';
-import { RENDER_SCALE } from '@/kit/stage';
+import { renderScaleOf } from '@/kit/render-scale';
 import type { AudioState } from '@/platform/audio';
 import type { Arcade } from './arcade';
 import { type Counts, countsOf } from './counts';
@@ -19,6 +19,8 @@ export interface PageLayout {
   readonly canvas: Rect;
   /** The canvas's own size in pixels. */
   readonly canvasPixels: { readonly width: number; readonly height: number };
+  /** Canvas pixels per design unit (ADR-0003). */
+  readonly renderScale: number;
   readonly frame: Rect;
   /** The showing screen's safe rectangle, or null before the first screen is shown. */
   readonly safe: Rect | null;
@@ -65,11 +67,12 @@ declare global {
 
 export function installTestBridge(win: Window, arcade: Arcade, buildId: string): void {
   const { game } = arcade;
+  const renderScale = renderScaleOf(game);
 
   const toPage = (rect: Rect): Rect => {
     const canvas = game.canvas;
     const box = canvas.getBoundingClientRect();
-    const frame = frameOnCanvas(canvas, RENDER_SCALE);
+    const frame = frameOnCanvas(canvas, renderScale);
     const pixelsPerUnit = frame.width / DESIGN_FRAME.width;
     // CSS stretches the canvas to its box; each axis has its own ratio after rounding.
     const cssX = box.width / canvas.width;
@@ -107,6 +110,7 @@ export function installTestBridge(win: Window, arcade: Arcade, buildId: string):
         viewport: { width: win.innerWidth, height: win.innerHeight },
         canvas: { x: box.left, y: box.top, width: box.width, height: box.height },
         canvasPixels: { width: game.canvas.width, height: game.canvas.height },
+        renderScale,
         frame: toPage(DESIGN_FRAME),
         safe: screen ? toPage(screen.stage.safe) : null,
       };
