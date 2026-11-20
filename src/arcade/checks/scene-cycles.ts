@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { picture } from '@/kit/atlas';
 import type { Insets } from '@/kit/frame';
 import { createStage } from '@/kit/stage';
 import { type Counts, countsOf } from '../counts';
@@ -10,13 +11,16 @@ export const LOOP_CYCLES = 50;
 /** The stand-in plays the part of a Game with this id: its Scene's key and its keys' prefix. */
 export const STANDIN_ID = 'standin';
 
-/** The stand-in's pack, keyed `${id}/…` as a Game's must be (game contract, GameModule). */
+/**
+ * The stand-in's pack, keyed as a Game's must be (game contract, Asset keys): its one atlas is
+ * the texture named by the bare id, which is where the kit looks for the frames `${id}/…`.
+ */
 const STANDIN_PACK = {
   [STANDIN_ID]: {
     files: [
       {
         type: 'atlas',
-        key: `${STANDIN_ID}/atlas`,
+        key: STANDIN_ID,
         textureURL: STANDIN_ATLAS.image,
         atlasURL: STANDIN_ATLAS.frames,
       },
@@ -64,7 +68,7 @@ class StandinScene extends Phaser.Scene {
       .get(key)
       .getFrameNames()
       .forEach((frame, index) => {
-        this.add.image(400 + (index % 5) * 500, 300 + Math.floor(index / 5) * 500, key, frame);
+        picture(this, 400 + (index % 5) * 500, 300 + Math.floor(index / 5) * 500, frame);
       });
     this.events.once('render', drawn);
   }

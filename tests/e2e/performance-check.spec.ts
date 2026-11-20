@@ -168,9 +168,9 @@ test.describe('the add-and-remove loop (story 20)', () => {
     expect(done.before).toEqual(opened);
     expect(done.after).toEqual(done.before);
     expect(await arcade.counts()).toEqual(opened);
-    // While it was loaded, every texture the stand-in added was its own; afterwards none remains.
-    expect(done.added.length).toBeGreaterThan(0);
-    expect(done.added.every((key) => key.startsWith('standin/'))).toBe(true);
+    // While it was loaded, the one texture the stand-in added was its atlas, keyed with its bare
+    // id as a Game's is (game contract, Asset keys); afterwards none remains.
+    expect(done.added).toEqual(['standin']);
     expect(done.standinTextures).toEqual([]);
     // The stand-in Scene never accepted input: only the Performance check did (ADR-0004).
     expect(done.inputScenes).toEqual([PERFORMANCE]);

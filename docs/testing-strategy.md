@@ -56,7 +56,7 @@ Lives beside the code as `*.test.ts`. No DOM, no Phaser.
 The same checks applied to every Game in the **Catalog**, so adding a Game adds its tests for free.
 
 - **Manifest:** the id is unique and kebab-case; every **Play Style** range is between 1 and 4 and has `min ≤ max`; `computerPlayers` is zero unless the style is `versus-computer`; Seats never exceed four; the card frame exists in the Arcade's atlas.
-- **Module:** every key in the pack and every sound recipe key starts with the Game's id; the pack lists no audio files.
+- **Module:** the pack has exactly one atlas, keyed with the Game's id; every other key in the pack and every sound recipe key starts with the Game's id and a `/`; the pack lists no audio files.
 - **`TurnRules`:** a shared helper, `checkTurnRules(rules)`, plays many random seeded Rounds and checks that there is always a legal Move until there is a Result, that every Round ends within a bound, that `apply` never mutates, that `seatToMove` is always a Seat in the Session, and that the Result names only Seats that exist. A Turn-Based Game opts in with one line.
 - **Boundaries:** lint is the test. `logic/` cannot import Phaser; a Game cannot import another Game or the Arcade; timers and `Math.random()` are banned in `games/`.
 

@@ -106,7 +106,7 @@ export interface GameManifest {
   /** False for a Game where Difficulty means nothing; the lobby then hides the choice. */
   readonly usesDifficulty: boolean;
 
-  /** Game Card artwork: a frame in the Arcade's own atlas, and a theme colour token. */
+  /** Game Card artwork: a frame in the Arcade's own atlas (so `arcade/…`), and a theme colour token. */
   readonly card: { readonly frame: string; readonly color: string };
 
   /** Loads the module. Must be a literal dynamic import so the bundler makes one chunk per Game. */
@@ -139,7 +139,7 @@ export const manifest: GameManifest = {
     { style: 'versus-computer', players: { min: 1, max: 1 }, computerPlayers: 1, zoned: false },
     { style: 'turn-based',      players: { min: 2, max: 2 }, computerPlayers: 0, zoned: false },
   ],
-  card: { frame: 'card/tic-tac-toe', color: 'sky' },
+  card: { frame: 'arcade/card/tic-tac-toe', color: 'sky' },
   load: () => import('./index'),
 };
 ```
@@ -151,7 +151,8 @@ Loaded only when a child opens the Game.
 ```ts
 export interface GameModule {
   /**
-   * Every asset the Game needs, as a Phaser pack. Keys must start with `${id}/`.
+   * Every asset the Game needs, as a Phaser pack. The Game's one atlas is keyed `${id}`
+   * exactly; every other key must start with `${id}/`. See "Asset keys" below.
    * The Arcade loads the pack before the first Round and removes it when the Session ends.
    */
   readonly pack: Phaser.Types.Loader.FileTypes.PackFileSection;
@@ -168,6 +169,16 @@ export interface GameModule {
 ```
 
 A Game has exactly one Scene registered with the Arcade. A Game that wants internal screens builds them inside that Scene. This is deliberate: only one Scene at a time may receive touches (see [ADR-0004](../adr/0004-one-input-scene-at-a-time.md)).
+
+#### Asset keys
+
+One rule, decided by the owner on 2026-11-20 ([ADR-0011](../adr/0011-svg-sources-atlas-per-game.md)):
+
+- **A frame is keyed `${id}/<name>`**, and it lives in the texture named by the part before the first `/`. So the frame `tic-tac-toe/board` is in the texture `tic-tac-toe`, and a frame key alone says where to find it. The Arcade's own frames are `arcade/<name>` in the texture `arcade`.
+- **A Game's atlas is therefore keyed `${id}` exactly.** A Game has one atlas page, so there is one such texture per Game.
+- **Every other key a Game owns starts with `${id}/`**: any other file in its pack, and every sound recipe.
+
+Every field in this contract that holds a frame (`card.frame`, `Seat.shape`, a `BackdropFill`'s `frame`, a control's icon) holds the frame key and nothing else, and the kit finds the texture from it. Scenes, textures and sounds are kept in separate lists by Phaser, so a Game's Scene and its atlas sharing the key `${id}` do not collide.
 
 ### Session and Seat
 
@@ -496,7 +507,7 @@ The state machine and failure paths are in [overview.md](overview.md#game-lifecy
 
 ## What a Game must do
 
-1. Export a manifest and a module of the shapes above, with all asset keys prefixed `${id}/`.
+1. Export a manifest and a module of the shapes above, with its atlas keyed `${id}` and every other asset key prefixed `${id}/` (see [Asset keys](#asset-keys)).
 2. Keep its rules in `logic/` with no Phaser import, and test them there.
 3. Call `openRound` first in `create`, and `round.finish` exactly once.
 4. Keep everything a child must see or touch inside `stage.safe`, and call `round.expose` so the browser tests can drive it.
