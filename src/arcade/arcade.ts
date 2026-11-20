@@ -1,3 +1,4 @@
+import type { ScreenWatch } from '@/platform/screen-watch';
 import type * as Phaser from 'phaser';
 import type { Audio } from '@/platform/audio';
 import type { RunningAs } from '@/platform/display-mode';
@@ -17,6 +18,8 @@ export interface ArcadeServices {
   readonly runningAs: () => RunningAs;
   /** The status page's markup, in index.html. */
   readonly grownUpsPage: HTMLElement;
+  /** The screen as the browser measures it, and its changes since the page started. */
+  readonly screen: ScreenWatch;
 }
 
 /**

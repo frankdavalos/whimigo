@@ -84,6 +84,40 @@ test('the status page shows the safe-area insets the browser reports', async ({ 
   await expect(status.getByText('Top 24 px, right 0 px, bottom 20 px, left 12 px')).toBeVisible();
 });
 
+/** The canvas as the page lays it out, in CSS pixels, and its size in pixels. */
+async function canvasSizes(page: Page) {
+  return page.evaluate(() => {
+    const canvas = document.querySelector('#arcade canvas') as HTMLCanvasElement;
+    const box = canvas.getBoundingClientRect();
+    return `Canvas ${Math.round(box.width)} × ${Math.round(box.height)} (${canvas.width} × ${canvas.height} pixels)`;
+  });
+}
+
+test('the status page shows the screen as the browser measures it, and each change of size as it happens', async ({
+  arcade,
+  page,
+}) => {
+  await arcade.open();
+  const status = await openStatusPage(arcade);
+  const now = status.locator('[data-reading="screen"]');
+  const changes = status.locator('[data-reading="screen-changes"]');
+  const { width, height } = page.viewportSize()!;
+  await expect(now).toContainText(`Window ${width} × ${height}`);
+  await expect(now).toContainText(`Arcade box ${width} × ${height}`);
+  await expect(now).toContainText(await canvasSizes(page));
+  await expect(changes).toContainText(`start: window ${width} × ${height}`);
+
+  // Turned to portrait while the page shows: it follows, and the change is listed as it happens.
+  await page.setViewportSize({ width: height, height: width });
+  await expect(now).toContainText(`Window ${height} × ${width}`);
+  await expect(now).toContainText(`Arcade box ${height} × ${width}`);
+  await expect
+    .poll(async () => (await now.textContent())!.includes(await canvasSizes(page)))
+    .toBe(true);
+  await expect(changes).toContainText(new RegExp(`\\d s resize: window ${height} × ${width}`));
+  await expect(changes).toContainText(`settled: window ${height} × ${width}`);
+});
+
 test.describe('without a service worker', () => {
   test.use({ serviceWorkers: 'block' });
 

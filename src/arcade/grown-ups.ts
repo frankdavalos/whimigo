@@ -4,6 +4,7 @@ import { createStage, type Stage } from '@/kit/stage';
 import { colors } from '@/kit/theme';
 import type { RunningAs } from '@/platform/display-mode';
 import type { SafeAreaInsets } from '@/platform/safe-area';
+import { describeChange, describeScreen, type ScreenMeasurement } from '@/platform/screen-watch';
 import type { UpdateState } from '@/platform/updates';
 import type { ArcadeScreen, ScreenData } from './screen';
 
@@ -16,6 +17,9 @@ export interface StatusReadings extends UpdateState {
   readonly runningAs: RunningAs;
   /** In CSS pixels. */
   readonly insets: SafeAreaInsets;
+  readonly screen: ScreenMeasurement;
+  /** Oldest first. */
+  readonly screenChanges: readonly ScreenMeasurement[];
 }
 
 const px = (value: number) => `${Math.round(value * 10) / 10} px`;
@@ -32,6 +36,9 @@ const TEXT = {
     runningAs === 'installed' ? 'Installed app' : 'Browser tab',
   insets: ({ insets }: StatusReadings) =>
     `Top ${px(insets.top)}, right ${px(insets.right)}, bottom ${px(insets.bottom)}, left ${px(insets.left)}`,
+  screen: ({ screen }: StatusReadings) => describeScreen(screen).join('\n'),
+  'screen-changes': ({ screenChanges }: StatusReadings) =>
+    screenChanges.map(describeChange).join('\n'),
 } as const satisfies Record<string, (readings: StatusReadings) => string>;
 
 /** Writes the readings into the status page's markup, which is in index.html. */
@@ -62,9 +69,12 @@ export class GrownUpsScreen extends Phaser.Scene implements ArcadeScreen {
         ...services.updates.state(),
         runningAs: services.runningAs(),
         insets: services.safeAreaInsets(),
+        screen: services.screen.now(),
+        screenChanges: services.screen.changes(),
       });
     show();
     const stopWatching = services.updates.onChange(show);
+    const stopMeasuring = services.screen.onChange(show);
     this.scale.on('resize', show);
     const back = page.querySelector('button');
     const goHome = () => arcade.show('home');
@@ -73,6 +83,7 @@ export class GrownUpsScreen extends Phaser.Scene implements ArcadeScreen {
     this.events.once('shutdown', () => {
       page.hidden = true;
       stopWatching();
+      stopMeasuring();
       this.scale.off('resize', show);
       back?.removeEventListener('click', goHome);
     });

@@ -8,6 +8,7 @@ import { resetTouches } from '@/kit/touches';
 import { colors, cssColor } from '@/kit/theme';
 import { createAudio } from '@/platform/audio';
 import { runningAs } from '@/platform/display-mode';
+import { watchScreen } from '@/platform/screen-watch';
 import { installErrorScreen } from '@/platform/error-screen';
 import { onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
@@ -22,6 +23,9 @@ const e2e = new URLSearchParams(window.location.search).get('e2e') === '1';
 const renderScale = renderScaleFor(window.location.search);
 
 /** The one Phaser.Game. It is never destroyed (ADR-0002). */
+// Measured from the start, so the grown-ups' status page can show how the screen has changed.
+const screen = watchScreen(window, document.getElementById('arcade')!);
+
 const game = new Phaser.Game({
   type: Phaser.WEBGL,
   parent: 'arcade',
@@ -55,6 +59,7 @@ const arcade = new Arcade(
     updates,
     runningAs: () => runningAs(window),
     grownUpsPage: document.getElementById('grown-ups')!,
+    screen,
   },
   checkScreens({ e2e }),
 );

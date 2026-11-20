@@ -85,6 +85,8 @@
         z-index: 1;
         box-sizing: border-box;
         overflow: auto;
+        /* Its text can be taller than the screen: a grown-up may scroll it, but never zoom it. */
+        touch-action: pan-y;
         padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
           max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
         background: #fff6e0;
@@ -112,6 +114,10 @@
       #grown-ups dd {
         margin: 0;
         overflow-wrap: anywhere;
+      }
+      #grown-ups dd.lines {
+        white-space: pre-line;
+        font-size: 16px;
       }
       #grown-ups button {
         min-width: 160px;
@@ -162,6 +168,10 @@
         <dd data-reading="running-as"></dd>
         <dt>Safe-area insets</dt>
         <dd data-reading="insets"></dd>
+        <dt>Screen</dt>
+        <dd data-reading="screen" class="lines"></dd>
+        <dt>Screen changes</dt>
+        <dd data-reading="screen-changes" class="lines"></dd>
       </dl>
       <button type="button">Back</button>
     </section>
