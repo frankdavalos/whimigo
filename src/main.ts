@@ -42,16 +42,16 @@ const audio = createAudio(
     : null,
 );
 
+const base = import.meta.env.BASE_URL;
+const updates = createUpdates(window, { script: `${base}sw.js`, scope: base });
+
 const arcade = new Arcade(
   game,
-  { audio, safeAreaInsets: () => readSafeAreaInsets(document) },
+  { buildId: __BUILD_ID__, audio, safeAreaInsets: () => readSafeAreaInsets(document), updates },
   checkScreens({ e2e }),
 );
 // Touches that were down while the page was hidden may never be reported lifting.
 onPageShown(document, () => resetTouches(game));
-if (e2e) installTestBridge(window, arcade, __BUILD_ID__);
-
-const base = import.meta.env.BASE_URL;
-const updates = createUpdates(window, { script: `${base}sw.js`, scope: base });
+if (e2e) installTestBridge(window, arcade);
 // The development server has no service worker.
 void (import.meta.env.PROD ? updates.start() : Promise.resolve()).then(() => arcade.show('start'));

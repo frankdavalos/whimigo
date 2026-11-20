@@ -33,6 +33,8 @@ export interface PageLayout {
 export interface TestBridge {
   /** The commit this build was made from. */
   readonly buildId: string;
+  /** Whether the service worker has finished caching every file, so the Arcade plays offline. */
+  offlineReady(): boolean;
   /** The screen showing, or null while the Arcade is changing screen. */
   screen(): ScreenId | null;
   snapshot(): PageSnapshot;
@@ -65,8 +67,8 @@ declare global {
   }
 }
 
-export function installTestBridge(win: Window, arcade: Arcade, buildId: string): void {
-  const { game } = arcade;
+export function installTestBridge(win: Window, arcade: Arcade): void {
+  const { game, services } = arcade;
   const renderScale = renderScaleOf(game);
 
   const toPage = (rect: Rect): Rect => {
@@ -92,7 +94,8 @@ export function installTestBridge(win: Window, arcade: Arcade, buildId: string):
   };
 
   win.whimigo = {
-    buildId,
+    buildId: services.buildId,
+    offlineReady: () => services.updates.state().offlineReady,
     screen: () => arcade.screen?.scene.key ?? null,
     snapshot() {
       const { state, targets } = showing().snapshot();
@@ -138,10 +141,10 @@ export function installTestBridge(win: Window, arcade: Arcade, buildId: string):
       if (!arcade.checks.some((check) => check.id === id)) throw new Error(`No check "${id}"`);
       arcade.show(id);
     },
-    audio: () => arcade.services.audio.state(),
+    audio: () => services.audio.state(),
     playSound(key) {
       const start = win.performance.now();
-      const started = arcade.services.audio.play(key);
+      const started = services.audio.play(key);
       return { started, ms: win.performance.now() - start };
     },
     frames: () => game.loop.frame,

@@ -1,13 +1,17 @@
 import type * as Phaser from 'phaser';
 import type { Audio } from '@/platform/audio';
 import type { SafeAreaInsets } from '@/platform/safe-area';
+import type { Updates } from '@/platform/updates';
 import type { ArcadeScreen, CheckScreen, ScreenData, ScreenId } from './screen';
 import { HomeScreen } from './home-screen';
 import { StartScreen } from './start-screen';
 
 export interface ArcadeServices {
+  /** The commit this build was made from. */
+  readonly buildId: string;
   readonly audio: Audio;
   readonly safeAreaInsets: () => SafeAreaInsets;
+  readonly updates: Updates;
 }
 
 /**
