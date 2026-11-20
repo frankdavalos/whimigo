@@ -17,6 +17,10 @@ For the next Claude Code session. It says where the project stands, what to do f
 - The remote is `github.com/frankdavalos/whimigo`, with Issues enabled. It is public, because GitHub Pages on the free plan needs a public repository.
 - Hosting is GitHub Pages at the default address, `https://frankdavalos.github.io/whimigo/`, which now serves the Arcade. The owner confirmed on 2026-11-19, using the placeholder page published there before the Arcade existed, that the iPad's web filter allows that address. The same day the owner confirmed that the page installs to the Home Screen and opens as an app, that Guided Access can be switched on, and that four fingers pressed at once all register.
 
+- **Phase 0 is complete (2026-11-20).** The owner ran the device checklist on the iPad Pro, iPadOS 27.2 ([record](device-runs/2026-11-20-ipad-pro.md)), and answered gates G1 to G8 the same day with `/zsl:grill-with-docs`: every answer is yes. Four Seats play Simultaneously on iPadOS; 60 frames per second is accepted, with the 3 ms work-per-frame budget kept; one atlas page per Game; resume-on-tap for sound, with no reload fallback; the 88-unit margin stays; per-Game unloading stays; Phaser 4.2.1 is dependable, with the portrait sizing workaround (`e14e3f5`) to recheck on any upgrade; the lighter render mode stays switched off. The answers, and where each is recorded, are under [Gate results](roadmap.md#gate-results) in the roadmap.
+- **Still open from Phase 0, for the owner:** the device-run slice [#9](https://github.com/frankdavalos/whimigo/issues/9) stays open until the owner clears it with `/zsl:human-itl`; the PRD [#1](https://github.com/frankdavalos/whimigo/issues/1) is closed after that. The coverage gap [#10](https://github.com/frankdavalos/whimigo/issues/10) (each Zone drawn in its Seat's colour) is closed.
+- **Next:** the Phase 1 PRD, by repeating steps 5 to 7 with the Phase 1 section of the roadmap. It is not yet written. One question it must settle, found in #7: the stand-in pack's texture key `standin/atlas` follows the contract's `${id}/` rule but clashes with the kit's `atlasOf()` rule (frame `x/y` lives in texture `x`); the first real Game needs one rule.
+
 ## Read these first
 
 In this order. Together they are about fifteen minutes of reading.
@@ -116,12 +120,14 @@ Done on 2026-11-19: eight slices, [#2](https://github.com/frankdavalos/whimigo/i
 
 After the device run, the owner types `/zsl:grill-with-docs` and works through the eight gate decisions in [roadmap.md](roadmap.md#phase-0-technical-proof-of-concept). Each answer updates an ADR. Only then is the Phase 1 PRD written, by repeating steps 5 to 7 with the Phase 1 section of the roadmap.
 
+Done on 2026-11-20: all eight answered yes, one commit per gate. The answers are under [Gate results](roadmap.md#gate-results). Where a gate changed no decision but confirmed one, the ADR or the overview gained a dated line instead.
+
 ## Recommended implementation order
 
 1. **Phase 0, slice 1** (walking skeleton, #2). Everything else stands on it.
 2. **Phase 0, wave 2** (the asset build #3, the deploy workflow #4). In either order, one at a time.
 3. **Phase 0, wave 3** (install and offline #5, and the three check screens #6 to #8). In any order, one at a time, once the asset build is on `main`.
-4. **Phase 0 device run (#9) and gate.** The owner, with the iPad Pro; about half an hour. Run on 2026-11-20: [results](device-runs/2026-11-20-ipad-pro.md). Items 13 and 14 (turning to portrait) failed in the installed app, were fixed, and pass when repeated; the gate decisions follow.
+4. **Phase 0 device run (#9) and gate.** The owner, with the iPad Pro; about half an hour. Run on 2026-11-20: [results](device-runs/2026-11-20-ipad-pro.md). Items 13 and 14 (turning to portrait) failed in the installed app, were fixed, and pass when repeated. The gate decisions were recorded the same day: all eight are yes.
 5. **Phase 1, slice 1** (one Tic-Tac-Toe Round end to end). It creates the contract, the `GameHost` and the kit.
 6. **Phase 1, the rest**, in waves as listed below.
 7. **Phase 1 device acceptance.**
@@ -186,17 +192,17 @@ Wave 2 has five slices that all add to `kit/`. Built one at a time, each starts 
 
 ## Risks to settle before substantial implementation
 
-These are the Phase 0 gate decisions. Nothing in Phase 1 should start until they have answers.
+These are the Phase 0 gate decisions. All were answered on 2026-11-20; see [Gate results](roadmap.md#gate-results).
 
 | Risk | Checked by | If it goes badly |
 |---|---|---|
-| iPadOS cancels touches when it sees four fingers | Touch Check, checklist items 5 to 8 | Simultaneous play capped at three Seats on iPadOS |
-| Work per frame on the iPad Pro leaves too little margin | Performance check | Find the cost before Phase 1 |
-| Art for the 2752 × 2064 frame does not fit one atlas page, or looks soft | Performance check, checklist item 15 | Two atlas pages per Game; fix the rasterising scale |
+| iPadOS cancels touches when it sees four fingers | Touch Check, checklist items 5 to 8. Settled 2026-11-20: no cancellations under any setting | Simultaneous play capped at three Seats on iPadOS |
+| Work per frame on the iPad Pro leaves too little margin | Performance check. Settled 2026-11-20: 0.33 ms at 60 frames per second | Find the cost before Phase 1 |
+| Art for the 2752 × 2064 frame does not fit one atlas page, or looks soft | Performance check, checklist item 15. Settled 2026-11-20: sharp, and one page fits | Two atlas pages per Game; fix the rasterising scale |
 | Phaser will not play a sound rendered from a recipe | Sound check screen, in CI. Settled 2026-11-19: Phaser plays it | `platform/audio` plays the buffers itself |
 | Half render scale does not draw or take touches correctly | Automated test in the performance-check slice. Settled 2026-11-19: targets and presses match at 0.5 | No lighter mode; slower tablets get the full frame |
-| Sound does not return after backgrounding | Sound check, items 16 to 20 | Reload at the Home Screen when sound is dead |
-| The status bar covers the top of the screen | Checklist items 12 and 14 | Larger margin, or no drawing under the status bar |
+| Sound does not return after backgrounding | Sound check, items 16 to 20. Settled 2026-11-20: sound returns | Reload at the Home Screen when sound is dead |
+| The status bar covers the top of the screen | Checklist items 12 and 14. Settled 2026-11-20: nothing hidden | Larger margin, or no drawing under the status bar |
 | Scenes and packs do not unload cleanly | Performance check, automated loop. Settled 2026-11-19: 50 cycles leave the counts unchanged | Keep assets loaded; revisit memory budget |
 | A Phaser 4.2.1 defect appears on the iPad Pro | All three check screens | Patch or work around before Phase 1 |
 

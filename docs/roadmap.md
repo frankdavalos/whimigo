@@ -18,6 +18,8 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 
 **Purpose.** Answer, on the family's 13-inch iPad Pro (M5), the questions that could change the architecture. Phase 0 is not throwaway: the project skeleton, the deployment, and the check screens all stay.
 
+**Status: complete, 2026-11-20.** The device run is [recorded](device-runs/2026-11-20-ipad-pro.md), and the owner answered all eight gates the same day: every answer is yes. The answers are under [Gate results](#gate-results). What remains is bookkeeping for the owner: clearing the device-run slice ([#9](https://github.com/frankdavalos/whimigo/issues/9)) with `/zsl:human-itl`, then closing the PRD ([#1](https://github.com/frankdavalos/whimigo/issues/1)). The Phase 1 PRD is not yet written.
+
 **What is built**
 
 1. A walking skeleton: the pinned stack, one `Phaser.Game` at the 2752 × 2064 design frame, a "tap to start" screen that unlocks sound, a placeholder Home Screen, the DOM error screen, the test bridge, lint rules, and CI.
@@ -48,7 +50,20 @@ Through Phase 3, human involvement is kept low on purpose ([ADR-0016](adr/0016-a
 | G7 | Is Phaser 4.2.1 dependable on the iPad Pro (atlas art and bitmap digits draw correctly, no crashes)? | Proceed | Record the defect, patch it or work around it, before Phase 1 |
 | G8 | At half render scale, does the picture match and do taps land on the same targets? Answered by an automated test, not on the tablet | A lighter mode is available whenever wanted; it stays switched off | Record in ADR-0003 that slower tablets get the full frame. Nothing else changes |
 
-**Risks.** The answer to G1 may be "no", which reduces what four children can do on the iPad but does not block the project. Nothing in this phase says anything about Android: with no Android tablet to test, its touch limits, speed and full-screen behaviour stay unverified, and the check screens are kept so they can be run on one later.
+<a id="gate-results"></a>**Gate results.** Decided by the owner on 2026-11-20, from the [device run](device-runs/2026-11-20-ipad-pro.md) of that day on iPadOS 27.2 and the automated tests of 2026-11-19.
+
+| # | Answer | What follows | Recorded in |
+|---|---|---|---|
+| G1 | Yes. One finger tapping fast in each of four Zones gave no cancellations with default settings, with the gesture toggles off, and with Guided Access on, each run on its own | Four Seats in Simultaneous play on iPadOS. The family guide recommends Guided Access while children play and does not ask for the gesture toggles to be switched off | [overview](architecture/overview.md#what-the-page-cannot-do), risks 1 and 15; Phase 3's family guide below |
+| G2 | Yes. About 0.33 ms a frame at a steady 60 frames per second; 0.65 ms at 30 in Low Power Mode | The 3 ms budget stays, restated against 60 frames per second, which is what WebKit gives an installed web app; the Arcade does not try to reach 120 | [overview](architecture/overview.md#performance-and-memory) |
+| G3 | Yes. Sharp on the tablet; a stand-in set of 1.15 frames' area fits one 2048 × 3774 page | One atlas page per Game. Decoded texture memory is noted, with no new budget | [ADR-0011](adr/0011-svg-sources-atlas-per-game.md), overview |
+| G4 | Yes. Sound returned after backgrounding, locking and reopening; the WebKit silence defect did not reproduce | Resume-on-tap stays; the reload fallback is not built, and stays described | overview, Sound and risk 4 |
+| G5 | Yes. Nothing hidden. The installed app's page starts below the status bar, and the bottom inset is about 52 units | The 88-unit margin stays on every side | overview, Safe area and risk 5 |
+| G6 | Yes, by automated test; the loop also ran to 50 on the tablet | Per-Game unloading stays | [ADR-0002](adr/0002-one-game-instance-lazy-scenes.md), overview |
+| G7 | Yes. No crashes; atlas art and digits correct. One sizing gap when the installed app turns to portrait is worked around in our code (`e14e3f5`) | Proceed. Any Phaser upgrade repeats checklist items 13 and 14 before the workaround is removed | [ADR-0012](adr/0012-pin-phaser-exactly.md), overview risk 6 |
+| G8 | Yes, by automated test in Chromium, comparing positions and presses | The lighter mode is available and stays switched off; switching it on for a real tablet first needs a check on that tablet | [ADR-0003](adr/0003-fixed-design-frame.md), overview |
+
+**Risks.** The answer to G1 might have been "no", which would have reduced what four children can do on the iPad; it was yes. Nothing in this phase says anything about Android: with no Android tablet to test, its touch limits, speed and full-screen behaviour stay unverified, and the check screens are kept so they can be run on one later.
 
 **Complete when.** Every gate decision is recorded and the architecture documents reflect the answers.
 
