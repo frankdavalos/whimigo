@@ -134,7 +134,7 @@ One PRD:
 - **Performance:** measure against the budgets and fix what misses.
 - **Art and motion pass:** every Mascot, Game Card and Game redrawn or tightened to the style guide; screen transitions and celebrations. Drawn in code.
 - **Sound pass:** every recipe reviewed for consistency and loudness.
-- **The family guide:** one page on installing, the recommended device settings, and what to do if there is no sound. Written by an agent.
+- **The family guide:** one page on installing, the recommended device settings, and what to do if there is no sound. Written by an agent. From gate G1: touch works with default settings; Guided Access is recommended while children play, to keep them in the Arcade and stop stray swipes; switching off the Multitasking gestures is not needed.
 
 The owner's review, which is not a PRD:
 
