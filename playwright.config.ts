@@ -8,6 +8,8 @@ const PORT = 4173;
  */
 export default defineConfig({
   testDir: 'tests/e2e',
+  // A second build, for the tests that deploy a newer version under a running page.
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: Boolean(process.env['CI']),
   retries: 0,

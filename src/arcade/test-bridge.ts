@@ -35,6 +35,8 @@ export interface TestBridge {
   readonly buildId: string;
   /** Whether the service worker has finished caching every file, so the Arcade plays offline. */
   offlineReady(): boolean;
+  /** Whether a newer version has been downloaded and waits for the next cold start. */
+  updateWaiting(): boolean;
   /** The screen showing, or null while the Arcade is changing screen. */
   screen(): ScreenId | null;
   snapshot(): PageSnapshot;
@@ -96,6 +98,7 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
   win.whimigo = {
     buildId: services.buildId,
     offlineReady: () => services.updates.state().offlineReady,
+    updateWaiting: () => services.updates.state().updateWaiting,
     screen: () => arcade.screen?.scene.key ?? null,
     snapshot() {
       const { state, targets } = showing().snapshot();
