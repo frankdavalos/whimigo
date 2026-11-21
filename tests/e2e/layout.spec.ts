@@ -8,7 +8,7 @@ import {
   gapBetween,
   test,
 } from './arcade';
-import { EVERY_STYLE, sessionFor } from './play';
+import { EVERY_STYLE, openSession, sessionFor } from './play';
 
 const DESIGN = { width: 2752, height: 2064 };
 /** Rounding between canvas pixels and CSS pixels, in CSS pixels. */
@@ -42,8 +42,7 @@ async function eachScreen(
     check(id, await arcade.layout(), await arcade.snapshot());
   }
   const { game, style } = EVERY_STYLE[0]!;
-  await arcade.call('open', sessionFor(game, style), 1);
-  await expect.poll(() => arcade.screen()).toBe(game.id);
+  await openSession(arcade, sessionFor(game, style), 1);
   await arcade.hold('pause', 900);
   await expect.poll(() => arcade.screen()).toBe('pause');
   check('pause', await arcade.layout(), await arcade.snapshot());
@@ -146,8 +145,7 @@ test.describe('when the window turns before the Arcade’s box does, as an insta
     'a Round': {
       reach: async (arcade: Arcade) => {
         const { game, style } = EVERY_STYLE[0]!;
-        await arcade.call('open', sessionFor(game, style), 1);
-        await expect.poll(() => arcade.screen()).toBe(game.id);
+        await openSession(arcade, sessionFor(game, style), 1);
       },
       targets: async (arcade: Arcade) => (await arcade.round())!.targets,
     },

@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { Arcade } from '@/arcade/arcade';
+import { SHARED_SOUNDS } from '@/arcade/sounds';
 import { checkScreens } from '@/arcade/checks';
 import { installTestBridge } from '@/arcade/test-bridge';
 import { CATALOG } from '@/games/catalog';
@@ -13,6 +14,7 @@ import { watchScreen } from '@/platform/screen-watch';
 import { installErrorScreen } from '@/platform/error-screen';
 import { onPageHidden, onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
+import { prefersReducedMotion } from '@/platform/reduced-motion';
 import { readSafeAreaInsets } from '@/platform/safe-area';
 import { createSaveStore } from '@/platform/save-store';
 import { createUpdates } from '@/platform/updates';
@@ -62,6 +64,9 @@ const audio = createAudio(
     : null,
 );
 
+// The Arcade's shared sounds stay loaded for the life of the page.
+for (const [key, recipe] of Object.entries(SHARED_SOUNDS)) audio.load(key, recipe);
+
 const base = import.meta.env.BASE_URL;
 const updates = createUpdates(window, { script: `${base}sw.js`, scope: base });
 
@@ -76,6 +81,7 @@ const arcade = new Arcade(
     grownUpsPage: document.getElementById('grown-ups')!,
     screen,
     save: createSaveStore(window.localStorage),
+    reducedMotion: () => prefersReducedMotion(window),
   },
   checkScreens({ e2e }),
   CATALOG,

@@ -72,7 +72,7 @@ A canvas has no buttons for a test to find. The Arcade exposes a small object on
 |---|---|
 | `screen()` | `{ id, host }`: which screen is showing (an Arcade screen, a check screen or a Game's id), and the `GameHost` state |
 | `open(session, seed)` | Starts a Session directly, skipping the Home Screen and lobby |
-| `round()` | The current Round's snapshot from `round.expose`: its Session, seed and number, its state, and its named targets converted to page coordinates. Null when no Game is open |
+| `round()` | The current Round's snapshot from `round.expose`: its Session, seed and number, its state, and its named targets converted to page coordinates; its Demo (`playing`, `plays`, and the `steps` with their points in page coordinates), how many touches the Game has `refusals`, and its `motion` (`full` or `reduced`). Null when no Game is open |
 | `sounds()` | Every sound the Round has requested since it began, with its key and Scene time |
 | `hostStates()` | The last few states the `GameHost` has been in, oldest first |
 | `inputScenes()` | The Scenes accepting input now; exactly one whenever a screen shows |

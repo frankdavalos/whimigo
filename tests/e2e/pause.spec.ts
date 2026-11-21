@@ -1,5 +1,5 @@
 import { DESIGN_WIDTH, MIN_GAP, MIN_TARGET, expect, gapBetween, test, type Arcade } from './arcade';
-import { EVERY_STYLE, playToResult, sessionFor } from './play';
+import { EVERY_STYLE, openSession, playToResult, sessionFor } from './play';
 
 const SEED = 3;
 /** Longer than the hold, with room for a slow software-rendered frame. */
@@ -11,8 +11,7 @@ const EPSILON = 1;
 /** Opens a Session of the first Game and Play Style in the Catalog, and waits for its Round. */
 async function openFirstRound(arcade: Arcade) {
   const { game, style } = EVERY_STYLE[0]!;
-  await arcade.call('open', sessionFor(game, style), SEED);
-  await expect.poll(() => arcade.screen()).toBe(game.id);
+  await openSession(arcade, sessionFor(game, style), SEED);
   return game;
 }
 
@@ -32,8 +31,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     arcade,
     page,
   }) => {
-    await arcade.call('open', sessionFor(game, style), SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, sessionFor(game, style), SEED);
 
     await arcade.brush('pause');
     await page.waitForTimeout(FULL_HOLD_MS);
@@ -49,8 +47,8 @@ for (const { game, style, name } of EVERY_STYLE) {
   test(`${name}: play on the pause screen resumes the Round as it was, and it plays on to a Result`, async ({
     arcade,
   }) => {
-    await arcade.call('open', sessionFor(game, style), SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    test.slow();
+    await openSession(arcade, sessionFor(game, style), SEED);
     const before = (await arcade.round())!.state;
 
     await pause(arcade);
@@ -74,8 +72,7 @@ for (const { game, style, name } of EVERY_STYLE) {
   }) => {
     const before = await arcade.counts();
     const saved = await arcade.call('save');
-    await arcade.call('open', sessionFor(game, style), SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, sessionFor(game, style), SEED);
     await pause(arcade);
     await arcade.tap('home');
     await expect.poll(() => arcade.screen()).toBe('home');
@@ -97,8 +94,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     arcade,
     page,
   }) => {
-    await arcade.call('open', sessionFor(game, style), SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, sessionFor(game, style), SEED);
     const round = (await arcade.round())!;
     await pause(arcade);
     const controls = Object.values((await arcade.snapshot()).targets).map(({ rect }) => rect);
@@ -118,8 +114,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     test(`${name}, ${seating}: the pause control is halfway down a short edge of the safe rectangle, large, and clear of every Zone and target`, async ({
       arcade,
     }) => {
-      await arcade.call('open', sessionFor(game, style, seating), SEED);
-      await expect.poll(() => arcade.screen()).toBe(game.id);
+      await openSession(arcade, sessionFor(game, style, seating), SEED);
       const { frame, safe } = await arcade.layout();
       const unit = frame.width / DESIGN_WIDTH;
       const { targets, zones } = (await arcade.round())!;
@@ -153,8 +148,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     arcade,
     page,
   }) => {
-    await arcade.call('open', sessionFor(game, style), SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, sessionFor(game, style), SEED);
     await arcade.hide();
     expect(await arcade.host()).toBe('paused');
     // The browser under test keeps drawing while it says it is hidden; give the pause a frame.

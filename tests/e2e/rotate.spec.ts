@@ -1,5 +1,5 @@
 import { expect, test, type Arcade } from './arcade';
-import { EVERY_STYLE, playToResult, sessionFor } from './play';
+import { EVERY_STYLE, openSession, playToResult, sessionFor } from './play';
 
 /** The 13-inch iPad Pro turned upright, in CSS pixels. */
 const PORTRAIT = { width: 1032, height: 1376 };
@@ -8,8 +8,7 @@ const { game, style } = EVERY_STYLE[0]!;
 
 /** Opens a Round of the first Game in the Catalog. */
 async function openRound(arcade: Arcade) {
-  await arcade.call('open', sessionFor(game, style), 5);
-  await expect.poll(() => arcade.screen()).toBe(game.id);
+  await openSession(arcade, sessionFor(game, style), 5);
 }
 
 test('opened upright, the Arcade shows the rotate picture, and tap-to-start once it is turned', async ({

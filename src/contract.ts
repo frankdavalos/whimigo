@@ -204,6 +204,29 @@ export interface Stage {
 /** For automated tests only: a plain JSON picture of a Round, its state and named targets. */
 export type RoundSnapshot = ScreenSnapshot;
 
+/** The kit's named motions. Each has a full form and a reduced one. */
+export type MotionPreset = 'pop' | 'bounce' | 'wiggle' | 'slide';
+
+/** Motion, as the device (and later the Grown-Ups Area) asks for it. */
+export interface Motion {
+  /** True when reduced motion is asked for. */
+  readonly reduced: boolean;
+  /**
+   * Plays a preset on `target`, in its reduced form when motion is reduced, and resolves when it
+   * ends. The target is left as it was before the motion began.
+   */
+  play(target: Phaser.GameObjects.GameObject, preset: MotionPreset): Promise<void>;
+}
+
+/** One step of a Demo, in design units. */
+export type DemoStep =
+  /** The hand moves to a point and taps it. */
+  | { readonly tap: { readonly x: number; readonly y: number } }
+  /** The hand points at a point and shakes: "not this one". */
+  | { readonly refuse: { readonly x: number; readonly y: number } }
+  /** The hand waits, for this many milliseconds. */
+  | { readonly wait: number };
+
 /** How a Game asks for sound. Keys without a Game prefix are the Arcade's shared sounds. */
 export interface RoundAudio {
   /** Requests a sound. Nothing plays if sound is off or not yet unlocked; never wait on it. */
@@ -222,14 +245,37 @@ export interface RoundHost {
     readonly bottom: number;
     readonly left: number;
   };
-  /** The Round has opened in `scene`. `describe` gives its snapshot, once the Game exposes one. */
-  opened(scene: Phaser.Scene, stage: Stage, describe: () => RoundSnapshot): void;
+  /** True when the device asks for reduced motion. */
+  reducedMotion(): boolean;
+  /** The Round has opened in `scene`; `view` is what the Arcade may see and ask of it. */
+  opened(scene: Phaser.Scene, stage: Stage, view: RoundView): void;
   /** A sound was requested at `time`, in the Scene's time. */
   sfx(key: string, time: number): void;
   /** The Round ended. The kit calls it at most once; the Arcade ignores any later call. */
   finish(result: Result): void;
   /** A Player held the pause control: the Arcade pauses the Round and shows the pause screen. */
   pause(): void;
+}
+
+/** Where a Round's Demo stands, for the test bridge. */
+export interface DemoReport {
+  /** True while the Demo plays. */
+  readonly playing: boolean;
+  /** How many times the Demo has started in this Round. */
+  readonly plays: number;
+  /** The steps the Game gave, or none before it gives them. */
+  readonly steps: readonly DemoStep[];
+}
+
+/** What the kit lets the Arcade see of an open Round, and ask of it. */
+export interface RoundView {
+  /** The Game's snapshot, with the pause control among its targets. */
+  snapshot(): RoundSnapshot;
+  demo(): DemoReport;
+  /** How many touches the Game has refused in this Round. */
+  refusals(): number;
+  /** Plays the Game's Demo again, as asked for from the pause screen. */
+  showDemo(): void;
 }
 
 /** What the Arcade starts a Game's Scene with: passed to its `create(data)`. */
@@ -250,6 +296,23 @@ export interface Round {
   readonly audio: RoundAudio;
   /** Which Round of the Session this is, counting from 0. */
   readonly number: number;
+  readonly motion: Motion;
+  /**
+   * The Round's own time, in milliseconds from when it opened. It stands still while the Round is
+   * paused and while its Demo plays, so time-driven play goes on from where it stopped.
+   */
+  now(): number;
+  /**
+   * Shows the Game's Demo: an animated hand performs the steps on the real board, holding the
+   * Game's input while it plays; a tap skips it. It plays on the first Round of a Session and
+   * when a Player asks from the pause screen; otherwise it resolves at once. Resolves when it ends.
+   */
+  demo(steps: readonly DemoStep[]): Promise<void>;
+  /**
+   * Answers a touch the Game ignores: `target` gives a gentle wiggle, and no sound is requested.
+   * The Game changes nothing else.
+   */
+  refuse(target: Phaser.GameObjects.GameObject): void;
   /**
    * Reports how the Round ended. Call once; later calls are ignored. Afterwards the Arcade pauses
    * the Scene and shows the Result.

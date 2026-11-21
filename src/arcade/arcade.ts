@@ -30,6 +30,8 @@ export interface ArcadeServices {
   readonly screen: ScreenWatch;
   /** Progress, kept between visits. */
   readonly save: SaveStore;
+  /** True when the device asks for reduced motion. */
+  readonly reducedMotion: () => boolean;
 }
 
 /** The Arcade's own screens, added once and kept for the life of the page. */

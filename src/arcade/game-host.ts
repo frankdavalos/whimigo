@@ -1,10 +1,12 @@
 import type {
+  DemoReport,
   GameManifest,
   GameModule,
   Rect,
   Result,
   RoundHost,
   RoundStart,
+  RoundView,
   ScreenSnapshot,
   Session,
 } from '@/contract';
@@ -37,6 +39,11 @@ export interface RoundReport {
   readonly sounds: readonly RequestedSound[];
   /** Each Seat's Zone, in design units. None yet: Zones arrive with slice 4b (#17). */
   readonly zones: readonly Rect[];
+  readonly demo: DemoReport;
+  /** How many touches the Game has refused in this Round. */
+  readonly refusals: number;
+  /** The motion the Round was opened with. */
+  readonly motion: 'full' | 'reduced';
 }
 
 /** A Game that is open: from loading until it is closed. */
@@ -47,7 +54,10 @@ interface OpenGame {
   seed: number;
   number: number;
   sounds: RequestedSound[];
-  describe: () => ScreenSnapshot;
+  /** What the kit lets the Arcade see of the Round, once it has opened. */
+  view: RoundView | null;
+  /** Whether the Round was opened with reduced motion. */
+  reduced: boolean;
   /** The Round's Scene as shown, once it has opened. */
   shown: Shown | null;
   /** Asked to pause while still loading: the first Round opens paused. */
@@ -100,7 +110,8 @@ export class GameHost {
       seed,
       number: 0,
       sounds: [],
-      describe: () => ({ state: null, targets: {} }),
+      view: null,
+      reduced: false,
       shown: null,
       pauseOnOpen: false,
       roundHost: null,
@@ -140,14 +151,14 @@ export class GameHost {
         arcade: this.arcade,
         play: () => this.resume(),
         home: () => this.close(),
-        demo: () => undefined,
+        demo: () => this.resume(() => game.view?.showDemo()),
       };
       this.over(game, PAUSE, data);
     });
   }
 
-  /** Hides the pause screen and resumes the Round's Scene as it was. */
-  resume(): void {
+  /** Hides the pause screen and resumes the Round's Scene as it was, then does `then`. */
+  resume(then: () => void = () => undefined): void {
     const game = this.game;
     if (!game || !this.step('resume')) return;
     this.arcade.nextFrame(() => {
@@ -159,6 +170,7 @@ export class GameHost {
       scenes.resume(id);
       this.arcade.adopt(id);
       this.arcade.showRound(game.shown!);
+      then();
     });
   }
 
@@ -188,15 +200,19 @@ export class GameHost {
   /** The Round being played, paused or whose Result shows, for the test bridge. */
   round(): RoundReport | null {
     const game = this.game;
-    if (!game?.shown) return null;
+    if (!game?.shown || !game.view) return null;
+    const { view } = game;
     return {
       session: game.session,
       seed: game.seed,
       number: game.number,
       time: game.shown.scene.time.now,
-      snapshot: game.describe(),
+      snapshot: view.snapshot(),
       sounds: game.sounds,
       zones: [],
+      demo: view.demo(),
+      refusals: view.refusals(),
+      motion: game.reduced ? 'reduced' : 'full',
     };
   }
 
@@ -224,6 +240,7 @@ export class GameHost {
   /** Starts (or restarts) the Game's Scene with a fresh Round. At the start of a frame only. */
   private startRound(game: OpenGame): void {
     game.sounds = [];
+    game.view = null;
     game.roundHost = this.roundHost(game);
     const start: RoundStart = {
       session: game.session,
@@ -239,9 +256,13 @@ export class GameHost {
     const { arcade } = this;
     return {
       insets: () => arcade.services.safeAreaInsets(),
-      opened(scene, stage, describe) {
-        game.describe = describe;
-        game.shown = { id: game.manifest.id, scene, stage, snapshot: describe };
+      reducedMotion() {
+        game.reduced = arcade.services.reducedMotion();
+        return game.reduced;
+      },
+      opened(scene, stage, view) {
+        game.view = view;
+        game.shown = { id: game.manifest.id, scene, stage, snapshot: () => view.snapshot() };
         arcade.showRound(game.shown);
       },
       sfx: (key, time) => {

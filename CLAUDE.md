@@ -2,7 +2,7 @@
 
 A private, offline, tablet-first arcade of mini-games for children aged 4–8, played by one to four children on one shared tablet. Phaser 4, TypeScript, Vite, installed as a PWA. No backend, accounts, ads or analytics.
 
-**Current state:** the architecture was accepted on 2026-11-19. Phase 0 is complete (2026-11-20). Phase 1 has begun: Tic-Tac-Toe (issue #12) is the first Game, with the contract, `GameHost`, `openRound` and a first lobby. Every push to `main` that passes the checks is published to GitHub Pages. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
+**Current state:** the architecture was accepted on 2026-11-19. Phase 0 is complete (2026-11-20). Phase 1 has begun: Tic-Tac-Toe (issue #12) is the first Game, with the contract, `GameHost`, `openRound` and a first lobby; Color Echo (#15) is the second, with the Demo, motion presets and touch feedback. Every push to `main` that passes the checks is published to GitHub Pages. Start at [docs/implementation-handoff.md](docs/implementation-handoff.md).
 
 ## Read before working
 

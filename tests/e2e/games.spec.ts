@@ -2,7 +2,7 @@ import type { MascotId, PlayStyle, Rect, Result } from '../../src/contract';
 import { MASCOTS } from '../../src/arcade/mascots';
 import { starsEarned } from '../../src/arcade/progress';
 import { expect, test } from './arcade';
-import { CATALOG, EVERY_STYLE, playToResult, sessionFor } from './play';
+import { CATALOG, EVERY_STYLE, openSession, playToResult, sessionFor } from './play';
 
 const SEED = 7;
 
@@ -42,8 +42,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     arcade,
   }) => {
     const session = sessionFor(game, style);
-    await arcade.call('open', session, SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, session, SEED);
 
     const first = resultFor(style.style);
     await arcade.call('finish', first);
@@ -75,8 +74,7 @@ for (const game of CATALOG) {
     arcade,
   }) => {
     test.slow();
-    await arcade.call('open', sessionFor(game, game.playStyles[0]!), SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, sessionFor(game, game.playStyles[0]!), SEED);
     await playToResult(arcade, game.id);
     await expect.poll(() => arcade.screen()).toBe('result');
     await arcade.tap('home');
@@ -106,8 +104,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     test.slow();
     const before = await arcade.counts();
     const session = sessionFor(game, style);
-    await arcade.call('open', session, SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, session, SEED);
     expect(await arcade.host()).toBe('playing');
     expect((await arcade.call('hostStates')).slice(-3)).toEqual(['idle', 'loading', 'playing']);
     expect(await arcade.call('inputScenes')).toEqual([game.id]);
@@ -157,8 +154,7 @@ for (const { game, style, name } of EVERY_STYLE) {
     test.slow();
     const session = sessionFor(game, style);
     const before = await arcade.call('save');
-    await arcade.call('open', session, SEED);
-    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await openSession(arcade, session, SEED);
     await playToResult(arcade, game.id);
     await expect.poll(() => arcade.screen()).toBe('result');
 
@@ -188,8 +184,7 @@ for (const { game, style, name } of EVERY_STYLE) {
   }) => {
     test.slow();
     const play = async () => {
-      await arcade.call('open', sessionFor(game, style), SEED);
-      await expect.poll(() => arcade.screen()).toBe(game.id);
+      await openSession(arcade, sessionFor(game, style), SEED);
       const states = [(await arcade.round())?.state, ...(await playToResult(arcade, game.id))];
       await expect.poll(() => arcade.screen()).toBe('result');
       await arcade.tap('home');

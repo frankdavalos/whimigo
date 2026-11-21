@@ -1,7 +1,7 @@
 import type { Seating } from '../../src/contract';
 import { seats as SEAT_LOOKS } from '../../src/kit/theme';
 import { expect, test, type Arcade } from './arcade';
-import { CATALOG, sessionFor } from './play';
+import { CATALOG, openSession, sessionFor } from './play';
 
 const GAME = CATALOG.find((game) => game.id === 'tic-tac-toe')!;
 const TURN_BASED = GAME.playStyles.find((style) => style.style === 'turn-based')!;
@@ -15,8 +15,7 @@ const board = async (arcade: Arcade) => (await arcade.round())!.state as Board;
 
 /** Opens a two-Player Session directly and waits for its Round. */
 async function openRound(arcade: Arcade, seating: Seating = 'side-by-side') {
-  await arcade.call('open', sessionFor(GAME, TURN_BASED, seating), 1);
-  await expect.poll(() => arcade.screen()).toBe('tic-tac-toe');
+  await openSession(arcade, sessionFor(GAME, TURN_BASED, seating), 1);
 }
 
 /** Taps a cell and waits for the mark. */
@@ -54,6 +53,7 @@ test('two Players go from the Home Screen through the lobby to a finished Round 
   expect(await arcade.call('inputScenes')).toEqual(['lobby']);
   await arcade.tap('start');
   await expect.poll(() => arcade.screen()).toBe('tic-tac-toe');
+  await arcade.skipDemo();
   expect(await arcade.host()).toBe('playing');
   expect((await arcade.call('hostStates')).slice(-3)).toEqual(['idle', 'loading', 'playing']);
   const { session } = (await arcade.round())!;

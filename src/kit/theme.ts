@@ -7,6 +7,7 @@ export const colors = {
   sun: 0xffc94a,
   cream: 0xfff6e0,
   coral: 0xff8a73,
+  lilac: 0xc9b8f0,
   ink: 0x2f3a56,
 } as const;
 

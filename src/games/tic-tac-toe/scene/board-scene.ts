@@ -33,7 +33,11 @@ export class TicTacToeScene extends Phaser.Scene {
     const gate = turnGate(this);
 
     const place = (cell: Cell, x: number, y: number) => {
-      if (!rules.legalMoves(state).includes(cell)) return;
+      if (!rules.legalMoves(state).includes(cell)) {
+        const taken = marks[cell];
+        if (taken) round.refuse(taken);
+        return;
+      }
       const seat = rules.seatToMove(state);
       state = rules.apply(state, cell);
       marks[cell] = picture(this, x, y, seats[seat]!.shape);
@@ -66,6 +70,16 @@ export class TicTacToeScene extends Phaser.Scene {
         rect: { x: x - CELL / 2, y: y - CELL / 2, width: CELL, height: CELL },
       };
     });
+
+    // A mark in the middle, another in a corner, and "not that one" at the middle again.
+    const at = (cell: Cell) => ({ x: targets[`cell-${cell}`]!.x, y: targets[`cell-${cell}`]!.y });
+    void round.demo([
+      { tap: at(4) },
+      { wait: 300 },
+      { tap: at(0) },
+      { wait: 300 },
+      { refuse: at(4) },
+    ]);
 
     round.expose(() => ({
       state: {

@@ -241,11 +241,22 @@ export interface RoundStart {
 /** The Arcade's side of a Round. Only the kit's openRound calls it. */
 export interface RoundHost {
   insets(): { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number };
-  opened(scene: Phaser.Scene, stage: Stage, describe: () => RoundSnapshot): void;
+  /** True when the device asks for reduced motion. */
+  reducedMotion(): boolean;
+  opened(scene: Phaser.Scene, stage: Stage, view: RoundView): void;
   sfx(key: string, time: number): void;
   finish(result: Result): void;
   /** The pause control was held: the Arcade pauses the Round and shows the pause screen. */
   pause(): void;
+}
+
+/** What the kit lets the Arcade see of an open Round, and ask of it. */
+export interface RoundView {
+  snapshot(): RoundSnapshot;
+  demo(): DemoReport;        // { playing, plays, steps }
+  refusals(): number;
+  /** Plays the Demo again, as asked for from the pause screen. */
+  showDemo(): void;
 }
 
 /** What openRound(scene, start) returns. */
@@ -256,8 +267,14 @@ export interface Round {
   readonly audio: RoundAudio;
   /** Which Round of the Session this is, counting from 0. */
   readonly number: number;
-  /** Arrives with slice 3b (#15), with `demo`. */
   readonly motion: Motion;
+
+  /**
+   * The Round's own time in milliseconds from when it opened. It stands still while the Round is
+   * paused and while its Demo plays. Time-driven play (Color Echo's sequence) runs on it, because
+   * Phaser's `scene.time.now` jumps forward by the length of a pause.
+   */
+  now(): number;
 
   /**
    * Report how the Round ended. Call exactly once. After this the Scene must not
@@ -271,6 +288,12 @@ export interface Round {
    * asks from the pause screen), holds input while it runs, and lets a tap skip it.
    */
   demo(steps: readonly DemoStep[]): Promise<void>;
+
+  /**
+   * Answers a touch the Game ignores (a taken cell, a pad pressed while the sequence plays): the
+   * target gives a gentle wiggle and no sound is requested. The test bridge counts refusals.
+   */
+  refuse(target: Phaser.GameObjects.GameObject): void;
 
   /**
    * For automated tests only. Register a function that returns a plain JSON picture of the
@@ -297,6 +320,10 @@ export interface RoundSnapshot {
 ```
 
 `openRound` also does the things every Game would otherwise repeat: it mounts the hold-to-pause control inside the Scene, connects pause and resume to the Arcade, and registers cleanup for when the Scene shuts down. A Game does not draw its own pause or exit control.
+
+The Demo (built in slice 3b, #15, 2026-11-20) plays above the Game and below the pause control, which works while it plays. An invisible cover takes every touch, so the Game hears none; a touch on it skips the Demo, and the cover stays until every finger that came down on it has lifted. The kit plays the Demo on Round 0 of a Session and when the pause screen's show-the-Demo target is tapped; otherwise `demo` resolves at once. A Game may ignore the promise: since `now()` stands still while the Demo plays, time-driven play begins when the Demo ends. With reduced motion the hand jumps instead of gliding, and the Demo still ends.
+
+Touch feedback, for every Game: an accepted touch requests a sound in the same handler that changes the Round; an ignored touch requests none, changes nothing and calls `round.refuse`.
 
 A minimal Scene:
 
@@ -429,7 +456,7 @@ All sound is synthesized. There are no audio files and no speech ([ADR-0014](../
 
 ```ts
 export interface RoundAudio {
-  /** Play a sound. Keys without a Game prefix are the Arcade's shared sounds ('tap', 'win'). */
+  /** Play a sound. Keys without a Game prefix are the Arcade's shared sounds: 'tap', 'wrong' and 'win'. */
   sfx(key: string): void;
 }
 
@@ -483,6 +510,8 @@ export interface Motion {
 ```
 
 Motion that carries meaning (a disc dropping into a column) still happens when `reduced` is true, shortened to a fade or a direct placement. Motion that only decorates is skipped.
+
+The presets are data in `src/kit/motion-presets.ts`, each a list of tween steps in a full and a reduced form; the reduced form never lasts longer (tested in Node). `bounce` only decorates, so its reduced form is empty. `round.motion.reduced` follows the device's `prefers-reduced-motion`; the Grown-Ups Area's override is slice 5d (#21).
 
 ### Rng
 

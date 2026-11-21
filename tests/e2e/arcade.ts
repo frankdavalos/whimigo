@@ -110,6 +110,19 @@ export class Arcade {
     await this.page.touchscreen.tap(target.x, target.y);
   }
 
+  /**
+   * Waits for the Demo that begins a Session's first Round, and skips it with a tap in the middle
+   * of the safe rectangle, which the Demo takes and the Round never sees.
+   */
+  async skipDemo(): Promise<void> {
+    await expect.poll(async () => (await this.round())?.demo.plays ?? 0).toBeGreaterThan(0);
+    const { safe } = await this.layout();
+    if ((await this.round())!.demo.playing) {
+      await this.page.touchscreen.tap(safe!.x + safe!.width / 2, safe!.y + safe!.height / 2);
+    }
+    await expect.poll(async () => (await this.round())!.demo.playing).toBe(false);
+  }
+
   /** Converts a point in design units to the page, in CSS pixels. */
   async toPage(point: Point): Promise<Point> {
     const { frame } = await this.layout();

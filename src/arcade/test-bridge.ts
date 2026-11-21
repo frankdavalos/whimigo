@@ -1,5 +1,13 @@
 import * as Phaser from 'phaser';
-import type { Rect, Result, ScreenSnapshot, Session, SnapshotTarget } from '@/contract';
+import type {
+  DemoReport,
+  DemoStep,
+  Rect,
+  Result,
+  ScreenSnapshot,
+  Session,
+  SnapshotTarget,
+} from '@/contract';
 import { DESIGN_FRAME, frameOnCanvas } from '@/kit/frame';
 import { renderScaleOf } from '@/kit/render-scale';
 import type { AudioState } from '@/platform/audio';
@@ -91,6 +99,11 @@ export interface RoundPage extends PageSnapshot {
   readonly time: number;
   /** Each Seat's Zone, in page coordinates. */
   readonly zones: readonly Rect[];
+  /** Where the Round's Demo stands; the points its steps name are in page coordinates. */
+  readonly demo: DemoReport;
+  /** How many touches the Game has refused in this Round. */
+  readonly refusals: number;
+  readonly motion: 'full' | 'reduced';
 }
 
 export interface Pictures {
@@ -131,6 +144,16 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     return screen;
   };
 
+  const pointOnPage = ({ x, y }: { x: number; y: number }) => {
+    const { x: px, y: py } = toPage({ x, y, width: 0, height: 0 });
+    return { x: px, y: py };
+  };
+  const stepOnPage = (step: DemoStep): DemoStep => {
+    if ('tap' in step) return { tap: pointOnPage(step.tap) };
+    if ('refuse' in step) return { refuse: pointOnPage(step.refuse) };
+    return step;
+  };
+
   const onPage = ({ state, targets }: ScreenSnapshot): PageSnapshot => {
     const converted: Record<string, SnapshotTarget> = {};
     for (const [name, target] of Object.entries(targets)) {
@@ -150,13 +173,16 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     round() {
       const round = arcade.host.round();
       if (!round) return null;
-      const { session, seed, number, time } = round;
+      const { session, seed, number, time, demo, refusals, motion } = round;
       return {
         session,
         seed,
         number,
         time,
         zones: round.zones.map(toPage),
+        demo: { ...demo, steps: demo.steps.map(stepOnPage) },
+        refusals,
+        motion,
         ...onPage(round.snapshot),
       };
     },
