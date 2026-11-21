@@ -111,14 +111,17 @@ export class Arcade {
   }
 
   /**
-   * Waits for the Demo that begins a Session's first Round, and skips it with a tap in the middle
-   * of the safe rectangle, which the Demo takes and the Round never sees.
+   * Waits for the Demo that begins a Session's first Round, and skips it with a tap at the top of
+   * the pause control's strip down the safe rectangle's left edge. The Demo takes it; and if the
+   * Demo has ended just before it lands, it falls on no Zone and no target, so the Round never
+   * sees it.
    */
   async skipDemo(): Promise<void> {
     await expect.poll(async () => (await this.round())?.demo.plays ?? 0).toBeGreaterThan(0);
-    const { safe } = await this.layout();
+    const { safe, frame } = await this.layout();
+    const unit = frame.width / DESIGN_WIDTH;
     if ((await this.round())!.demo.playing) {
-      await this.page.touchscreen.tap(safe!.x + safe!.width / 2, safe!.y + safe!.height / 2);
+      await this.page.touchscreen.tap(safe!.x + 172 * unit, safe!.y + 100 * unit);
     }
     await expect.poll(async () => (await this.round())!.demo.playing).toBe(false);
   }

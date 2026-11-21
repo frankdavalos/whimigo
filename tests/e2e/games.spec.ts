@@ -98,11 +98,17 @@ for (const game of CATALOG) {
   });
 }
 
+/**
+ * Time for a test that plays two Rounds. Round time moves slowly while a software-rendered page draws
+ * few frames, and a Round of Reaction Rush, all waiting for signals, takes nearly two minutes then.
+ */
+const TWO_ROUNDS = 6 * 60_000;
+
 for (const { game, style, name } of EVERY_STYLE) {
   test(`${name}: opens straight into a Round, plays to a Result, replays and closes leaving nothing behind`, async ({
     arcade,
   }) => {
-    test.slow();
+    test.setTimeout(TWO_ROUNDS);
     const before = await arcade.counts();
     const session = sessionFor(game, style);
     await openSession(arcade, session, SEED);
@@ -183,7 +189,7 @@ for (const { game, style, name } of EVERY_STYLE) {
   test(`${name}: the same seed and the same touches give the same Round states`, async ({
     arcade,
   }) => {
-    test.slow();
+    test.setTimeout(TWO_ROUNDS);
     const play = async () => {
       await openSession(arcade, sessionFor(game, style), SEED);
       const states = [(await arcade.round())?.state, ...(await playToResult(arcade, game.id))];

@@ -61,6 +61,19 @@ export interface SeatTouch {
   readonly time: number;
 }
 
+/**
+ * Zoned touch attribution (ADR-0006): a touch belongs to the Seat in whose Zone it began, until it
+ * lifts. Each Seat has at most one touch down; a second finger in its Zone is ignored.
+ */
+export interface SeatZones {
+  /** A Seat's touch came down. Act on this: a press counts when the finger lands. */
+  onDown(handler: (touch: SeatTouch) => void): void;
+  /** A Seat's touch lifted, or was taken away by the system (`canceled`), which is never a tap. */
+  onUp(handler: (touch: SeatTouch & { readonly canceled: boolean }) => void): void;
+  /** Reports nothing of a Seat's touches while it is switched off. Every Seat starts switched on. */
+  setEnabled(seat: SeatIndex, enabled: boolean): void;
+}
+
 /** A sound described as data. Rendered to a buffer once, when it is loaded (ADR-0014). */
 export interface SoundRecipe {
   readonly notes: readonly Note[];
@@ -183,6 +196,8 @@ export interface Session {
   readonly playStyle: PlayStyle;
   readonly difficulty: Difficulty;
   readonly seating: Seating;
+  /** True when each Seat has its own Zone, as the Play Style says; false for one shared board. */
+  readonly zoned: boolean;
   /** One to four Seats, in Seat order: Players in the order they joined, then Computer Players. */
   readonly seats: readonly Seat[];
 }
@@ -199,6 +214,16 @@ export interface Stage {
   readonly safe: Rect;
   /** Fill everything visible, including the extra width or height beyond the design frame. */
   backdrop(fill: BackdropFill): void;
+  /**
+   * One Zone per Seat for a zoned Session, in the safe rectangle less the pause control's strip down
+   * its left edge; none otherwise.
+   */
+  readonly zones: readonly Zone[];
+  /**
+   * A Container placed and turned for a Seat's Zone: draw into it in Zone-local coordinates, and
+   * the content faces the Seat's Player. Throws for a Seat with no Zone.
+   */
+  zoneContainer(seat: SeatIndex): Phaser.GameObjects.Container;
 }
 
 /** For automated tests only: a plain JSON picture of a Round, its state and named targets. */
@@ -276,6 +301,17 @@ export interface RoundView {
   refusals(): number;
   /** Plays the Game's Demo again, as asked for from the pause screen. */
   showDemo(): void;
+  /** The Round's own time, as `Round.now()` gives it. */
+  now(): number;
+  /** What the Round's SeatZones has reported, for the test bridge. */
+  seatTouches(): SeatTouchReport;
+}
+
+/** What a Round's SeatZones has reported to its Game: the Seats holding a touch, and its latest reports. */
+export interface SeatTouchReport {
+  readonly held: readonly SeatIndex[];
+  /** The latest reports, oldest first: a touch down, lifted, or taken away by the system. */
+  readonly events: readonly { readonly kind: 'down' | 'up' | 'cancel'; readonly seat: SeatIndex }[];
 }
 
 /** What the Arcade starts a Game's Scene with: passed to its `create(data)`. */
@@ -298,6 +334,11 @@ export interface Round {
   readonly number: number;
   readonly motion: Motion;
   /**
+   * Whose touch is whose in a zoned Session: each touch belongs to the Seat in whose Zone it began.
+   * In an unzoned Session it reports nothing; a shared board uses the kit's TurnGate instead.
+   */
+  readonly seatZones: SeatZones;
+  /**
    * The Round's own time, in milliseconds from when it opened. It stands still while the Round is
    * paused and while its Demo plays, so time-driven play goes on from where it stopped.
    */
@@ -308,6 +349,11 @@ export interface Round {
    * when a Player asks from the pause screen; otherwise it resolves at once. Resolves when it ends.
    */
   demo(steps: readonly DemoStep[]): Promise<void>;
+  /**
+   * True while the Demo plays, whether the Game began it or a Player asked for it from the pause
+   * screen: a Game that draws something for its Demo to point at draws it while this is true.
+   */
+  readonly demoPlaying: boolean;
   /**
    * Answers a touch the Game ignores: `target` gives a gentle wiggle, and no sound is requested.
    * The Game changes nothing else.

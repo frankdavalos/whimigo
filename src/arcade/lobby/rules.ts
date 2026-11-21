@@ -135,6 +135,7 @@ export function buildSession({
     playStyle: style.style,
     difficulty,
     seating,
+    zoned: style.zoned,
     seats: occupants.map((occupant, index) => ({
       index: index as SeatIndex,
       occupant,

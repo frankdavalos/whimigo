@@ -209,6 +209,8 @@ export interface Session {
   readonly playStyle: PlayStyle;
   readonly difficulty: Difficulty;
   readonly seating: Seating;
+  /** True when each Seat has its own Zone: the chosen Play Style's `zoned`. Since slice 4b (#17). */
+  readonly zoned: boolean;
   /** One to four Seats, in Seat order. */
   readonly seats: readonly Seat[];
 }
@@ -260,6 +262,10 @@ export interface RoundView {
   refusals(): number;
   /** Plays the Demo again, as asked for from the pause screen. */
   showDemo(): void;
+  /** The Round's own time, as `Round.now()` gives it. */
+  now(): number;
+  /** The Seats holding a touch, and SeatZones' latest reports (down, up, cancel), for the bridge. */
+  seatTouches(): SeatTouchReport;
 }
 
 /** What openRound(scene, start) returns. */
@@ -271,6 +277,12 @@ export interface Round {
   /** Which Round of the Session this is, counting from 0. */
   readonly number: number;
   readonly motion: Motion;
+
+  /**
+   * Whose touch is whose in a zoned Session (slice 4b, #17). In an unzoned Session it reports
+   * nothing; a shared board uses TurnGate.
+   */
+  readonly seatZones: SeatZones;
 
   /**
    * The Round's own time in milliseconds from when it opened. It stands still while the Round is
@@ -291,6 +303,12 @@ export interface Round {
    * asks from the pause screen), holds input while it runs, and lets a tap skip it.
    */
   demo(steps: readonly DemoStep[]): Promise<void>;
+
+  /**
+   * True while the Demo plays, however it began: a Game that draws something for the Demo to point
+   * at (Reaction Rush's decoy) draws it while this is true. Since slice 4b (#17).
+   */
+  readonly demoPlaying: boolean;
 
   /**
    * Answers a touch the Game ignores (a taken cell, a pad pressed while the sequence plays): the
@@ -361,7 +379,7 @@ export type Result =
 export type Scores = Readonly<Partial<Record<SeatIndex, number>>>;
 ```
 
-- `win` may name more than one winner: two Seats that tap within the same touch sample in Reaction Rush both win.
+- `win` may name more than one winner: two Seats whose presses in Reaction Rush have the same touch timestamp both win.
 - Leaving a **Round** before it ends produces no Result.
 - A Game reports what happened. The Arcade decides what it is worth: converting a Result into **Stars** is the Arcade's job, so the reward rules are the same in every Game.
 - **Achievements** are not part of the Phase 1 contract. When they are built (Phase 3) they arrive as an optional field on Result and an optional list on the manifest, which breaks no existing Game.
@@ -387,7 +405,10 @@ export interface Stage {
    * The backdrop follows the screen if its size changes, so a Game never handles resize.
    */
   backdrop(fill: BackdropFill): void;
-  /** One Zone per Seat for this Session's Seating. Empty unless the Play Style is zoned. Slice 4b (#17). */
+  /**
+   * One Zone per Seat for this Session's Seating, in the safe rectangle less the pause control's
+   * strip. Empty unless the Session is zoned. Since slice 4b (#17).
+   */
   readonly zones: readonly Zone[];
   /** A Container placed and rotated for a Seat's Zone. Draw Zone content into it in Zone-local coordinates. */
   zoneContainer(seat: SeatIndex): Phaser.GameObjects.Container;
@@ -401,7 +422,9 @@ export interface Zone {
 }
 ```
 
-Zone positions for each **Seating** and Seat count are decided once, in the kit. A Game asks for its Zones; it does not compute them. The kit's `zonesFor(area, seats, seating)` lays them out inside the area it is given. The Touch Check gives it the part of the safe rectangle between its two columns of controls; for a Game, which has no controls beside its Zones, the area is meant to be the whole safe rectangle, and that is settled when `GameHost` is built.
+Zone positions for each **Seating** and Seat count are decided once, in the kit. A Game asks for its Zones; it does not compute them. The kit's `zonesFor(area, seats, seating)` lays them out inside the area it is given. The Touch Check gives it the part of the safe rectangle between its two columns of controls.
+
+For a Game the area is the safe rectangle less a strip down its left edge, as wide as the pause control and a control's gap (344 + 64 units), where the pause control stands halfway down (`roundZones` and `pausePlace` in `src/kit/zones.ts`). No Zone reaches the pause control, so a child pressing in their Zone never pauses the Round and a hold on the pause control is never a press. Settled in slice 4b ([#17](https://github.com/frankdavalos/whimigo/issues/17), 2026-11-21); the pause control's placement test iterates every Zone. `zoneContainer(seat)` is a Container standing at the Zone's top-left corner as its Player sees it, turned by its facing, so content placed at a Zone-local point lands where `fromZoneLocal` puts it.
 
 | Seats | `side-by-side` | `around-the-table` |
 |---|---|---|
@@ -429,11 +452,12 @@ export interface TurnGate {
   readonly isOpen: boolean;
 }
 
-/** Zoned: a touch belongs to the Seat in whose Zone it began, until it lifts. */
+/** Zoned: a touch belongs to the Seat in whose Zone it began, until it lifts. `round.seatZones`. */
 export interface SeatZones {
+  /** Act on this: a press counts when the finger lands. */
   onDown(handler: (touch: SeatTouch) => void): void;
   onUp(handler: (touch: SeatTouch & { readonly canceled: boolean }) => void): void;
-  /** Ignore a Seat's touches, e.g. after a false start. */
+  /** Report nothing of a Seat's touches until it is switched on again. */
   setEnabled(seat: SeatIndex, enabled: boolean): void;
 }
 
@@ -452,6 +476,10 @@ Behaviour the kit guarantees, so no Game re-implements it:
 - **Shared board.** Games use ordinary Phaser interactive objects for cells, cards and columns, with handlers wrapped in `guard`. While one guarded touch is down, others are ignored, so two children pressing at once produce one **Move**, not two.
 - **Zoned.** A touch is attributed where it starts and keeps that Seat until it lifts, even if the finger slides into a neighbour's Zone. Each Seat has one active touch; a second finger or a resting palm in the same Zone is ignored. A touch that starts outside every Zone belongs to nobody.
 - **Cancellation.** A touch the system takes away (for example an iPadOS gesture) is reported as `onUp` with `canceled: true` and never as a tap.
+- **Switched off.** A Seat switched off with `setEnabled` still holds its Zone (a second finger there is still ignored), but nothing of its touches is reported; a touch whose coming down was not reported is not reported lifting either.
+- **Forgotten.** When the page is shown again, or the Round resumes after a pause, every touch is forgotten: no Seat holds one, a stale touch lifting later is not reported, and a new touch in each Zone is accepted.
+
+Built in slice 4b ([#17](https://github.com/frankdavalos/whimigo/issues/17), 2026-11-21). The rules are pure in `src/kit/seat-zones.ts`, over `attributeTouch`. `openRound` makes the Round's SeatZones, rather than the Game calling a kit function as it does for `turnGate`, because it must hear touches beneath everything: it listens on an invisible rectangle over each Zone, below anything the Game draws, so the Demo's cover and the pause control keep their touches and a Game needs no interactive objects of its own in a Zone. Lifts are heard anywhere. The touch's time is the browser's event timestamp (Phaser's `downTime`).
 
 ### RoundAudio
 

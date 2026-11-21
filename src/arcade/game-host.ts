@@ -2,13 +2,14 @@ import type {
   DemoReport,
   GameManifest,
   GameModule,
-  Rect,
   Result,
   RoundHost,
   RoundStart,
   RoundView,
   ScreenSnapshot,
+  SeatTouchReport,
   Session,
+  Zone,
 } from '@/contract';
 import { createRng } from '@/kit/rng';
 import type { Arcade } from './arcade';
@@ -34,11 +35,15 @@ export interface RoundReport {
   readonly number: number;
   /** The Round's Scene clock, in milliseconds: it stands still while the Round is paused. */
   readonly time: number;
+  /** The Round's own time (`Round.now()`), in milliseconds: still while paused or in its Demo. */
+  readonly now: number;
   readonly snapshot: ScreenSnapshot;
   /** Every sound requested since the Round began, in order. */
   readonly sounds: readonly RequestedSound[];
-  /** Each Seat's Zone, in design units. None yet: Zones arrive with slice 4b (#17). */
-  readonly zones: readonly Rect[];
+  /** Each Seat's Zone, in design units: none unless the Session is zoned. */
+  readonly zones: readonly Zone[];
+  /** What the Round's SeatZones has reported. */
+  readonly seatTouches: SeatTouchReport;
   readonly demo: DemoReport;
   /** How many touches the Game has refused in this Round. */
   readonly refusals: number;
@@ -207,9 +212,11 @@ export class GameHost {
       seed: game.seed,
       number: game.number,
       time: game.shown.scene.time.now,
+      now: view.now(),
       snapshot: view.snapshot(),
       sounds: game.sounds,
-      zones: [],
+      zones: game.shown.stage.zones,
+      seatTouches: view.seatTouches(),
       demo: view.demo(),
       refusals: view.refusals(),
       motion: game.reduced ? 'reduced' : 'full',

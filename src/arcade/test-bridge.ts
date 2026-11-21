@@ -5,6 +5,8 @@ import type {
   Rect,
   Result,
   ScreenSnapshot,
+  SeatIndex,
+  SeatTouchReport,
   Session,
   SnapshotTarget,
 } from '@/contract';
@@ -97,8 +99,12 @@ export interface RoundPage extends PageSnapshot {
   readonly number: number;
   /** The Round's Scene clock, in milliseconds. */
   readonly time: number;
-  /** Each Seat's Zone, in page coordinates. */
-  readonly zones: readonly Rect[];
+  /** The Round's own time, in milliseconds: it stands still while paused and while its Demo plays. */
+  readonly now: number;
+  /** Each Seat's Zone, in page coordinates, with its Seat and the way it faces. */
+  readonly zones: readonly (Rect & { readonly seat: SeatIndex; readonly facing: 0 | 180 })[];
+  /** What the Round's SeatZones has reported to its Game. */
+  readonly seatTouches: SeatTouchReport;
   /** Where the Round's Demo stands; the points its steps name are in page coordinates. */
   readonly demo: DemoReport;
   /** How many touches the Game has refused in this Round. */
@@ -173,13 +179,15 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     round() {
       const round = arcade.host.round();
       if (!round) return null;
-      const { session, seed, number, time, demo, refusals, motion } = round;
+      const { session, seed, number, time, now, demo, refusals, motion, seatTouches } = round;
       return {
         session,
         seed,
         number,
         time,
-        zones: round.zones.map(toPage),
+        now,
+        zones: round.zones.map(({ rect, seat, facing }) => ({ ...toPage(rect), seat, facing })),
+        seatTouches,
         demo: { ...demo, steps: demo.steps.map(stepOnPage) },
         refusals,
         motion,

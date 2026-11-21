@@ -81,21 +81,24 @@ for (const { game, style, name } of EVERY_STYLE) {
     expect(await arcade.host()).toBe('playing');
     expect(await arcade.call('inputScenes')).toEqual([game.id]);
     await expect.poll(async () => (await demo(arcade)).plays).toBe(2);
-    expect((await demo(arcade)).playing).toBe(true);
-    expect((await arcade.round())!.state).toEqual(before.state);
 
     // Played to its end this time, not skipped, with nothing moved or heard while it played. Once it
-    // ends the Round goes on at once (Color Echo sounds its next pad), so the state and sounds are
-    // read before asking whether it still plays: a reading followed by "playing" was taken during it.
-    let last: { state: unknown; sounds: unknown } | null = null;
+    // ends the Round goes on at once (Color Echo sounds its next pad), so each reading takes the
+    // state, the sounds and whether the Demo plays in one call to the page: a loaded page answers
+    // each call slowly, and separate calls could straddle the Demo's end.
+    const read = () =>
+      arcade.page.evaluate(() => {
+        const bridge = window.whimigo!;
+        const round = bridge.round()!;
+        return { state: round.state, sounds: bridge.sounds(), playing: round.demo.playing };
+      });
+    const first = await read();
+    expect(first.playing).toBe(true);
+    let last = { state: first.state, sounds: first.sounds };
     await expect
       .poll(
         async () => {
-          const reading = {
-            state: (await arcade.round())!.state,
-            sounds: await arcade.call('sounds'),
-          };
-          const { playing } = await demo(arcade);
+          const { playing, ...reading } = await read();
           if (playing) last = reading;
           return playing;
         },

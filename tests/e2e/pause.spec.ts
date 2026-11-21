@@ -165,6 +165,42 @@ for (const { game, style, name } of EVERY_STYLE) {
   });
 }
 
+/**
+ * The Games whose Rounds move on by themselves, each with what says where it has reached: Color
+ * Echo's place in the sequence it plays, and Reaction Rush's wait for its signal.
+ */
+const TIMED = [
+  { id: 'color-echo', difficulty: 'hard', moving: { phase: 'playing' } },
+  { id: 'reaction-rush', difficulty: 'easy', moving: { phase: 'waiting' } },
+] as const;
+
+for (const { id, difficulty, moving } of TIMED) {
+  test(`${id}: a timed Round does not advance while paused, and goes on from where it was (story 8)`, async ({
+    arcade,
+    page,
+  }) => {
+    test.slow();
+    const game = EVERY_STYLE.find((entry) => entry.game.id === id)!;
+    const session = sessionFor(game.game, game.style, 'side-by-side', undefined, difficulty);
+    await openSession(arcade, session, SEED);
+    expect((await arcade.round())!.state).toMatchObject(moving);
+
+    await pause(arcade);
+    const paused = (await arcade.round())!;
+    expect(paused.state, 'still moving on when paused').toMatchObject(moving);
+    await page.waitForTimeout(3000);
+    const later = (await arcade.round())!;
+    expect(later.now, 'the Round’s own time').toBe(paused.now);
+    expect(later.state).toEqual(paused.state);
+
+    await arcade.tap('play');
+    await expect.poll(() => arcade.screen()).toBe(id);
+    const resumed = (await arcade.round())!;
+    expect(resumed.now).toBeGreaterThanOrEqual(paused.now);
+    expect(resumed.now - paused.now, 'no jump by the length of the pause').toBeLessThan(1000);
+  });
+}
+
 test('after the page returns, play resumes the Round with sound running, and the page never reloads itself', async ({
   arcade,
 }) => {

@@ -231,6 +231,19 @@ describe('the Session built when start is pressed', () => {
     expect(new Set(session.seats.map((seat) => seat.shape)).size).toBe(4);
   });
 
+  it('is zoned exactly when its Play Style gives each Seat a Zone', () => {
+    const begin = (zoned: boolean) =>
+      buildSession({
+        game: FIXTURE,
+        style: { ...style('simultaneous', 2, 4), zoned },
+        joined: ['fox', 'owl'],
+        difficulty: 'easy',
+        seating: 'around-the-table',
+      });
+    expect(begin(true).zoned).toBe(true);
+    expect(begin(false).zoned).toBe(false);
+  });
+
   it('never has more than four Seats', () => {
     expect(() =>
       buildSession({

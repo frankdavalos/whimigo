@@ -1,4 +1,5 @@
 import type { Difficulty } from '../../src/contract';
+import type { RequestedSound } from '../../src/arcade/game-host';
 import { expect, test, type Arcade } from './arcade';
 import { CATALOG, openSession, sessionFor } from './play';
 
@@ -21,15 +22,17 @@ interface Case {
   readonly name: string;
   readonly game: string;
   readonly difficulty?: Difficulty;
+  /** The Round's seed, when the case needs a particular one. */
+  readonly seed?: number;
   /** Brings the Round to where the touch is made; returns the target to touch. */
   readonly prepare: (arcade: Arcade) => Promise<string>;
   /** The part of the state only a touch may change: time moves some Games on by itself. */
   readonly settled?: (state: unknown) => unknown;
   /**
-   * Checks that the touch requested no sound. By default no sound at all follows it; a Game that
-   * goes on by itself says what it requests on its own.
+   * Checks that the touch requested no sound, given the sounds requested before it. By default no
+   * sound at all follows it; a Game that goes on by itself says what it requests on its own.
    */
-  readonly silent?: (arcade: Arcade) => Promise<void>;
+  readonly silent?: (arcade: Arcade, before: readonly RequestedSound[]) => Promise<void>;
 }
 
 const echo = (round: RoundPage | null) => round!.state as Echo;
@@ -43,6 +46,20 @@ async function untilRepeating(arcade: Arcade) {
   await expect
     .poll(async () => echo(await arcade.round()).phase, { timeout: 30_000 })
     .toBe('repeating');
+}
+
+/** What Reaction Rush's snapshot says about its rules. */
+interface Rush {
+  phase: 'waiting' | 'signal' | 'between' | 'over';
+  point: number;
+  seats: { seat: number; score: number; out: boolean }[];
+}
+const rush = (round: RoundPage | null) => round!.state as Rush;
+
+/** Waits until Reaction Rush's Round is in `phase`. */
+async function untilPhase(arcade: Arcade, phase: Rush['phase']) {
+  // Round time moves slowly while a software-rendered page draws few frames.
+  await expect.poll(async () => rush(await arcade.round()).phase, { timeout: 90_000 }).toBe(phase);
 }
 
 /** Touches that must be ignored. #18 adds the Computer Player's choosing; #19 a pad out of Turn. */
@@ -76,11 +93,42 @@ const IGNORED: readonly Case[] = [
       expect(keys).toEqual(sequence.map((pad) => `color-echo/tone-${pads[pad]}`));
     },
   },
+  {
+    name: 'a press by a Seat that pressed too early, before the next point',
+    game: 'reaction-rush',
+    async prepare(arcade) {
+      await untilPhase(arcade, 'waiting');
+      await arcade.tapRound('button-0');
+      await expect.poll(async () => rush(await arcade.round()).seats[0]!.out).toBe(true);
+      return 'button-0';
+    },
+    settled: (state) => {
+      const { point, seats } = state as Rush;
+      return { point, seats };
+    },
+    async silent(arcade, before) {
+      // The signal, or a decoy, may show by itself meanwhile; nothing else is asked for.
+      const added = (await arcade.call('sounds')).slice(before.length).map(({ key }) => key);
+      for (const key of added) {
+        expect(['reaction-rush/signal', 'reaction-rush/decoy']).toContain(key);
+      }
+    },
+  },
 ];
 
 /** Touches that count. */
 const ACCEPTED: readonly Case[] = [
   { name: 'an empty cell', game: 'tic-tac-toe', prepare: async () => 'cell-4' },
+  {
+    name: 'a press after the signal',
+    game: 'reaction-rush',
+    // Its first signal comes soon.
+    seed: 7,
+    async prepare(arcade) {
+      await untilPhase(arcade, 'signal');
+      return 'button-0';
+    },
+  },
   {
     name: 'the next pad of the sequence',
     game: 'color-echo',
@@ -109,7 +157,7 @@ test('every Game in the Catalog has a case of an ignored touch and of an accepte
 async function openCase(arcade: Arcade, c: Case) {
   const game = CATALOG.find((candidate) => candidate.id === c.game)!;
   const session = sessionFor(game, game.playStyles[0]!, 'side-by-side', undefined, c.difficulty);
-  await openSession(arcade, session, SEED);
+  await openSession(arcade, session, c.seed ?? SEED);
 }
 
 /** The Round and its requested sounds, read in one go so they describe the same moment. */
@@ -128,6 +176,8 @@ for (const c of IGNORED) {
   test(`${c.game}, ignored: ${c.name} requests no sound, changes nothing, and the snapshot reports the refusal`, async ({
     arcade,
   }) => {
+    // Some Games move on by themselves, and their Round time moves slowly under load.
+    test.slow();
     await openCase(arcade, c);
     const target = await c.prepare(arcade);
     const settle = c.settled ?? ((state: unknown) => state);
@@ -136,7 +186,7 @@ for (const c of IGNORED) {
     await expect.poll(async () => (await arcade.round())!.refusals).toBe(before.round.refusals + 1);
     const after = await now(arcade);
     expect(settle(after.round.state)).toEqual(settle(before.round.state));
-    if (c.silent) await c.silent(arcade);
+    if (c.silent) await c.silent(arcade, before.sounds);
     else expect(after.sounds).toEqual(before.sounds);
     expect(await arcade.screen()).toBe(c.game);
   });
@@ -146,6 +196,8 @@ for (const c of ACCEPTED) {
   test(`${c.game}, accepted: ${c.name} has a sound requested in the same frame, and the next snapshot shows what it changed`, async ({
     arcade,
   }) => {
+    // Some Games move on by themselves, and their Round time moves slowly under load.
+    test.slow();
     await openCase(arcade, c);
     const target = await c.prepare(arcade);
     const before = await now(arcade);

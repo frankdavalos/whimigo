@@ -116,13 +116,13 @@ Playwright's WebKit is not Safari and does not behave like an iPad. It catches g
 
 **Multitouch**
 
-Playwright's own touchscreen is single-point. Multi-finger tests use the Chromium DevTools protocol, which accepts several touch points in one event and produces real, trusted touch events. They run in Chromium only.
+Playwright's own touchscreen is single-point. Multi-finger tests use the Chromium DevTools protocol, which accepts several touch points in one call and produces real, trusted touch events. They run in Chromium only. Chromium delivers such a call as one DOM touch event per finger, every one with the same timestamp (found in slice 4b, #17), which is how one touch event with several fingers reaches Reaction Rush's rules: as presses with equal timestamps.
 
 - Four fingers down in four Zones in one event: each **Seat** registers exactly one touch.
 - Two fingers in one Zone: the second is ignored.
 - A finger that slides into a neighbouring Zone still belongs to its original Seat.
 - A cancelled touch does not count as a tap.
-- Reaction Rush: of two touches with different timestamps, the earlier wins regardless of event order; two with the same timestamp both score.
+- Reaction Rush: of two touches with different timestamps, the earlier wins regardless of event order; two with the same timestamp both score. The order is tested on the pure rules in Node, which can hand a later-arriving press the earlier timestamp; the browser test shows four fingers in one call scoring together.
 - On a shared board, two simultaneous taps produce one **Move**.
 - Eleven fingers: the Arcade keeps working.
 

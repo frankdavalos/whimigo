@@ -70,23 +70,53 @@ const NEXT_TAP: Readonly<Record<string, (round: RoundPage) => string | null>> = 
     const pad = completed < 1 ? right : (right + 1) % pads.length;
     return `pad-${pads[pad]}`;
   },
+  // The first Seat presses as soon as the signal shows; the others never do.
+  'reaction-rush': (round) =>
+    (round.state as { phase: string }).phase === 'signal' ? 'button-0' : null,
 };
+
+/** A Round as the page reports it after a change, and whether its Result now shows. */
+type Changed = { readonly round: RoundPage | null; readonly over: boolean };
+
+/**
+ * Waits inside the page, frame by frame, until the Round's state differs from `seen` or the host
+ * shows a Result. Waiting there rather than polling from the test catches a target that shows
+ * only briefly, such as Reaction Rush's signal, as soon as it shows.
+ */
+async function changed(arcade: Arcade, seen: string): Promise<Changed> {
+  const handle = await arcade.page.waitForFunction(
+    (seen) => {
+      const bridge = window.whimigo!;
+      const over = bridge.screen().host === 'showing-result';
+      const round = bridge.round();
+      if (round && JSON.stringify(round.state) !== seen) return { round, over };
+      return over ? { round: null, over } : false;
+    },
+    seen,
+    // Round time moves slowly while a software-rendered page draws few frames.
+    { timeout: 60_000 },
+  );
+  return (await handle.jsonValue()) as Changed;
+}
 
 /** Taps the Round's targets until the host shows a Result; returns the Round's state after each tap. */
 export async function playToResult(arcade: Arcade, gameId: string): Promise<unknown[]> {
   const next = NEXT_TAP[gameId];
   if (!next) throw new Error(`tests/e2e/play.ts does not know how to play ${gameId}`);
   const states: unknown[] = [];
+  if ((await arcade.host()) === 'showing-result') return states;
+  let round = await arcade.round();
   for (let taps = 0; taps < 200; taps += 1) {
-    if ((await arcade.host()) === 'showing-result') return states;
-    const round = await arcade.round();
     if (!round) throw new Error(`No Round while playing ${gameId}`);
     const target = next(round);
-    if (target) await arcade.tapRound(target);
-    await expect
-      .poll(async () => JSON.stringify((await arcade.round())?.state), { timeout: 30_000 })
-      .not.toBe(JSON.stringify(round.state));
-    if (target) states.push((await arcade.round())?.state);
+    if (target) {
+      const { x, y } = round.targets[target]!;
+      await arcade.page.touchscreen.tap(x, y);
+    }
+    const after = await changed(arcade, JSON.stringify(round.state));
+    if (target && after.round) states.push(after.round.state);
+    if (after.over) return states;
+    round = after.round;
   }
   throw new Error(`${gameId} did not reach a Result in 200 taps`);
 }

@@ -19,6 +19,8 @@ const ARRIVE_REDUCED = 150;
 export interface DemoPlayer {
   /** True while the Demo plays. */
   readonly playing: boolean;
+  /** True while its cover takes every touch: while it plays, and until each finger on it lifts. */
+  readonly covering: boolean;
   report(): DemoReport;
   /** Keeps the Game's steps and plays them if `play`. Resolves when the Demo ends. */
   run(steps: readonly DemoStep[], play: boolean): Promise<void>;
@@ -165,6 +167,9 @@ export function createDemo(
   });
 
   return {
+    get covering() {
+      return cover !== null;
+    },
     get playing() {
       return showing !== null;
     },

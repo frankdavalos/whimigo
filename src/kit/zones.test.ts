@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import type { Rect, Seating, Zone } from '@/contract';
+import type { Rect, Seat, SeatIndex, Seating, Zone } from '@/contract';
+import { CONTROL_AREAS } from './control-areas';
 import { safeRect } from './frame';
-import { fromZoneLocal, toZoneLocal, zoneAt, zonesFor } from './zones';
+import { sizes } from './theme';
+import {
+  pausePlace,
+  fromZoneLocal,
+  roundZones,
+  toZoneLocal,
+  zoneAt,
+  zonePlacement,
+  zonesFor,
+} from './zones';
 
 const SAFE = safeRect({ top: 0, right: 0, bottom: 0, left: 0 });
 /** A safe rectangle with uneven insets, and a smaller area such as a check screen leaves. */
@@ -158,4 +168,83 @@ describe('the Zone at a point', () => {
     expect(zoneAt(zones, right(SAFE), centre(SAFE).y)).toBeNull();
     expect(zoneAt(zones, centre(SAFE).x, bottom(SAFE))).toBeNull();
   });
+});
+
+const seatsOf = (count: number): Seat[] =>
+  Array.from({ length: count }, (_, index) => ({
+    index: index as SeatIndex,
+    occupant: { kind: 'player', mascot: `mascot-${index}` },
+    color: 0,
+    shape: 'arcade/seat-circle',
+  }));
+
+describe('a Round’s Zones', () => {
+  const pause = (safe: Rect) => {
+    const { x, y } = pausePlace(safe);
+    return CONTROL_AREAS.holdButton({ x, y, width: sizes.button, height: sizes.button });
+  };
+  const gap = (a: Rect, b: Rect) =>
+    Math.max(b.x - right(a), a.x - right(b), b.y - bottom(a), a.y - bottom(b));
+
+  for (const [name, safe] of Object.entries(AREAS).slice(0, 2)) {
+    for (const seating of SEATINGS) {
+      for (const count of COUNTS) {
+        it(`for a zoned Session of ${count} Seats ${seating}, in ${name}, are the documented Zones of the safe rectangle less the pause control’s strip`, () => {
+          const zones = roundZones(safe, { zoned: true, seating, seats: seatsOf(count) });
+          const strip = sizes.button + sizes.gap;
+          const area = { ...safe, x: safe.x + strip, width: safe.width - strip };
+          expect(zones).toEqual(zonesFor(area, count, seating));
+          for (const zone of zones) {
+            expect(gap(pause(safe), zone.rect), `Zone ${zone.seat}`).toBeGreaterThanOrEqual(
+              sizes.gap,
+            );
+          }
+        });
+      }
+    }
+  }
+
+  it('are none for an unzoned Session, whatever its Seats and Seating', () => {
+    for (const seating of SEATINGS) {
+      for (const count of [1, 2, 3, 4]) {
+        expect(roundZones(SAFE, { zoned: false, seating, seats: seatsOf(count) })).toEqual([]);
+      }
+    }
+  });
+
+  it('are none for a zoned Session of one Seat, which has nobody to share with', () => {
+    expect(roundZones(SAFE, { zoned: true, seating: 'side-by-side', seats: seatsOf(1) })).toEqual(
+      [],
+    );
+  });
+});
+
+describe('a Zone’s placement, for a container of Zone-local content', () => {
+  /** Where a point of a container placed and turned like this lands in the design frame. */
+  const place = (zone: Zone, local: { x: number; y: number }) => {
+    const { x, y, angle } = zonePlacement(zone);
+    const turn = (angle * Math.PI) / 180;
+    return {
+      x: x + local.x * Math.cos(turn) - local.y * Math.sin(turn),
+      y: y + local.x * Math.sin(turn) + local.y * Math.cos(turn),
+    };
+  };
+
+  for (const seating of SEATINGS) {
+    for (const zone of zonesFor(SAFE, 4, seating)) {
+      it(`puts Zone-local content where fromZoneLocal says, ${seating}, Seat ${zone.seat} facing ${zone.facing}°`, () => {
+        expect(zonePlacement(zone).angle).toBe(zone.facing);
+        for (const local of [
+          { x: 0, y: 0 },
+          { x: 120, y: 700 },
+          { x: zone.rect.width, y: zone.rect.height },
+        ]) {
+          const at = place(zone, local);
+          const expected = fromZoneLocal(zone, local.x, local.y);
+          expect(at.x).toBeCloseTo(expected.x, 6);
+          expect(at.y).toBeCloseTo(expected.y, 6);
+        }
+      });
+    }
+  }
 });

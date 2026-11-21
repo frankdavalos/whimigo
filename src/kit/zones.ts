@@ -1,4 +1,5 @@
-import type { Rect, SeatIndex, Seating, Zone } from '@/contract';
+import type { Rect, SeatIndex, Seating, Session, Zone } from '@/contract';
+import { sizes } from './theme';
 
 /** How many Seats can have Zones. Zones are for simultaneous play, which needs two or more. */
 export type ZonedSeats = 2 | 3 | 4;
@@ -88,4 +89,37 @@ export function fromZoneLocal(zone: Zone, x: number, y: number): { x: number; y:
   return zone.facing === 0
     ? { x: rect.x + x, y: rect.y + y }
     : { x: rect.x + rect.width - x, y: rect.y + rect.height - y };
+}
+
+/** The centre of a Round's pause control: halfway down the safe rectangle's left edge. */
+export function pausePlace(safe: Rect): { x: number; y: number } {
+  return { x: safe.x + sizes.button / 2, y: safe.y + safe.height / 2 };
+}
+
+/**
+ * A Round's Zones: none unless the Session is zoned and has Seats to share; otherwise the
+ * documented Zones of the safe rectangle less a strip down its left edge, where the pause control
+ * stands with a control's gap beside it, so no Zone reaches the pause control.
+ */
+export function roundZones(
+  safe: Rect,
+  session: Pick<Session, 'zoned' | 'seating' | 'seats'>,
+): Zone[] {
+  const count = session.seats.length;
+  if (!session.zoned || count < 2) return [];
+  const strip = sizes.button + sizes.gap;
+  const area = { ...safe, x: safe.x + strip, width: safe.width - strip };
+  return zonesFor(area, count as ZonedSeats, session.seating);
+}
+
+/**
+ * Where a container of Zone-local content stands and how far it turns, in degrees: its origin is
+ * the Zone's top-left corner as its Player sees it, so content placed at a Zone-local point lands
+ * where fromZoneLocal puts that point.
+ */
+export function zonePlacement(zone: Zone): { x: number; y: number; angle: 0 | 180 } {
+  const { rect, facing } = zone;
+  return facing === 0
+    ? { x: rect.x, y: rect.y, angle: 0 }
+    : { x: rect.x + rect.width, y: rect.y + rect.height, angle: 180 };
 }

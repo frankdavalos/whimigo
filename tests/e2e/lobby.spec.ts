@@ -195,6 +195,8 @@ test('a Session of one Player is side by side, with no Seating to choose', async
 test('a chosen Seating is saved and selected in every Game’s lobby with two or more Players, after a reload too', async ({
   arcade,
 }) => {
+  // It visits every Game's lobby, so it takes longer with each Game added.
+  test.slow();
   await openLobby(arcade, TIC_TAC_TOE);
   await tapMascots(arcade, ['fox', 'owl']);
   await arcade.tap('seating-around-the-table');
@@ -262,3 +264,58 @@ test('what is remembered for one Game does not change what another Game’s lobb
   await openLobby(arcade, COLOR_ECHO);
   expect(await lobby(arcade)).toMatchObject({ joined: [], style: null, difficulty: null });
 });
+
+/** What a page may report about the device it runs on. */
+const REPORTED_DEVICES = {
+  // iPadOS reports itself as a Mac, with touch points.
+  'an iPad on iPadOS': {
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15',
+    platform: 'MacIntel',
+    maxTouchPoints: 5,
+  },
+  'an Android tablet': {
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 15; SM-X910) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+    platform: 'Linux armv8l',
+    maxTouchPoints: 10,
+  },
+  'a desktop with no touch at all': {
+    userAgent:
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+    platform: 'Linux x86_64',
+    maxTouchPoints: 0,
+  },
+} as const;
+
+for (const [device, reported] of Object.entries(REPORTED_DEVICES)) {
+  test.describe(`on a page that reports ${device}`, () => {
+    test.use({ userAgent: reported.userAgent });
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(({ platform, maxTouchPoints }) => {
+        Object.defineProperty(Navigator.prototype, 'platform', { get: () => platform });
+        Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => maxTouchPoints });
+      }, reported);
+    });
+
+    for (const game of CATALOG) {
+      for (const style of game.playStyles.filter((option) =>
+        ['simultaneous', 'cooperative'].includes(option.style),
+      )) {
+        test(`${game.id} ${style.style} offers a Seat to every Player it accepts, four included (story 3)`, async ({
+          arcade,
+        }) => {
+          await openLobby(arcade, game);
+          await tapMascots(arcade, MASCOTS.slice(0, style.players.max));
+          const shown = await lobby(arcade);
+          expect(shown.styles).toContain(style.style);
+          if (shown.style !== style.style) await arcade.tap(`style-${style.style}`);
+          expect((await lobby(arcade)).start.available).toBe(true);
+          const session = await start(arcade, game.id);
+          expect(session.seats).toHaveLength(style.players.max);
+          expect((await arcade.round())!.zones).toHaveLength(style.zoned ? style.players.max : 0);
+        });
+      }
+    }
+  });
+}

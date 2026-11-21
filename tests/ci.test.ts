@@ -26,6 +26,17 @@ function block(name: string, indent: number): string[] {
 }
 
 const job = (name: string) => block(name, 2);
+
+/**
+ * How many jobs share each Chromium project's tests. With three Games every project's tests took
+ * nearly 30 minutes in one job (slice 4b, #17), and each Game adds to them.
+ */
+const SHARDS = 4;
+const shardsOf = (project: string) =>
+  Array.from({ length: SHARDS }, (_, i) => ({
+    name: `${project}-${i + 1}-of-${SHARDS}`,
+    shard: `--shard=${i + 1}/${SHARDS}`,
+  }));
 /** The commands a job's steps run. */
 const runs = (lines: string[]) =>
   lines.flatMap((line) => /^(?:- )?run: (.+)$/.exec(line)?.[1] ?? []);
@@ -106,13 +117,17 @@ describe('the CI workflow', () => {
     const chromium = projects.filter((project) => project !== 'webkit-smoke');
     // The tests that open the Performance check, whose load needs the browser to draw steadily.
     expect(e2e).toContain('ISOLATED: performance-check|every named target of every screen');
-    // One job for each project, running all of its tests but those.
-    for (const project of projects) {
-      expect(jobs.get(project), `a job for ${project}`).toEqual(
-        project === 'webkit-smoke'
-          ? [`--project=${project}`]
-          : [`--project=${project}`, '--grep-invert="$ISOLATED"'],
-      );
+    // WebKit's smoke tests in one job. Each Chromium project's other tests shared among SHARDS
+    // jobs side by side, so that no job comes near the 30-minute limit.
+    expect(jobs.get('webkit-smoke')).toEqual(['--project=webkit-smoke']);
+    for (const project of chromium) {
+      for (const { name, shard } of shardsOf(project)) {
+        expect(jobs.get(name), `a job for ${name}`).toEqual([
+          `--project=${project}`,
+          '--grep-invert="$ISOLATED"',
+          shard,
+        ]);
+      }
     }
     // And one job for each Chromium project running exactly those, one at a time.
     for (const project of chromium) {
@@ -123,10 +138,12 @@ describe('the CI workflow', () => {
       ]);
     }
     expect([...jobs.keys()]).toEqual([
-      ...projects,
+      ...chromium.flatMap((project) => shardsOf(project).map(({ name }) => name)),
+      'webkit-smoke',
       ...chromium.map((project) => `one-at-a-time-${project}`),
     ]);
     expect(e2e).toContain('fail-fast: false');
+    expect(e2e).toContain('timeout-minutes: 30');
   });
 
   it('publishes only from main, only after npm run check and npm run e2e have passed in the same run', () => {
@@ -141,16 +158,18 @@ describe('the CI workflow', () => {
       tested.indexOf('- run: npm run e2e -- --project=${{ matrix.project }}'),
     );
     expect(tested.slice(keep, keep + 3)).toContain(
-      "if: github.ref == 'refs/heads/main' && matrix.job == 'chromium-tablet-4x3'",
+      `if: github.ref == 'refs/heads/main' && matrix.job == '${shardsOf('chromium-tablet-4x3')[0]!.name}'`,
     );
     // Every project's build is the same build, byte for byte, or nothing is published.
     const same = job('same-build');
     expect(same).toContain('needs: e2e');
     expect(same).toContain('pattern: build-checksums-*');
     expect(same.some((line) => line.startsWith('diff -u '))).toBe(true);
-    // One checksum list from each browser-test job: each project's, and each one-at-a-time job's.
-    const oneAtATime = config.projects!.filter((project) => project.name !== 'webkit-smoke').length;
-    expect(same).toContain(`if [ "$count" -ne ${config.projects!.length + oneAtATime} ]; then`);
+    // One checksum list from each browser-test job: each shard's, WebKit's, and each one-at-a-time
+    // job's.
+    const chromium = config.projects!.filter((project) => project.name !== 'webkit-smoke').length;
+    const count = chromium * SHARDS + 1 + chromium;
+    expect(same).toContain(`if [ "$count" -ne ${count} ]; then`);
     // No other job publishes.
     const publishers = workflow.match(/actions\/deploy-pages@/g) ?? [];
     expect(publishers).toHaveLength(1);
