@@ -20,7 +20,8 @@ async function open(arcade: Arcade, difficulty: Difficulty = 'easy', seed = 2) {
 }
 
 async function untilRepeating(arcade: Arcade) {
-  await expect.poll(async () => (await echo(arcade)).phase, { timeout: 30_000 }).toBe('repeating');
+  // Round time moves slowly while a software-rendered page draws few frames.
+  await expect.poll(async () => (await echo(arcade)).phase, { timeout: 60_000 }).toBe('repeating');
 }
 
 /** Presses the pad the sequence asks for next. */

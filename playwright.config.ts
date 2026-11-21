@@ -15,7 +15,9 @@ export default defineConfig({
   retries: 0,
   // Headless browsers draw WebGL in software, and the canvas is 2752 x 2064 or more.
   workers: process.env['CI'] ? 2 : 4,
-  timeout: 60_000,
+  // A CI runner draws three or four frames a second, and many ordinary tests took 40 to 60
+  // seconds there.
+  timeout: 2 * 60_000,
   expect: { timeout: 10_000 },
   reporter: process.env['CI'] ? [['list'], ['github']] : 'list',
   use: {
