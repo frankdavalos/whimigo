@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { drawNumber, type DrawnNumber } from '@/kit/digits';
-import { holdButton } from '@/kit/hold-button';
+import { holdButton } from '@/kit/controls';
 import { createStage, type Stage } from '@/kit/stage';
 import { colors, sizes } from '@/kit/theme';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
@@ -25,7 +25,7 @@ class BlankCheckScreen extends Phaser.Scene implements ArcadeScreen {
       y: safe.y + safe.height / 2,
       icon: 'arcade/home',
       onHold: () => arcade.show('home'),
-    });
+    }).target;
     // Every digit once, so a test can see each glyph drawn.
     this.number = drawNumber(this, safe.x + safe.width / 2, safe.y + safe.height / 2, 1234567890);
     arcade.shown(this);

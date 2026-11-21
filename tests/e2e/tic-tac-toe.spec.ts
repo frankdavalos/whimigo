@@ -9,7 +9,7 @@ const TURN_BASED = GAME.playStyles.find((style) => style.style === 'turn-based')
 interface Board {
   board: (number | null)[];
   toMove: number;
-  marks: ({ seat: number; frame: string } | null)[];
+  marks: ({ seat: number; shape: string; color: number } | null)[];
 }
 const board = async (arcade: Arcade) => (await arcade.round())!.state as Board;
 
@@ -99,15 +99,15 @@ test('a tap on an empty cell places the mark of the Seat to move and passes the 
   expect((await board(arcade)).board.filter((cell) => cell !== null)).toHaveLength(1);
 });
 
-test('a mark is its Seat’s shape: the snapshot names the Seat, and the picture drawn is its shape frame', async ({
+test('a mark is its Seat’s shape: the snapshot names the Seat, the shape frame drawn and its colour', async ({
   arcade,
 }) => {
   await openRound(arcade);
   await mark(arcade, 0);
   await mark(arcade, 8);
   const { marks } = await board(arcade);
-  expect(marks[0]).toEqual({ seat: 0, frame: SEAT_LOOKS[0].shape });
-  expect(marks[8]).toEqual({ seat: 1, frame: SEAT_LOOKS[1].shape });
+  expect(marks[0]).toEqual({ seat: 0, shape: SEAT_LOOKS[0].shape, color: SEAT_LOOKS[0].color });
+  expect(marks[8]).toEqual({ seat: 1, shape: SEAT_LOOKS[1].shape, color: SEAT_LOOKS[1].color });
 });
 
 test('two taps on two empty cells in one touch event make exactly one Move', async ({ arcade }) => {

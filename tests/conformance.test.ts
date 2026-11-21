@@ -14,13 +14,13 @@ const turnBased: PlayStyleOption = {
   players: { min: 2, max: 2 },
   computerPlayers: 0,
   zoned: false,
+  usesDifficulty: false,
 };
 
 const manifest = (changes: Partial<GameManifest> = {}): GameManifest => ({
   id: 'good-game',
   title: 'Good Game',
   minAge: 4,
-  usesDifficulty: false,
   playStyles: [turnBased],
   card: { frame: 'arcade/card', color: 0 },
   load: () => Promise.reject(new Error('fixture')),
@@ -65,6 +65,7 @@ describe('the manifest checks', () => {
             players: { min: 1, max: 4 },
             computerPlayers: 1,
             zoned: false,
+            usesDifficulty: true,
           },
         ],
       }),

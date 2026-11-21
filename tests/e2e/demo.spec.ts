@@ -84,10 +84,25 @@ for (const { game, style, name } of EVERY_STYLE) {
     expect((await demo(arcade)).playing).toBe(true);
     expect((await arcade.round())!.state).toEqual(before.state);
 
-    // Played to its end this time, not skipped.
-    await expect.poll(async () => (await demo(arcade)).playing, { timeout: 20_000 }).toBe(false);
-    expect((await arcade.round())!.state).toEqual(before.state);
-    expect(await arcade.call('sounds')).toEqual(sounds);
+    // Played to its end this time, not skipped, with nothing moved or heard while it played. Once it
+    // ends the Round goes on at once (Color Echo sounds its next pad), so the state and sounds are
+    // read before asking whether it still plays: a reading followed by "playing" was taken during it.
+    let last: { state: unknown; sounds: unknown } | null = null;
+    await expect
+      .poll(
+        async () => {
+          const reading = {
+            state: (await arcade.round())!.state,
+            sounds: await arcade.call('sounds'),
+          };
+          const { playing } = await demo(arcade);
+          if (playing) last = reading;
+          return playing;
+        },
+        { timeout: 20_000, intervals: [100] },
+      )
+      .toBe(false);
+    expect(last).toEqual({ state: before.state, sounds });
     await playToResult(arcade, game.id);
     await expect.poll(() => arcade.screen()).toBe('result');
   });

@@ -7,8 +7,8 @@ type Glyph = Phaser.Types.GameObjects.BitmapText.BitmapFontCharacterData & { xAd
 
 /**
  * The digits 0 to 9 and a decimal point as a bitmap font (ADR-0005), made from frames of the
- * Arcade's atlas rather than from a font file. Provisional until the Phase 1 style guide chooses
- * the typeface.
+ * Arcade's atlas rather than from a font file. No typeface is bundled; the glyphs are drawn to the
+ * style guide (docs/design/style-guide.md).
  */
 export const DIGIT_FONT = 'arcade/digits';
 

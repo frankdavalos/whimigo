@@ -1,4 +1,5 @@
-import type { Rect } from '../../src/contract';
+import type { Rect, Seating } from '../../src/contract';
+import { MASCOTS } from '../../src/arcade/mascots';
 import {
   type Arcade,
   MIN_GAP,
@@ -8,7 +9,7 @@ import {
   gapBetween,
   test,
 } from './arcade';
-import { EVERY_STYLE, openSession, sessionFor } from './play';
+import { CATALOG, EVERY_STYLE, openSession, sessionFor } from './play';
 
 const DESIGN = { width: 2752, height: 2064 };
 /** Rounding between canvas pixels and CSS pixels, in CSS pixels. */
@@ -22,31 +23,112 @@ const contains = (outer: Rect, inner: Rect) =>
   inner.x + inner.width <= outer.x + outer.width + EPSILON &&
   inner.y + inner.height <= outer.y + outer.height + EPSILON;
 
-/** Visits every screen and hands each one's layout and snapshot to `check`. */
-async function eachScreen(
-  arcade: Arcade,
-  check: (
-    screen: string,
-    layout: Awaited<ReturnType<Arcade['layout']>>,
-    snapshot: Awaited<ReturnType<Arcade['snapshot']>>,
-  ) => void,
-) {
+type Check = (
+  screen: string,
+  layout: Awaited<ReturnType<Arcade['layout']>>,
+  snapshot: Awaited<ReturnType<Arcade['snapshot']>>,
+) => void;
+
+/**
+ * Visits every Arcade screen and hands each one's layout and snapshot to `check`: the tap-to-start
+ * screen, the Home Screen, every check screen, every Game's lobby with each number of Players
+ * joined, and the pause and Result screens.
+ */
+async function eachScreen(arcade: Arcade, check: Check) {
+  const visit = async (name: string) => check(name, await arcade.layout(), await arcade.snapshot());
   await arcade.open();
-  check('start', await arcade.layout(), await arcade.snapshot());
+  await visit('start');
   await arcade.start();
-  check('home', await arcade.layout(), await arcade.snapshot());
-  const checks = await arcade.checks();
-  for (const id of checks) {
+  await visit('home');
+  for (const game of CATALOG) {
+    await arcade.tap(game.id);
+    await expect.poll(() => arcade.screen()).toBe('lobby');
+    await visit(`${game.id} lobby with 0 Players`);
+    for (const [index, mascot] of MASCOTS.slice(0, 4).entries()) {
+      const before = JSON.stringify((await arcade.snapshot()).state);
+      await arcade.tap(`mascot-${mascot}`);
+      await expect
+        .poll(async () => JSON.stringify((await arcade.snapshot()).state))
+        .not.toBe(before);
+      await visit(`${game.id} lobby with ${index + 1} Players`);
+    }
+    await arcade.tap('home');
+    await expect.poll(() => arcade.screen()).toBe('home');
+  }
+  for (const id of await arcade.checks()) {
     await arcade.call('openCheck', id);
     await expect.poll(() => arcade.screen()).toBe(id);
-    check(id, await arcade.layout(), await arcade.snapshot());
+    await visit(id);
   }
   const { game, style } = EVERY_STYLE[0]!;
   await openSession(arcade, sessionFor(game, style), 1);
   await arcade.hold('pause', 900);
   await expect.poll(() => arcade.screen()).toBe('pause');
-  check('pause', await arcade.layout(), await arcade.snapshot());
+  await visit('pause');
+  await arcade.tap('play');
+  await expect.poll(() => arcade.screen()).toBe(game.id);
+  await arcade.call('finish', { kind: 'win', winners: [0] });
+  await expect.poll(() => arcade.screen()).toBe('result');
+  await visit('result');
 }
+
+/** Every Game in each Play Style, with each number of Seats it accepts, in each Seating that applies. */
+const EVERY_ROUND = EVERY_STYLE.flatMap(({ game, style, name }) =>
+  Array.from(
+    { length: style.players.max - style.players.min + 1 },
+    (_, i) => style.players.min + i,
+  ).flatMap((players) => {
+    const seats = players + style.computerPlayers;
+    // As the lobby offers them: a choice of Seating only with two or more Players.
+    const seatings: Seating[] =
+      players >= 2 ? ['side-by-side', 'around-the-table'] : ['side-by-side'];
+    return seatings.map((seating) => ({
+      name: `${name} with ${seats} Seats ${seating}`,
+      session: sessionFor(game, style, seating, players),
+    }));
+  }),
+);
+
+/** Checks a screen's frame, and that every named target is large, apart and inside the safe rectangle. */
+const checkLayout: Check = (screen, layout, snapshot) => {
+  const { canvas, frame, viewport: page } = layout;
+  expect(canvas, 'the canvas fills the page').toEqual({ x: 0, y: 0, ...page });
+  expect(contains(canvas, frame), `${screen}: frame inside canvas`).toBe(true);
+  expect(frame.x + frame.width / 2).toBeCloseTo(canvas.x + canvas.width / 2, 0);
+  expect(frame.y + frame.height / 2).toBeCloseTo(canvas.y + canvas.height / 2, 0);
+  expect(frame.width / frame.height).toBeCloseTo(DESIGN.width / DESIGN.height, 2);
+  expect(
+    Math.abs(frame.width - canvas.width) < EPSILON ||
+      Math.abs(frame.height - canvas.height) < EPSILON,
+    `${screen}: the frame fills the canvas one way`,
+  ).toBe(true);
+  if (page.width / page.height > DESIGN.width / DESIGN.height + 0.01) {
+    expect(layout.canvasPixels.width).toBeGreaterThan(DESIGN.width);
+    expect(layout.canvasPixels.height).toBe(DESIGN.height);
+  }
+
+  const controls = Object.entries(snapshot.targets);
+  for (const [name, target] of controls) {
+    expect(contains(frame, target.rect), `${screen}/${name} inside the frame`).toBe(true);
+  }
+  if (screen === 'start') return; // Its one target is the whole frame: tap anywhere.
+
+  const unit = frame.width / DESIGN.width;
+  expect(controls.length, `${screen} has controls`).toBeGreaterThan(0);
+  for (const [name, { rect }] of controls) {
+    expect(rect.width / unit, `${screen}/${name} width`).toBeGreaterThanOrEqual(MIN_TARGET - 1);
+    expect(rect.height / unit, `${screen}/${name} height`).toBeGreaterThanOrEqual(MIN_TARGET - 1);
+    expect(contains(layout.safe!, rect), `${screen}/${name} inside the safe rectangle`).toBe(true);
+  }
+  for (const [i, [a, first]] of controls.entries()) {
+    for (const [b, second] of controls.slice(i + 1)) {
+      expect(
+        gapBetween(first.rect, second.rect) / unit,
+        `${screen}: ${a} to ${b}`,
+      ).toBeGreaterThanOrEqual(MIN_GAP - 1);
+    }
+  }
+};
 
 for (const [shape, viewport] of Object.entries(shapes)) {
   test.describe(`at ${shape}`, () => {
@@ -54,55 +136,20 @@ for (const [shape, viewport] of Object.entries(shapes)) {
       if (viewport) await page.setViewportSize(viewport);
     });
 
-    test('the design frame is fully visible and centred, and every control is large, apart and safe', async ({
+    test('the design frame is fully visible and centred, and every control of every Arcade screen is large, apart and safe', async ({
       arcade,
     }) => {
-      await eachScreen(arcade, (screen, layout, snapshot) => {
-        const { canvas, frame, viewport: page } = layout;
-        expect(canvas, 'the canvas fills the page').toEqual({ x: 0, y: 0, ...page });
-        expect(contains(canvas, frame), `${screen}: frame inside canvas`).toBe(true);
-        expect(frame.x + frame.width / 2).toBeCloseTo(canvas.x + canvas.width / 2, 0);
-        expect(frame.y + frame.height / 2).toBeCloseTo(canvas.y + canvas.height / 2, 0);
-        expect(frame.width / frame.height).toBeCloseTo(DESIGN.width / DESIGN.height, 2);
-        expect(
-          Math.abs(frame.width - canvas.width) < EPSILON ||
-            Math.abs(frame.height - canvas.height) < EPSILON,
-          `${screen}: the frame fills the canvas one way`,
-        ).toBe(true);
-        if (page.width / page.height > DESIGN.width / DESIGN.height + 0.01) {
-          expect(layout.canvasPixels.width).toBeGreaterThan(DESIGN.width);
-          expect(layout.canvasPixels.height).toBe(DESIGN.height);
-        }
-
-        const controls = Object.entries(snapshot.targets);
-        for (const [name, target] of controls) {
-          expect(contains(frame, target.rect), `${screen}/${name} inside the frame`).toBe(true);
-        }
-        if (screen === 'start') return; // Its one target is the whole frame: tap anywhere.
-
-        const unit = frame.width / DESIGN.width;
-        expect(controls.length, `${screen} has controls`).toBeGreaterThan(0);
-        for (const [name, { rect }] of controls) {
-          expect(rect.width / unit, `${screen}/${name} width`).toBeGreaterThanOrEqual(
-            MIN_TARGET - 1,
-          );
-          expect(rect.height / unit, `${screen}/${name} height`).toBeGreaterThanOrEqual(
-            MIN_TARGET - 1,
-          );
-          expect(contains(layout.safe!, rect), `${screen}/${name} inside the safe rectangle`).toBe(
-            true,
-          );
-        }
-        for (const [i, [a, first]] of controls.entries()) {
-          for (const [b, second] of controls.slice(i + 1)) {
-            expect(
-              gapBetween(first.rect, second.rect) / unit,
-              `${screen}: ${a} to ${b}`,
-            ).toBeGreaterThanOrEqual(MIN_GAP - 1);
-          }
-        }
-      });
+      test.slow();
+      await eachScreen(arcade, checkLayout);
     });
+
+    for (const { name, session } of EVERY_ROUND) {
+      test(`every target of ${name} is large, apart and safe`, async ({ arcade }) => {
+        await arcade.open();
+        await openSession(arcade, session, 1);
+        checkLayout(name, await arcade.layout(), await arcade.snapshot());
+      });
+    }
   });
 }
 

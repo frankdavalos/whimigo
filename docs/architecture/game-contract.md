@@ -104,9 +104,6 @@ export interface GameManifest {
   /** Every way this Game can be played. The lobby offers those that fit the Players who joined. */
   readonly playStyles: readonly PlayStyleOption[];
 
-  /** False for a Game where Difficulty means nothing; the lobby then hides the choice. */
-  readonly usesDifficulty: boolean;
-
   /** The Game Card: a frame in the Arcade's own atlas (`arcade/game-card/<id>`) and a theme colour. */
   readonly card: { readonly frame: string; readonly color: number };
 
@@ -125,6 +122,13 @@ export interface PlayStyleOption {
 
   /** True if each Seat gets its own Zone. False means one shared board. */
   readonly zoned: boolean;
+
+  /**
+   * False where Difficulty means nothing in this style, as in Tic-Tac-Toe for two Players; the
+   * lobby then offers no Difficulty and the Session carries Easy. Per Play Style since slice 4a
+   * (#16), when it moved here from the manifest.
+   */
+  readonly usesDifficulty: boolean;
 }
 ```
 
@@ -135,10 +139,9 @@ export const manifest: GameManifest = {
   id: 'tic-tac-toe',
   title: 'Tic-Tac-Toe',
   minAge: 4,
-  usesDifficulty: true,
   playStyles: [
-    { style: 'versus-computer', players: { min: 1, max: 1 }, computerPlayers: 1, zoned: false },
-    { style: 'turn-based',      players: { min: 2, max: 2 }, computerPlayers: 0, zoned: false },
+    { style: 'versus-computer', players: { min: 1, max: 1 }, computerPlayers: 1, zoned: false, usesDifficulty: true },
+    { style: 'turn-based',      players: { min: 2, max: 2 }, computerPlayers: 0, zoned: false, usesDifficulty: false },
   ],
   card: { frame: 'arcade/game-card/tic-tac-toe', color: colors.sky },
   load: () => import('./index'),
@@ -531,6 +534,8 @@ Seeded from `RoundStart.seed`. The same seed and the same sequence of touches pr
 ### UI
 
 Factory functions that build the Arcade's standard controls inside any Scene: `button`, `iconButton`, `holdButton`, `panel`, `seatBadge`, `turnPointer`. They apply the touch-target minimums and theme tokens from [overview.md](overview.md#visual-system), so a Game cannot accidentally make a control too small. Labels are icons or bitmap digits. Phaser `Text` objects are not used in Games ([ADR-0005](../adr/0005-pictures-in-canvas-words-in-dom.md)).
+
+Built in slice 4a ([#16](https://github.com/frankdavalos/whimigo/issues/16), 2026-11-20): `src/kit/controls.ts` holds the first five and `src/kit/turn-pointer.ts` the Turn pointer. Each takes its touch rectangle from `CONTROL_AREAS` (`src/kit/control-areas.ts`), which never reports less than 256 units square whatever size was asked for; `src/kit/control-areas.test.ts` holds every control to it. The squash on press and the sound on release that the overview describes are not built yet. How the controls look is in the [style guide](../design/style-guide.md).
 
 ## A convention for Turn-Based Games
 

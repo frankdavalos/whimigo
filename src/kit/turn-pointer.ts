@@ -1,11 +1,11 @@
 import type * as Phaser from 'phaser';
 import type { Rect, SeatIndex, Seating, SnapshotTarget } from '@/contract';
 import { picture } from './atlas';
-import { sizes } from './theme';
+import { CONTROL_AREAS, MIN_TOUCH } from './control-areas';
 import { zonesFor, type ZonedSeats } from './zones';
 
 /**
- * Where the Turn pointer stands for the Seat to move: at the edge of the screen that belongs to
+ * Where the Turn pointer stands for the Seat to move, the size of a Seat's shape: at the edge of the screen that belongs to
  * that Seat, which is the outer edge of the part of the safe rectangle its Zone would cover. The
  * bottom edge for a Seat facing 0°, the top edge for one facing 180°.
  */
@@ -17,14 +17,14 @@ export function turnPointerRect(
 ): Rect {
   const zone = zonesFor(safe, seats, seating)[seat];
   if (!zone) throw new Error(`No Seat ${seat} among ${seats}`);
-  const size = sizes.button;
+  const size = MIN_TOUCH;
   const { rect } = zone;
-  return {
-    x: rect.x + rect.width / 2 - size / 2,
-    y: zone.facing === 0 ? rect.y + rect.height - size : rect.y,
+  return CONTROL_AREAS.turnPointer({
+    x: rect.x + rect.width / 2,
+    y: zone.facing === 0 ? rect.y + rect.height - size / 2 : rect.y + size / 2,
     width: size,
     height: size,
-  };
+  });
 }
 
 /** The Turn pointer as drawn: it moves to the Seat whose Turn it is. */
@@ -39,7 +39,7 @@ export interface TurnPointer {
  * Draws the Turn pointer for a shared board: the shape of the Seat to move, at its edge of the
  * screen, so that every Player can see whose Turn it is without reading.
  */
-export function drawTurnPointer(
+export function turnPointer(
   scene: Phaser.Scene,
   safe: Rect,
   seats: number,

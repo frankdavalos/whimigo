@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
 import { createStage, type Stage } from '@/kit/stage';
-import { tapButton } from '@/kit/tap-button';
+import { iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
 import { GROWN_UPS } from './grown-ups';
 import { LOBBY, type LobbyData } from './lobby/lobby-screen';
@@ -49,7 +49,7 @@ export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
       };
     });
     // The Grown-Up Gate will guard this control (slice 5d).
-    this.targets[GROWN_UPS] = tapButton(this, {
+    this.targets[GROWN_UPS] = iconButton(this, {
       x: safe.x + safe.width - sizes.button / 2,
       y: safe.y + safe.height - sizes.button / 2,
       icon: 'arcade/grown-ups',

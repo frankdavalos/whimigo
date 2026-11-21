@@ -120,6 +120,8 @@ export interface PlayStyleOption {
   readonly computerPlayers: number;
   /** True if each Seat gets its own Zone; false means one shared board. */
   readonly zoned: boolean;
+  /** False where Difficulty means nothing in this style; the lobby then offers no choice. */
+  readonly usesDifficulty: boolean;
 }
 
 /**
@@ -133,8 +135,6 @@ export interface GameManifest {
   /** The youngest age the Game is meant for. Shown to grown-ups only. */
   readonly minAge: number;
   readonly playStyles: readonly PlayStyleOption[];
-  /** False for a Game where Difficulty means nothing. */
-  readonly usesDifficulty: boolean;
   /** The Game Card: a frame in the Arcade's atlas (`arcade/…`) and a theme colour. */
   readonly card: { readonly frame: string; readonly color: number };
   /** Loads the module. A literal dynamic import, so the bundler makes one chunk per Game. */

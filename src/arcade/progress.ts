@@ -38,5 +38,6 @@ export function recordRound(document: SaveDocument, game: GameId, stars: Stars):
     mascots[mascot] = { stars: (mascots[mascot]?.stars ?? 0) + earned };
   }
   const roundsPlayed = (document.games[game]?.roundsPlayed ?? 0) + 1;
-  return { ...document, mascots, games: { ...document.games, [game]: { roundsPlayed } } };
+  const games = { ...document.games, [game]: { ...document.games[game], roundsPlayed } };
+  return { ...document, mascots, games };
 }

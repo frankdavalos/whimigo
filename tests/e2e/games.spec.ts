@@ -1,6 +1,7 @@
 import type { MascotId, PlayStyle, Rect, Result } from '../../src/contract';
 import { MASCOTS } from '../../src/arcade/mascots';
 import { starsEarned } from '../../src/arcade/progress';
+import { seats as SEAT_LOOKS } from '../../src/kit/theme';
 import { expect, test } from './arcade';
 import { CATALOG, EVERY_STYLE, openSession, playToResult, sessionFor } from './play';
 
@@ -192,5 +193,37 @@ for (const { game, style, name } of EVERY_STYLE) {
       return states;
     };
     expect(await play()).toEqual(await play());
+  });
+}
+
+/** Every object in a Round's state that names a Seat, wherever it is nested. */
+function seatsIn(state: unknown): Record<string, unknown>[] {
+  if (Array.isArray(state)) return state.flatMap(seatsIn);
+  if (state === null || typeof state !== 'object') return [];
+  const object = state as Record<string, unknown>;
+  const nested = Object.values(object).flatMap(seatsIn);
+  return 'seat' in object ? [object, ...nested] : nested;
+}
+
+for (const { game, style, name } of EVERY_STYLE) {
+  test(`${name}: every Seat the Round’s snapshot shows reports its shape with its colour`, async ({
+    arcade,
+  }) => {
+    test.slow();
+    const session = sessionFor(game, style);
+    await openSession(arcade, session, SEED);
+    const { session: opened } = (await arcade.round())!;
+    opened.seats.forEach((seat, index) => {
+      expect(seat).toMatchObject({
+        index,
+        color: SEAT_LOOKS[index]!.color,
+        shape: SEAT_LOOKS[index]!.shape,
+      });
+    });
+    const states = [(await arcade.round())!.state, ...(await playToResult(arcade, game.id))];
+    for (const shown of states.flatMap(seatsIn)) {
+      const look = SEAT_LOOKS[shown['seat'] as number]!;
+      expect(shown, JSON.stringify(shown)).toMatchObject({ shape: look.shape, color: look.color });
+    }
   });
 }

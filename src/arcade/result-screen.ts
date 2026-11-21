@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import type { MascotId, Result, ScreenSnapshot, Session, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
 import { createStage, type Stage } from '@/kit/stage';
-import { tapButton } from '@/kit/tap-button';
+import { iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
 import type { Stars } from './progress';
 import { mascotFrame } from './mascots';
@@ -63,13 +63,13 @@ export class ResultScreen extends Phaser.Scene implements ArcadeScreen {
       stars: Object.fromEntries(mascots.map((mascot) => [mascot, stars[mascot] ?? 0])),
     };
     this.targets = {
-      replay: tapButton(this, {
+      replay: iconButton(this, {
         x: middle.x - spacing,
         y: middle.y + 360,
         icon: 'arcade/replay',
         onTap: replay,
       }).target,
-      home: tapButton(this, {
+      home: iconButton(this, {
         x: middle.x + spacing,
         y: middle.y + 360,
         icon: 'arcade/home',

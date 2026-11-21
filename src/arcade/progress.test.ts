@@ -10,7 +10,13 @@ const GAME = { id: 'fixture' } as GameManifest;
 function session(style: PlayStyle, joined: MascotId[], computerPlayers = 0): Session {
   return buildSession({
     game: GAME,
-    style: { style, players: { min: 1, max: 4 }, computerPlayers, zoned: false },
+    style: {
+      style,
+      players: { min: 1, max: 4 },
+      computerPlayers,
+      zoned: false,
+      usesDifficulty: true,
+    },
     joined,
     difficulty: 'easy',
     seating: 'side-by-side',
@@ -87,6 +93,18 @@ describe('a Round recorded in the save document', () => {
       'tic-tac-toe': { roundsPlayed: 2 },
       'color-echo': { roundsPlayed: 1 },
     });
+  });
+
+  it('keeps the remembered choices and Seating', () => {
+    const choices = { style: 'solo', difficulty: 'hard', mascots: ['fox'] } as const;
+    const before: SaveDocument = {
+      ...FRESH,
+      games: { 'color-echo': { roundsPlayed: 0, choices } },
+      seating: 'around-the-table',
+    };
+    const after = recordRound(before, 'color-echo', { fox: 1 });
+    expect(after.games['color-echo']).toEqual({ roundsPlayed: 1, choices });
+    expect(after.seating).toBe('around-the-table');
   });
 
   it('leaves the document it was given unchanged', () => {

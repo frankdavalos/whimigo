@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="992" viewBox="0 0 800 992" shape-rendering="crispEdges">
   <!-- A test card for checklist item 15: every line is a whole number of units wide, on whole units. -->
   <defs>
-    <pattern id="columns-1" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="2" fill="#000000"/></pattern>
-    <pattern id="columns-2" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="4" fill="#000000"/></pattern>
-    <pattern id="columns-3" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="3" height="6" fill="#000000"/></pattern>
-    <pattern id="rows-1" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="2" height="1" fill="#000000"/></pattern>
-    <pattern id="rows-2" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#000000"/></pattern>
-    <pattern id="rows-3" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="3" fill="#000000"/></pattern>
-    <pattern id="grid-4" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="1" fill="#000000"/><rect width="1" height="4" fill="#000000"/></pattern>
-    <pattern id="checks-1" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#000000"/><rect x="1" y="1" width="1" height="1" fill="#000000"/></pattern>
-    <pattern id="grid-8" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="1" fill="#000000"/><rect width="1" height="8" fill="#000000"/></pattern>
+    <pattern id="columns-1" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="2" fill="#2f3a56"/></pattern>
+    <pattern id="columns-2" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="4" fill="#2f3a56"/></pattern>
+    <pattern id="columns-3" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="3" height="6" fill="#2f3a56"/></pattern>
+    <pattern id="rows-1" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="2" height="1" fill="#2f3a56"/></pattern>
+    <pattern id="rows-2" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#2f3a56"/></pattern>
+    <pattern id="rows-3" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="3" fill="#2f3a56"/></pattern>
+    <pattern id="grid-4" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="1" fill="#2f3a56"/><rect width="1" height="4" fill="#2f3a56"/></pattern>
+    <pattern id="checks-1" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#2f3a56"/><rect x="1" y="1" width="1" height="1" fill="#2f3a56"/></pattern>
+    <pattern id="grid-8" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="1" fill="#2f3a56"/><rect width="1" height="8" fill="#2f3a56"/></pattern>
   </defs>
   <rect width="800" height="992" fill="#2f3a56"/>
   <rect x="8" y="8" width="784" height="976" fill="#ffffff"/>

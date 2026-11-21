@@ -2,9 +2,8 @@ import * as Phaser from 'phaser';
 import type { Rect, ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
 import { drawNumber, type DrawnNumber } from '@/kit/digits';
-import { holdButton } from '@/kit/hold-button';
 import { createStage, type Stage } from '@/kit/stage';
-import { tapButton } from '@/kit/tap-button';
+import { holdButton, iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 import { createFrameMeter, type FrameMeter } from './frame-meter';
@@ -69,7 +68,7 @@ class PerformanceCheckScreen extends Phaser.Scene implements ArcadeScreen {
     this.cycles = new SceneCycles(this, arcade.services.safeAreaInsets());
     this.events.once('shutdown', () => this.cycles.stop());
     this.targets = {
-      loop: tapButton(this, {
+      loop: iconButton(this, {
         x: safe.x + sizes.button / 2,
         y: safe.y + sizes.button / 2,
         icon: 'arcade/perf-loop',
@@ -80,7 +79,7 @@ class PerformanceCheckScreen extends Phaser.Scene implements ArcadeScreen {
         y: safe.y + safe.height / 2,
         icon: 'arcade/home',
         onHold: () => arcade.show('home'),
-      }),
+      }).target,
     };
 
     // The sharpness card, at the bottom of the right column, with its top-left corner on a whole unit.

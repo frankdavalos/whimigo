@@ -40,7 +40,7 @@ export class ColorEchoScene extends Phaser.Scene {
   create(begin: RoundStart): void {
     const round = openRound(this, begin);
     const { safe } = round.stage;
-    round.stage.backdrop({ color: colors.lilac });
+    round.stage.backdrop({ color: colors.sky });
     const pads = PADS.slice(0, padCount(round.session.difficulty));
     const middle = { x: safe.x + safe.width / 2, y: safe.y + safe.height / 2 };
     const gate = turnGate(this);

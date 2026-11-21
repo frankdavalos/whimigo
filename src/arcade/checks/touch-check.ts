@@ -2,10 +2,9 @@ import * as Phaser from 'phaser';
 import type { Rect, ScreenSnapshot, SnapshotTarget, Zone } from '@/contract';
 import { picture } from '@/kit/atlas';
 import { drawNumber, type DrawnNumber } from '@/kit/digits';
-import { holdButton } from '@/kit/hold-button';
 import type { TouchInput } from '@/kit/seat-touches';
 import { createStage, type Stage } from '@/kit/stage';
-import { tapButton, type TapButton } from '@/kit/tap-button';
+import { holdButton, iconButton, type IconButton } from '@/kit/controls';
 import { colors, seats, sizes } from '@/kit/theme';
 import { onTouchesReset } from '@/kit/touches';
 import { fromZoneLocal } from '@/kit/zones';
@@ -59,7 +58,7 @@ class TouchCheckScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
   private readings!: TouchReadings;
   private targets: Record<string, SnapshotTarget> = {};
-  private seating!: TapButton;
+  private seating!: IconButton;
   private shown!: { count: DrawnNumber; highest: DrawnNumber; cancellations: DrawnNumber };
   private zones: DrawnZone[] = [];
   private markers = new Map<number, Marker>();
@@ -83,7 +82,7 @@ class TouchCheckScreen extends Phaser.Scene implements ArcadeScreen {
     this.markers = new Map();
     this.zones = [];
 
-    this.seating = tapButton(this, {
+    this.seating = iconButton(this, {
       x: left,
       y: rows[0]!,
       icon: SEATING_ICON[this.readings.seating],
@@ -96,13 +95,13 @@ class TouchCheckScreen extends Phaser.Scene implements ArcadeScreen {
         y: rows[1]!,
         icon: 'arcade/home',
         onHold: () => arcade.show('home'),
-      }),
+      }).target,
       reset: holdButton(this, {
         x: left,
         y: rows[2]!,
         icon: 'arcade/reset',
         onHold: () => this.change(resetReadings(this.readings)),
-      }),
+      }).target,
     };
 
     const reading = (y: number, icon: string) => {

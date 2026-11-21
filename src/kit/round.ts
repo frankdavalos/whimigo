@@ -1,7 +1,7 @@
 import type * as Phaser from 'phaser';
 import type { Round, RoundSnapshot, RoundStart } from '@/contract';
 import { createDemo } from './demo';
-import { holdButton } from './hold-button';
+import { holdButton } from './controls';
 import { createMotion } from './motion';
 import { createRng } from './rng';
 import { createStage } from './stage';
@@ -24,7 +24,7 @@ export function openRound(scene: Phaser.Scene, start: RoundStart): Round {
   const { host } = start;
   const stage = createStage(scene, host.insets());
   const { safe } = stage;
-  const pause = holdButton(scene, {
+  const { target: pause } = holdButton(scene, {
     x: safe.x + sizes.button / 2,
     y: safe.y + safe.height / 2,
     icon: 'arcade/pause',

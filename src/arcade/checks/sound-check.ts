@@ -1,9 +1,8 @@
 import * as Phaser from 'phaser';
 import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
-import { holdButton } from '@/kit/hold-button';
 import { createStage, type Stage } from '@/kit/stage';
-import { tapButton } from '@/kit/tap-button';
+import { holdButton, iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
 import type { Audio, AudioState } from '@/platform/audio';
 import { onPageHidden, onPageShown } from '@/platform/lifecycle';
@@ -75,11 +74,11 @@ class SoundCheckScreen extends Phaser.Scene implements ArcadeScreen {
         y: middle.y,
         icon: 'arcade/home',
         onHold: () => arcade.show('home'),
-      }),
+      }).target,
     };
     ROWS.forEach((row, rowIndex) => {
       row.forEach((sound, index) => {
-        this.targets[sound] = tapButton(this, {
+        this.targets[sound] = iconButton(this, {
           x: middle.x + (index - (row.length - 1) / 2) * SPACING,
           y: middle.y - 100 + rowIndex * SPACING,
           icon: iconOf(sound),

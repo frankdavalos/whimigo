@@ -25,7 +25,7 @@ For the next Claude Code session. It says where the project stands, what to do f
   - The contract types are in `src/contract.ts`. A Game's pack has its own small type, `GamePack`, because Phaser's demands loader internals; colours are theme numbers. `RoundStart` and `Round` carry the Round's `number` in the Session, and `TurnRules.start` takes the Seat that moves `first`.
   - `GameHost` (`src/arcade/game-host.ts`) is a pure state machine (`host-state.ts`) plus Scene handling. The loading and Result screens are Arcade screens, and the Result screen runs over the Game's paused Scene. `openRound` is in `src/kit/round.ts`.
   - The kit gained the seeded `createRng`, `TurnRules` with `checkTurnRules`, a pure `TurnGate` with its Scene wiring, and the Turn pointer.
-  - The lobby's rules are in `src/arcade/lobby/rules.ts`. The eight Mascot ids in `src/arcade/mascots.ts` are permanent; their pictures are provisional until slice 4a.
+  - The lobby's rules are in `src/arcade/lobby/rules.ts`. The eight Mascot ids in `src/arcade/mascots.ts` are permanent; they were redrawn to the style guide in slice 4a.
   - Conformance checks are in `src/arcade/conformance.ts`. Manifests are checked in Node (`tests/conformance.test.ts`) and modules in the browser (`games.spec.ts`).
   - The asset build finds each Game's `art/` folder and `card.svg` by itself.
   - The check screens moved from the Home Screen to buttons on the status page.
@@ -50,7 +50,16 @@ For the next Claude Code session. It says where the project stands, what to do f
   - The Arcade's shared sounds are `tap`, `wrong` and `win` (`src/arcade/sounds.ts`), loaded at boot. There is no refusal sound: an ignored touch is silent. `tests/sounds.test.ts` checks every recipe of the Arcade and of every Game.
   - The bridge's `round()` reports `demo`, `refusals` and `motion`. Browser tests open a Session with `openSession` in `tests/e2e/play.ts`, which skips the Demo with a tap; `NEXT_TAP` may return null to wait for a Game that moves on by itself. The ignored- and accepted-touch tables are in `tests/e2e/feedback.spec.ts`, and a Game added to the Catalog without a case in each fails them.
   - Round time adds up Phaser's frame deltas, so in the software-rendered test browser it runs at about a third of wall time; waits on Color Echo allow for that.
-- **Next:** `/zsl:tdd 16`, then the other `[AFK]` slices one at a time in the order of the table below. Read each slice's body and its agent brief before building it.
+- **Phase 1 slice 4a is built (#16, 2026-11-20).** The lobby is the real thing, and the Arcade has its look.
+  - The [style guide](design/style-guide.md) is written. The palette in `src/kit/theme.ts` is its source of truth, and `tests/palette.test.ts` fails on any colour outside it in any SVG of the Arcade or of any Game (the stand-in check art excepted). The eight Mascots were redrawn to it; the Game Cards, controls, check icons and Color Echo's pads were recoloured to it; Play Style and Difficulty pictures are new and the Seating pictures show Seat shapes.
+  - The final Seat colours are blue, yellow, red and aqua, with circle, square, triangle and star. `src/kit/theme.test.ts` holds them more than 20 apart in CIEDE2000 with ordinary vision and under simulated protanopia, deuteranopia and tritanopia (`src/kit/color-difference.ts`, Machado 2009); the least today is about 29.
+  - The lobby's rules are pure: `lobbyView` in `src/arcade/lobby/rules.ts` turns the choices made into what is offered and the Session start would begin (null when start is unavailable); `tapMascot` joins, frees a Seat (the rest close up) or refuses a fifth. `src/arcade/lobby/memory.ts` reads and writes the save document: `openLobby`, `startSession` and `rememberSeating`.
+  - The contract changed: `usesDifficulty` moved from the manifest to each `PlayStyleOption`. Tic-Tac-Toe for two Players does not use it; the Session then carries Easy.
+  - The save document stays version 1 with two optional additions: `games[id].choices` (the last Play Style, Difficulty and Mascots in Seat order, written when a Session starts) and `seating` (written when a Seating is tapped, so the default by Player count holds until someone chooses one).
+  - The kit's controls are `button`, `iconButton`, `holdButton`, `panel`, `seatBadge` (`src/kit/controls.ts`) and `turnPointer`; `tapButton` and `drawTurnPointer` are gone. An icon larger than 240 units is drawn smaller, to fit the 344-unit face.
+  - The layout test now visits every Game's lobby with 0 to 4 Players, the pause and Result screens, and every Game in each Play Style, Seat count and Seating (`EVERY_ROUND` in `tests/e2e/layout.spec.ts`). It found Tic-Tac-Toe's cells touching: each cell now takes touches on 320 of its 384 units, and the Turn pointer is the size of a Seat shape (256).
+  - The lobby's browser tests are in `tests/e2e/lobby.spec.ts`; those over the Catalog fire for a several-Play-Style lobby once #19 or #20 adds one.
+- **Next:** `/zsl:tdd 17`, then the other `[AFK]` slices one at a time in the order of the table below. Read each slice's body and its agent brief before building it.
 
 ## Read these first
 

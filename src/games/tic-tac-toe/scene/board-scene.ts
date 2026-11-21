@@ -2,13 +2,15 @@ import * as Phaser from 'phaser';
 import type { RoundStart, SeatIndex, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
 import { openRound } from '@/kit/round';
-import { colors } from '@/kit/theme';
+import { colors, sizes } from '@/kit/theme';
 import { turnGate } from '@/kit/turn-gate';
-import { drawTurnPointer } from '@/kit/turn-pointer';
+import { turnPointer } from '@/kit/turn-pointer';
 import { rules, type Cell } from '../logic/rules';
 
 /** A cell's size in design units; the board's art is three cells and a border across. */
 const CELL = 384;
+/** The part of a cell that takes touches, leaving the standard gap between neighbouring cells. */
+const TOUCH = CELL - sizes.gap;
 
 /** Two Players take Turns on one board. */
 export class TicTacToeScene extends Phaser.Scene {
@@ -28,7 +30,7 @@ export class TicTacToeScene extends Phaser.Scene {
     picture(this, middle.x, middle.y, 'tic-tac-toe/board');
 
     const marks: (Phaser.GameObjects.Image | null)[] = state.board.map(() => null);
-    const pointer = drawTurnPointer(this, safe, seats.length, seating);
+    const pointer = turnPointer(this, safe, seats.length, seating);
     pointer.point(rules.seatToMove(state), seats[rules.seatToMove(state)]!.shape);
     const gate = turnGate(this);
 
@@ -58,7 +60,7 @@ export class TicTacToeScene extends Phaser.Scene {
       const x = middle.x + ((cell % 3) - 1) * CELL;
       const y = middle.y + (Math.floor(cell / 3) - 1) * CELL;
       this.add
-        .rectangle(x, y, CELL, CELL)
+        .rectangle(x, y, TOUCH, TOUCH)
         .setInteractive()
         .on(
           'pointerdown',
@@ -67,7 +69,7 @@ export class TicTacToeScene extends Phaser.Scene {
       targets[`cell-${cell}`] = {
         x,
         y,
-        rect: { x: x - CELL / 2, y: y - CELL / 2, width: CELL, height: CELL },
+        rect: { x: x - TOUCH / 2, y: y - TOUCH / 2, width: TOUCH, height: TOUCH },
       };
     });
 
@@ -81,12 +83,19 @@ export class TicTacToeScene extends Phaser.Scene {
       { refuse: at(4) },
     ]);
 
+    const shown = (seat: SeatIndex) => ({
+      seat,
+      shape: seats[seat]!.shape,
+      color: seats[seat]!.color,
+    });
     round.expose(() => ({
       state: {
         board: state.board,
         toMove: rules.seatToMove(state),
+        // Each Seat shown, as drawn: its shape, and the colour that shape is drawn in.
+        pointer: shown(rules.seatToMove(state)),
         marks: marks.map((mark, cell) =>
-          mark ? { seat: state.board[cell], frame: mark.frame.name } : null,
+          mark ? { ...shown(state.board[cell] as SeatIndex), shape: mark.frame.name } : null,
         ),
         result: rules.result(state),
       },

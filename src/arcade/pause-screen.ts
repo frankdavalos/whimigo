@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { createStage, type Stage } from '@/kit/stage';
-import { tapButton } from '@/kit/tap-button';
+import { iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
 import type { ArcadeScreen, ScreenData } from './screen';
 
@@ -34,7 +34,7 @@ export class PauseScreen extends Phaser.Scene implements ArcadeScreen {
 
     const spacing = sizes.button + sizes.gap * 2;
     const button = (x: number, icon: string, onTap: () => void) =>
-      tapButton(this, { x, y: middle.y, icon, onTap }).target;
+      iconButton(this, { x, y: middle.y, icon, onTap }).target;
     this.targets = {
       home: button(middle.x - spacing, 'arcade/home', home),
       play: button(middle.x, 'arcade/resume', play),
