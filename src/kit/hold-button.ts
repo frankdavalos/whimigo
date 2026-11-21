@@ -13,6 +13,8 @@ export interface HoldButtonOptions {
   readonly icon: string;
   /** Called once each time a finger has stayed on the button for the whole hold. */
   readonly onHold: () => void;
+  /** Draws it, and takes its touches, above everything of a lower depth. Defaults to 0. */
+  readonly depth?: number;
 }
 
 /** The face every hold control shares, from the Arcade's atlas, which is loaded at boot. */
@@ -20,19 +22,22 @@ const HOLD_FACE = 'arcade/hold';
 
 /**
  * A control that acts only on a deliberate hold of about half a second, filling a ring while it
- * is held. A short tap or a brush does nothing. Used for leaving a screen and resetting counters.
+ * is held. A short tap or a brush does nothing. Used for pausing a Round, leaving a screen and
+ * resetting counters.
  */
 export function holdButton(scene: Phaser.Scene, options: HoldButtonOptions): SnapshotTarget {
   const size = sizes.button;
   const radius = size / 2;
   const hold = createHold();
 
-  picture(scene, options.x, options.y, HOLD_FACE);
-  picture(scene, options.x, options.y, options.icon);
+  const depth = options.depth ?? 0;
+  picture(scene, options.x, options.y, HOLD_FACE).setDepth(depth);
+  picture(scene, options.x, options.y, options.icon).setDepth(depth);
 
-  const ring = scene.add.graphics({ x: options.x, y: options.y });
+  const ring = scene.add.graphics({ x: options.x, y: options.y }).setDepth(depth);
   const hit = scene.add
     .rectangle(options.x, options.y, size, size)
+    .setDepth(depth)
     .setInteractive()
     .on('pointerdown', (pointer: Phaser.Input.Pointer) => hold.press(pointer.id, scene.time.now))
     .on('pointerout', (pointer: Phaser.Input.Pointer) => hold.release(pointer.id));

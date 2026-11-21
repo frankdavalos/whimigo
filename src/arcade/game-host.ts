@@ -1,6 +1,7 @@
 import type {
   GameManifest,
   GameModule,
+  Rect,
   Result,
   RoundHost,
   RoundStart,
@@ -11,7 +12,9 @@ import { createRng } from '@/kit/rng';
 import type { Arcade } from './arcade';
 import { nextHostState, type HostEvent, type HostState } from './host-state';
 import { LOADING, type LoadingData } from './loading-screen';
+import { PAUSE, type PauseData } from './pause-screen';
 import { RESULT, type ResultData } from './result-screen';
+import type { Shown } from './screen';
 
 export type { HostState } from './host-state';
 
@@ -26,9 +29,13 @@ export interface RoundReport {
   readonly session: Session;
   readonly seed: number;
   readonly number: number;
+  /** The Round's Scene clock, in milliseconds: it stands still while the Round is paused. */
+  readonly time: number;
   readonly snapshot: ScreenSnapshot;
   /** Every sound requested since the Round began, in order. */
   readonly sounds: readonly RequestedSound[];
+  /** Each Seat's Zone, in design units. None yet: Zones arrive with slice 4b (#17). */
+  readonly zones: readonly Rect[];
 }
 
 /** A Game that is open: from loading until it is closed. */
@@ -40,6 +47,10 @@ interface OpenGame {
   number: number;
   sounds: RequestedSound[];
   describe: () => ScreenSnapshot;
+  /** The Round's Scene as shown, once it has opened. */
+  shown: Shown | null;
+  /** Asked to pause while still loading: the first Round opens paused. */
+  pauseOnOpen: boolean;
 }
 
 const SEEDS = 2 ** 31;
@@ -87,6 +98,8 @@ export class GameHost {
       number: 0,
       sounds: [],
       describe: () => ({ state: null, targets: {} }),
+      shown: null,
+      pauseOnOpen: false,
     };
     const data: Omit<LoadingData, 'arcade'> = {
       manifest,
@@ -108,6 +121,43 @@ export class GameHost {
     });
   }
 
+  /**
+   * Pauses the Round being played and shows the pause screen over it. Asked while the Game is still
+   * loading, it pauses the first Round as soon as it opens.
+   */
+  pause(): void {
+    const game = this.game;
+    if (game && this.current === 'loading') game.pauseOnOpen = true;
+    if (!game || !this.step('pause')) return;
+    this.arcade.nextFrame(() => {
+      // The Round may have ended, or been resumed, in the frame it was paused in.
+      if (this.current !== 'paused') return;
+      const data: PauseData = {
+        arcade: this.arcade,
+        play: () => this.resume(),
+        home: () => this.close(),
+        demo: () => undefined,
+      };
+      this.over(game, PAUSE, data);
+    });
+  }
+
+  /** Hides the pause screen and resumes the Round's Scene as it was. */
+  resume(): void {
+    const game = this.game;
+    if (!game || !this.step('resume')) return;
+    this.arcade.nextFrame(() => {
+      const scenes = this.arcade.game.scene;
+      const id = game.manifest.id;
+      // Resumed in the frame it was paused in: the pause screen never showed.
+      if (this.current !== 'playing' || !scenes.isPaused(id)) return;
+      this.arcade.leave();
+      scenes.resume(id);
+      this.arcade.adopt(id);
+      this.arcade.showRound(game.shown!);
+    });
+  }
+
   /** Closes the Game: removes its Scene, textures and sounds, and returns to the Home Screen. */
   close(): void {
     const game = this.game;
@@ -126,16 +176,18 @@ export class GameHost {
     });
   }
 
-  /** The Round being played or whose Result shows, for the test bridge. */
+  /** The Round being played, paused or whose Result shows, for the test bridge. */
   round(): RoundReport | null {
     const game = this.game;
-    if (!game?.module) return null;
+    if (!game?.shown) return null;
     return {
       session: game.session,
       seed: game.seed,
       number: game.number,
+      time: game.shown.scene.time.now,
       snapshot: game.describe(),
       sounds: game.sounds,
+      zones: [],
     };
   }
 
@@ -150,6 +202,7 @@ export class GameHost {
       this.arcade.leave();
       this.arcade.game.scene.add(game.manifest.id, module.scene, false);
       this.startRound(game);
+      if (game.pauseOnOpen) this.pause();
     });
   }
 
@@ -178,21 +231,25 @@ export class GameHost {
       insets: () => arcade.services.safeAreaInsets(),
       opened(scene, stage, describe) {
         game.describe = describe;
-        arcade.showRound({ id: game.manifest.id, scene, stage, snapshot: describe });
+        game.shown = { id: game.manifest.id, scene, stage, snapshot: describe };
+        arcade.showRound(game.shown);
       },
-      sfx(key, time) {
+      sfx: (key, time) => {
+        // No Game sound while paused, even in the frame the pause control filled.
+        if (this.current !== 'playing') return;
         game.sounds.push({ key, time });
         arcade.services.audio.play(key);
       },
       finish: (result) => this.finish(game, result),
+      pause: () => {
+        if (game === this.game) this.pause();
+      },
     };
   }
 
   private finish(game: OpenGame, result: Result): void {
     if (game !== this.game || !this.step('finish')) return;
     this.arcade.nextFrame(() => {
-      const scenes = this.arcade.game.scene;
-      scenes.pause(game.manifest.id);
       const data: ResultData = {
         arcade: this.arcade,
         result,
@@ -200,10 +257,17 @@ export class GameHost {
         replay: () => this.replay(),
         home: () => this.close(),
       };
-      scenes.start(RESULT, data);
-      scenes.bringToTop(RESULT);
-      this.arcade.adopt(RESULT);
+      this.over(game, RESULT, data);
     });
+  }
+
+  /** Pauses the Round's Scene and starts the Arcade screen `id` over it. At the start of a frame only. */
+  private over(game: OpenGame, id: string, data: object): void {
+    const scenes = this.arcade.game.scene;
+    scenes.pause(game.manifest.id);
+    scenes.start(id, data);
+    scenes.bringToTop(id);
+    this.arcade.adopt(id);
   }
 
   /** Moves the state machine on; false, changing nothing, if the event means nothing now. */

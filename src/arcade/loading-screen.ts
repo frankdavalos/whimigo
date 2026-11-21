@@ -31,7 +31,8 @@ export class LoadingScreen extends Phaser.Scene implements ArcadeScreen {
     arcade.shown(this);
 
     manifest.load().then(({ default: module }) => {
-      if (!this.sys.isActive()) return;
+      // Left while loading. Paused beneath the rotate picture, it carries on once that is gone.
+      if (!this.sys.isActive() && !this.sys.isPaused()) return;
       let broken = false;
       this.load.once(Phaser.Loader.Events.FILE_LOAD_ERROR, () => (broken = true));
       this.load.once(Phaser.Loader.Events.COMPLETE, () => (broken ? failed() : loaded(module)));

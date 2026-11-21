@@ -13,10 +13,28 @@ export type Point = { readonly x: number; readonly y: number };
 /** The design frame's width, in design units. */
 export const DESIGN_WIDTH = 2752;
 
-/** Screen shapes tested beyond each project's own viewport. */
+/** Nothing a child touches is smaller than this, in design units. */
+export const MIN_TARGET = 256;
+/** The least space between two controls, in design units. */
+export const MIN_GAP = 64;
+
+/** The space between two rectangles, negative when they overlap. */
+export const gapBetween = (a: Rect, b: Rect) =>
+  Math.max(
+    b.x - (a.x + a.width),
+    a.x - (b.x + b.width),
+    b.y - (a.y + a.height),
+    a.y - (b.y + b.height),
+  );
+
+/**
+ * Screen shapes tested beyond each project's own viewport. Both are on their side: an upright one
+ * shows the rotate picture.
+ */
 export const OTHER_VIEWPORTS = {
   '16:9': { width: 1600, height: 900 },
-  'a narrow window': { width: 900, height: 1000 },
+  // Narrower than the design frame, so the canvas grows downwards.
+  'a narrow window': { width: 1100, height: 1000 },
 } as const;
 
 /** Drives the running Arcade the way a test should: through the bridge and real touches. */

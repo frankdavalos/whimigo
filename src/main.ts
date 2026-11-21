@@ -11,7 +11,7 @@ import { createAudio } from '@/platform/audio';
 import { runningAs } from '@/platform/display-mode';
 import { watchScreen } from '@/platform/screen-watch';
 import { installErrorScreen } from '@/platform/error-screen';
-import { onPageShown } from '@/platform/lifecycle';
+import { onPageHidden, onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
 import { readSafeAreaInsets } from '@/platform/safe-area';
 import { createUpdates } from '@/platform/updates';
@@ -78,6 +78,8 @@ const arcade = new Arcade(
   checkScreens({ e2e }),
   CATALOG,
 );
+// A Round waits on the pause screen while the tablet is put down or locked.
+onPageHidden(document, () => arcade.host.pause());
 // Touches that were down while the page was hidden may never be reported lifting.
 onPageShown(document, () => resetTouches(game));
 if (e2e) installTestBridge(window, arcade);

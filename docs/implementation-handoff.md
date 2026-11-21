@@ -30,7 +30,13 @@ For the next Claude Code session. It says where the project stands, what to do f
   - The asset build finds each Game's `art/` folder and `card.svg` by itself.
   - The check screens moved from the Home Screen to buttons on the status page.
   - Browser tests over the Catalog play each Game with `tests/e2e/play.ts`, which says which target to tap next. Every new Game adds a line there.
-- **Next:** `/zsl:tdd 13`, then the other `[AFK]` slices one at a time in the order of the table below. Read each slice's body and its agent brief before building it.
+- **Phase 1 slice 2 is built (#13, 2026-11-20).** A Round pauses on a deliberate hold, and whenever the page is hidden or turned upright.
+  - `openRound` mounts the pause control, a kit hold control named `pause` among the Round's targets, halfway down the safe rectangle's left edge. `RoundHost` gained `pause()`; `GameHost` gained `pause`, `resume` and the `paused` state. A Round that ends in the frame its pause began still reaches its Result. While paused, no Game sound is requested.
+  - The pause screen (`src/arcade/pause-screen.ts`) runs over the Game's paused Scene, like the Result screen. Its targets are `home`, `play` and `demo`; the Demo target does nothing until slice 3b (#15) makes it play.
+  - A Scene that resumes forgets its touches (`onTouchesReset` in `src/kit/touches.ts`), because it heard no finger lift while paused.
+  - There was no rotate picture before this slice. It is the `rotate` Scene (`src/arcade/rotate-screen.ts`). When the canvas is taller than wide, the Arcade pauses every running Scene beneath it and holds every screen change until the screen is back on its side. The `e14e3f5` workaround is untouched. The layout tests' "narrow window" is now 1100 × 1000, which is still narrower than the design frame but no longer upright.
+  - The bridge's `round()` reports the Round's Scene clock as `time` and its `zones`, which stay empty until slice 4b (#17). The pause control's placement test (`tests/e2e/pause.spec.ts`) iterates them.
+- **Next:** `/zsl:tdd 14` or `/zsl:tdd 15`, then the other `[AFK]` slices one at a time in the order of the table below. Read each slice's body and its agent brief before building it.
 
 ## Read these first
 

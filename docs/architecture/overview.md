@@ -167,9 +167,10 @@ stateDiagram-v2
     idle --> loading: open(Session)
     loading --> playing: chunk and pack loaded
     loading --> idle: load failed (card shakes, stay on Home Screen)
-    playing --> paused: hold pause control, or app hidden
+    playing --> paused: hold pause control, app hidden, or turned upright
     paused --> playing: resume
     paused --> closing: exit
+    paused --> showing_result: finish(Result) in the frame the pause began
     playing --> showing_result: finish(Result)
     showing_result --> playing: replay (new seed)
     showing_result --> closing: home
@@ -284,7 +285,7 @@ Phaser 4 has no device-pixel-ratio support: the canvas has exactly as many pixel
 - After Phase 1 the frame size itself is expensive to change.
 - **Safe area:** `stage.safe` is the design frame inset by the larger of the reported safe-area inset and a fixed 88 units (about 8 mm on the iPad Pro). The fixed margin exists because iPadOS currently has an open defect in which installed web apps report an inset of zero while still drawing a status bar. On the iPad Pro, iPadOS 27.2, on 2026-11-20 (gate G5), the installed app behaved differently: despite `display: fullscreen` and `viewport-fit=cover`, iPadOS placed the page below the status bar (a 1376 × 1000 window in landscape), so nothing is drawn under it, and the bottom inset was 25 CSS pixels, about 52 units. The fixed margin therefore governs on every side, nothing a child must touch was hidden, and it stays at 88.
 - **Resize:** the design frame never changes, so Games ignore resizing. Only the backdrop follows the screen, and the kit does that.
-- **Portrait:** the Arcade pauses and shows a rotate picture.
+- **Portrait:** the Arcade pauses and shows a rotate picture. Portrait means the canvas is taller than it is wide. The picture covers whatever was showing, which waits beneath it, paused, and shows again once the screen is back on its side; a Round that was running comes back on the pause screen.
 
 ## Storage
 

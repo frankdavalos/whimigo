@@ -244,6 +244,8 @@ export interface RoundHost {
   opened(scene: Phaser.Scene, stage: Stage, describe: () => RoundSnapshot): void;
   sfx(key: string, time: number): void;
   finish(result: Result): void;
+  /** The pause control was held: the Arcade pauses the Round and shows the pause screen. */
+  pause(): void;
 }
 
 /** What openRound(scene, start) returns. */
@@ -534,8 +536,9 @@ Not visible to Games. Recorded here because it is the other half of the contract
 export interface GameHost {
   /** Load the Game's chunk and pack, add its Scene, start the first Round. A test may fix the seed. */
   open(session: Session, seed?: number): void;
-  /** Slice 2 (#13). */
+  /** Pause the Round's Scene (its clock, tweens and input stop) and show the pause screen over it. */
   pause(): void;
+  /** Hide the pause screen and resume the Round as it was. */
   resume(): void;
   /** Start a new Round in the same Session with a new seed. */
   replay(): void;

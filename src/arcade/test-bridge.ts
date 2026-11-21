@@ -45,8 +45,8 @@ export interface TestBridge {
   /** Starts a Session directly, skipping the Home Screen and the lobby. */
   open(session: Session, seed: number): void;
   /**
-   * The Round being played, or whose Result shows: its seed, its number in the Session, its state
-   * and its named targets in page coordinates. Null when no Game is open.
+   * The Round being played, paused or whose Result shows: its seed, its number in the Session, its
+   * state, and its named targets and Zones in page coordinates. Null when no Game is open.
    */
   round(): RoundPage | null;
   /** The last few states the GameHost has been in, oldest first. */
@@ -82,6 +82,10 @@ export interface RoundPage extends PageSnapshot {
   readonly session: Session;
   readonly seed: number;
   readonly number: number;
+  /** The Round's Scene clock, in milliseconds. */
+  readonly time: number;
+  /** Each Seat's Zone, in page coordinates. */
+  readonly zones: readonly Rect[];
 }
 
 export interface Pictures {
@@ -141,8 +145,15 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     round() {
       const round = arcade.host.round();
       if (!round) return null;
-      const { session, seed, number } = round;
-      return { session, seed, number, ...onPage(round.snapshot) };
+      const { session, seed, number, time } = round;
+      return {
+        session,
+        seed,
+        number,
+        time,
+        zones: round.zones.map(toPage),
+        ...onPage(round.snapshot),
+      };
     },
     hostStates: () => [...arcade.host.history],
     sounds: () => JSON.parse(JSON.stringify(arcade.host.round()?.sounds ?? [])) as RequestedSound[],

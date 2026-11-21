@@ -213,3 +213,18 @@ test('while the Result shows, touches at the board change nothing, and only the 
   expect(await board(arcade)).toEqual(finished);
   expect(await arcade.screen()).toBe('result');
 });
+
+test('a finger on the board when the Round pauses, lifted while it is paused, does not hold the board after play', async ({
+  arcade,
+}) => {
+  await openRound(arcade);
+  const { targets } = (await arcade.round())!;
+  // One child marks a cell and keeps a finger there while another holds the pause control.
+  await arcade.touch('touchStart', [targets['cell-0']!, targets['pause']!]);
+  await expect.poll(() => arcade.screen(), { timeout: 3000 }).toBe('pause');
+  await arcade.touch('touchEnd', []);
+  await arcade.tap('play');
+  await expect.poll(() => arcade.screen()).toBe('tic-tac-toe');
+  expect(await board(arcade)).toMatchObject({ toMove: 1 });
+  await mark(arcade, 4);
+});

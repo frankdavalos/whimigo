@@ -13,9 +13,16 @@ export function resetTouches(game: Phaser.Game): void {
   game.events.emit(TOUCHES_RESET);
 }
 
-/** Calls `handler` whenever every touch is forgotten, for as long as the Scene runs. */
+/**
+ * Calls `handler` whenever the Scene's touches must be forgotten, for as long as the Scene runs:
+ * every touch was reset, or the Scene resumes after a pause, during which it heard no touch lift.
+ */
 export function onTouchesReset(scene: Phaser.Scene, handler: () => void): void {
   const events = scene.game.events;
   events.on(TOUCHES_RESET, handler);
-  scene.events.once('shutdown', () => events.off(TOUCHES_RESET, handler));
+  scene.events.on('resume', handler);
+  scene.events.once('shutdown', () => {
+    events.off(TOUCHES_RESET, handler);
+    scene.events.off('resume', handler);
+  });
 }

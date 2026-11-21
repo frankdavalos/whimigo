@@ -228,6 +228,8 @@ export interface RoundHost {
   sfx(key: string, time: number): void;
   /** The Round ended. Called at most once. */
   finish(result: Result): void;
+  /** A Player held the pause control: the Arcade pauses the Round and shows the pause screen. */
+  pause(): void;
 }
 
 /** What the Arcade starts a Game's Scene with: passed to its `create(data)`. */

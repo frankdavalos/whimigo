@@ -1,9 +1,16 @@
 import type { Rect } from '../../src/contract';
-import { type Arcade, OTHER_VIEWPORTS, expect, test } from './arcade';
+import {
+  type Arcade,
+  MIN_GAP,
+  MIN_TARGET,
+  OTHER_VIEWPORTS,
+  expect,
+  gapBetween,
+  test,
+} from './arcade';
+import { EVERY_STYLE, sessionFor } from './play';
 
 const DESIGN = { width: 2752, height: 2064 };
-const MIN_TARGET = 256;
-const MIN_GAP = 64;
 /** Rounding between canvas pixels and CSS pixels, in CSS pixels. */
 const EPSILON = 0.75;
 
@@ -14,14 +21,6 @@ const contains = (outer: Rect, inner: Rect) =>
   inner.y >= outer.y - EPSILON &&
   inner.x + inner.width <= outer.x + outer.width + EPSILON &&
   inner.y + inner.height <= outer.y + outer.height + EPSILON;
-
-const gapBetween = (a: Rect, b: Rect) =>
-  Math.max(
-    b.x - (a.x + a.width),
-    a.x - (b.x + b.width),
-    b.y - (a.y + a.height),
-    a.y - (b.y + b.height),
-  );
 
 /** Visits every screen and hands each one's layout and snapshot to `check`. */
 async function eachScreen(
@@ -42,6 +41,12 @@ async function eachScreen(
     await expect.poll(() => arcade.screen()).toBe(id);
     check(id, await arcade.layout(), await arcade.snapshot());
   }
+  const { game, style } = EVERY_STYLE[0]!;
+  await arcade.call('open', sessionFor(game, style), 1);
+  await expect.poll(() => arcade.screen()).toBe(game.id);
+  await arcade.hold('pause', 900);
+  await expect.poll(() => arcade.screen()).toBe('pause');
+  check('pause', await arcade.layout(), await arcade.snapshot());
 }
 
 for (const [shape, viewport] of Object.entries(shapes)) {
@@ -132,52 +137,75 @@ test('the safe rectangle is the design frame less 88 units each side when no ins
 test.describe('when the window turns before the Arcade’s box does, as an installed iPad app’s does', () => {
   test.use({ viewport: { width: 1376, height: 1000 } });
 
-  test('the canvas follows the box once the box takes its new size, without waiting on Phaser’s frame loop', async ({
-    arcade,
-    page,
-  }) => {
-    await arcade.open();
-    await arcade.start();
-    // Stop Phaser's frame loop for good (an exception in an update does that), so its own recheck
-    // of the box cannot run and only the Arcade's following of the box can resize the canvas.
-    await arcade.call('throwInUpdate');
-    await expect(page.locator('#error-screen')).toBeVisible();
+  /** Where the screen is turned from, and the named targets there. */
+  const FROM = {
+    'the Home Screen': {
+      reach: async () => undefined,
+      targets: async (arcade: Arcade) => (await arcade.snapshot()).targets,
+    },
+    'a Round': {
+      reach: async (arcade: Arcade) => {
+        const { game, style } = EVERY_STYLE[0]!;
+        await arcade.call('open', sessionFor(game, style), 1);
+        await expect.poll(() => arcade.screen()).toBe(game.id);
+      },
+      targets: async (arcade: Arcade) => (await arcade.round())!.targets,
+    },
+  };
 
-    // The box keeps its landscape width while the window turns to portrait, then takes the new one.
-    await page.evaluate(() => {
-      const box = document.getElementById('arcade')!;
-      box.style.right = 'auto';
-      box.style.width = '1376px';
-    });
-    await page.setViewportSize({ width: 1032, height: 1344 });
-    // As on the iPad: Phaser has sized the canvas from the box while the box was still too wide.
-    await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const canvas = document.querySelector('#arcade canvas')!.getBoundingClientRect();
-          return [Math.round(canvas.width), Math.round(canvas.height)];
-        }),
-      )
-      .toEqual([1376, 1344]);
-    await page.evaluate(() => {
-      const box = document.getElementById('arcade')!;
-      box.style.right = '';
-      box.style.width = '';
-    });
+  for (const [from, { reach, targets }] of Object.entries(FROM)) {
+    test(`from ${from}, the canvas follows the box once the box takes its new size, without waiting on Phaser’s frame loop, and every named target stays inside it`, async ({
+      arcade,
+      page,
+    }) => {
+      await arcade.open();
+      await arcade.start();
+      await reach(arcade);
+      // Stop Phaser's frame loop for good (an exception in an update does that), so its own recheck
+      // of the box cannot run and only the Arcade's following of the box can resize the canvas.
+      await arcade.call('throwInUpdate');
+      await expect(page.locator('#error-screen')).toBeVisible();
 
-    const canvasFitsBox = () =>
-      page.evaluate((epsilon) => {
-        const element = document.querySelector('#arcade canvas') as HTMLCanvasElement;
-        const canvas = element.getBoundingClientRect();
-        const box = document.getElementById('arcade')!.getBoundingClientRect();
-        return (
-          box.width === 1032 &&
-          Math.abs(canvas.width - box.width) <= epsilon &&
-          Math.abs(canvas.height - box.height) <= epsilon &&
-          // Expanded downwards: the design frame's full width across a portrait screen.
-          element.width === 2752
-        );
-      }, EPSILON);
-    await expect.poll(canvasFitsBox, { timeout: 5000 }).toBe(true);
-  });
+      // The box keeps its landscape width while the window turns to portrait, then takes the new one.
+      await page.evaluate(() => {
+        const box = document.getElementById('arcade')!;
+        box.style.right = 'auto';
+        box.style.width = '1376px';
+      });
+      await page.setViewportSize({ width: 1032, height: 1344 });
+      // As on the iPad: Phaser has sized the canvas from the box while the box was still too wide.
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const canvas = document.querySelector('#arcade canvas')!.getBoundingClientRect();
+            return [Math.round(canvas.width), Math.round(canvas.height)];
+          }),
+        )
+        .toEqual([1376, 1344]);
+      await page.evaluate(() => {
+        const box = document.getElementById('arcade')!;
+        box.style.right = '';
+        box.style.width = '';
+      });
+
+      const canvasFitsBox = () =>
+        page.evaluate((epsilon) => {
+          const element = document.querySelector('#arcade canvas') as HTMLCanvasElement;
+          const canvas = element.getBoundingClientRect();
+          const box = document.getElementById('arcade')!.getBoundingClientRect();
+          return (
+            box.width === 1032 &&
+            Math.abs(canvas.width - box.width) <= epsilon &&
+            Math.abs(canvas.height - box.height) <= epsilon &&
+            // Expanded downwards: the design frame's full width across a portrait screen.
+            element.width === 2752
+          );
+        }, EPSILON);
+      await expect.poll(canvasFitsBox, { timeout: 5000 }).toBe(true);
+      const { canvas } = await arcade.layout();
+      for (const [name, target] of Object.entries(await targets(arcade))) {
+        expect(contains(canvas, target.rect), `${name} inside the visible canvas`).toBe(true);
+      }
+    });
+  }
 });
