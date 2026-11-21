@@ -14,6 +14,7 @@ import { installErrorScreen } from '@/platform/error-screen';
 import { onPageHidden, onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
 import { readSafeAreaInsets } from '@/platform/safe-area';
+import { createSaveStore } from '@/platform/save-store';
 import { createUpdates } from '@/platform/updates';
 
 const errorScreen = document.getElementById('error-screen');
@@ -74,6 +75,7 @@ const arcade = new Arcade(
     runningAs: () => runningAs(window),
     grownUpsPage: document.getElementById('grown-ups')!,
     screen,
+    save: createSaveStore(window.localStorage),
   },
   checkScreens({ e2e }),
   CATALOG,

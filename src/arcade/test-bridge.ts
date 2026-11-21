@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser';
-import type { Rect, ScreenSnapshot, Session, SnapshotTarget } from '@/contract';
+import type { Rect, Result, ScreenSnapshot, Session, SnapshotTarget } from '@/contract';
 import { DESIGN_FRAME, frameOnCanvas } from '@/kit/frame';
 import { renderScaleOf } from '@/kit/render-scale';
 import type { AudioState } from '@/platform/audio';
+import type { SaveDocument } from '@/platform/save-store';
 import type { Arcade } from './arcade';
 import { checkModule } from './conformance';
 import { type Counts, countsOf } from './counts';
@@ -49,6 +50,10 @@ export interface TestBridge {
    * state, and its named targets and Zones in page coordinates. Null when no Game is open.
    */
   round(): RoundPage | null;
+  /** Reports a Result for the Round being played, exactly as its Game would. */
+  finish(result: Result): void;
+  /** The current save document. */
+  save(): SaveDocument;
   /** The last few states the GameHost has been in, oldest first. */
   hostStates(): HostState[];
   /** Every sound the Round has requested since it began, with its key and Scene time. */
@@ -155,6 +160,8 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
         ...onPage(round.snapshot),
       };
     },
+    finish: (result) => arcade.host.report(result),
+    save: () => JSON.parse(JSON.stringify(services.save.current())) as SaveDocument,
     hostStates: () => [...arcade.host.history],
     sounds: () => JSON.parse(JSON.stringify(arcade.host.round()?.sounds ?? [])) as RequestedSound[],
     inputScenes: () =>

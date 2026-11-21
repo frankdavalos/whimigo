@@ -70,7 +70,9 @@ test('two Players go from the Home Screen through the lobby to a finished Round 
   expect((await arcade.snapshot()).state).toEqual({
     result: { kind: 'win', winners: [0] },
     celebrated: ['fox'],
+    stars: { fox: 2 },
   });
+  expect((await arcade.call('save')).mascots).toEqual({ fox: { stars: 2 }, owl: { stars: 1 } });
 
   await arcade.tap('home');
   await expect.poll(() => arcade.screen()).toBe('home');
@@ -179,7 +181,7 @@ test('the Seat that moves first alternates from one Round to the next', async ({
   expect(await board(arcade)).toMatchObject({ board: Array(9).fill(null), toMove: 1 });
 });
 
-test('a draw celebrates every Player’s Mascot', async ({ arcade }) => {
+test('a draw celebrates every Player’s Mascot, each with one Star', async ({ arcade }) => {
   await openRound(arcade);
   // X O X / X O O / O X X: a full board with no line.
   for (const cell of [0, 1, 2, 4, 3, 5, 7, 6, 8]) await arcade.tapRound(`cell-${cell}`);
@@ -187,6 +189,7 @@ test('a draw celebrates every Player’s Mascot', async ({ arcade }) => {
   expect((await arcade.snapshot()).state).toEqual({
     result: { kind: 'draw' },
     celebrated: ['fox', 'owl'],
+    stars: { fox: 1, owl: 1 },
   });
 });
 

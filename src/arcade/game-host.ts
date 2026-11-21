@@ -10,6 +10,7 @@ import type {
 } from '@/contract';
 import { createRng } from '@/kit/rng';
 import type { Arcade } from './arcade';
+import { recordRound, starsEarned } from './progress';
 import { nextHostState, type HostEvent, type HostState } from './host-state';
 import { LOADING, type LoadingData } from './loading-screen';
 import { PAUSE, type PauseData } from './pause-screen';
@@ -51,6 +52,8 @@ interface OpenGame {
   shown: Shown | null;
   /** Asked to pause while still loading: the first Round opens paused. */
   pauseOnOpen: boolean;
+  /** The Arcade's side of the Round being played, as its Game holds it. */
+  roundHost: RoundHost | null;
 }
 
 const SEEDS = 2 ** 31;
@@ -100,6 +103,7 @@ export class GameHost {
       describe: () => ({ state: null, targets: {} }),
       shown: null,
       pauseOnOpen: false,
+      roundHost: null,
     };
     const data: Omit<LoadingData, 'arcade'> = {
       manifest,
@@ -176,6 +180,11 @@ export class GameHost {
     });
   }
 
+  /** For the test bridge: reports a Result for the Round being played, exactly as its Game would. */
+  report(result: Result): void {
+    this.game?.roundHost?.finish(result);
+  }
+
   /** The Round being played, paused or whose Result shows, for the test bridge. */
   round(): RoundReport | null {
     const game = this.game;
@@ -215,11 +224,12 @@ export class GameHost {
   /** Starts (or restarts) the Game's Scene with a fresh Round. At the start of a frame only. */
   private startRound(game: OpenGame): void {
     game.sounds = [];
+    game.roundHost = this.roundHost(game);
     const start: RoundStart = {
       session: game.session,
       seed: game.seed,
       number: game.number,
-      host: this.roundHost(game),
+      host: game.roundHost,
     };
     this.arcade.game.scene.start(game.manifest.id, start);
     this.arcade.adopt(game.manifest.id);
@@ -247,13 +257,18 @@ export class GameHost {
     };
   }
 
+  /** The Round ended: awards its Stars and saves them at once, then shows the Result. Once per Round. */
   private finish(game: OpenGame, result: Result): void {
     if (game !== this.game || !this.step('finish')) return;
+    const { save } = this.arcade.services;
+    const stars = starsEarned(result, game.session);
+    save.write(recordRound(save.current(), game.manifest.id, stars));
     this.arcade.nextFrame(() => {
       const data: ResultData = {
         arcade: this.arcade,
         result,
         session: game.session,
+        stars,
         replay: () => this.replay(),
         home: () => this.close(),
       };

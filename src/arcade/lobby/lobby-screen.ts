@@ -1,11 +1,13 @@
 import * as Phaser from 'phaser';
 import type { GameManifest, MascotId, ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
+import type { DrawnNumber } from '@/kit/digits';
 import { createStage, type Stage } from '@/kit/stage';
 import { tapButton } from '@/kit/tap-button';
 import { seats as SEAT_LOOKS, sizes } from '@/kit/theme';
 import { MASCOTS, mascotFrame } from '../mascots';
 import type { ArcadeScreen, ScreenData } from '../screen';
+import { drawStarCount } from '../star-count';
 import { buildSession, fittingStyles, join } from './rules';
 
 /** The lobby's key. */
@@ -18,16 +20,20 @@ export interface LobbyData extends ScreenData {
 /** Mascots stand in two rows of this many. */
 const PER_ROW = 4;
 
+/** From one row of Mascots to the next, leaving room for each Mascot's Stars beneath it. */
+const ROW_SPACING = sizes.button + 256;
+
 /**
  * Where Players sit down for a Game: each taps a Mascot, which takes the lowest free Seat and wears
- * its colour and shape; start opens a Session in the first Play Style that fits. Difficulty is
- * Easy and Seating side by side until the lobby offers them.
+ * its colour and shape; start opens a Session in the first Play Style that fits. Beneath each
+ * Mascot are its Stars. Difficulty is Easy and Seating side by side until the lobby offers them.
  */
 export class LobbyScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
   private manifest!: GameManifest;
   private joined: readonly MascotId[] = [];
   private targets: Record<string, SnapshotTarget> = {};
+  private stars = new Map<MascotId, DrawnNumber>();
 
   create({ arcade, game }: LobbyData): void {
     this.manifest = game;
@@ -48,12 +54,15 @@ export class LobbyScreen extends Phaser.Scene implements ArcadeScreen {
     };
 
     this.targets = {};
+    this.stars = new Map();
+    const saved = arcade.services.save.current().mascots;
     MASCOTS.forEach((mascot, index) => {
       const column = index % PER_ROW;
       const row = Math.floor(index / PER_ROW);
       const x = middle.x + (column - (PER_ROW - 1) / 2) * spacing;
-      const y = middle.y + (row - 0.5) * spacing;
+      const y = middle.y + (row - 0.5) * ROW_SPACING;
       picture(this, x, y, mascotFrame(mascot));
+      this.stars.set(mascot, drawStarCount(this, x, y + half + 80, saved[mascot]?.stars ?? 0));
       badges.set(
         mascot,
         picture(this, x + half, y - half, SEAT_LOOKS[0].shape)
@@ -115,6 +124,9 @@ export class LobbyScreen extends Phaser.Scene implements ArcadeScreen {
         })),
         styles,
         selected: styles[0] ?? null,
+        stars: Object.fromEntries(
+          [...this.stars].map(([mascot, drawn]) => [mascot, drawn.describe()]),
+        ),
       },
       targets: this.targets,
     };

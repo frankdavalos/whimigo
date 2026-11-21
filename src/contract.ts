@@ -226,7 +226,7 @@ export interface RoundHost {
   opened(scene: Phaser.Scene, stage: Stage, describe: () => RoundSnapshot): void;
   /** A sound was requested at `time`, in the Scene's time. */
   sfx(key: string, time: number): void;
-  /** The Round ended. Called at most once. */
+  /** The Round ended. The kit calls it at most once; the Arcade ignores any later call. */
   finish(result: Result): void;
   /** A Player held the pause control: the Arcade pauses the Round and shows the pause screen. */
   pause(): void;

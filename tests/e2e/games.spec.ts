@@ -1,4 +1,6 @@
-import type { Rect } from '../../src/contract';
+import type { MascotId, PlayStyle, Rect, Result } from '../../src/contract';
+import { MASCOTS } from '../../src/arcade/mascots';
+import { starsEarned } from '../../src/arcade/progress';
 import { expect, test } from './arcade';
 import { CATALOG, EVERY_STYLE, playToResult, sessionFor } from './play';
 
@@ -28,11 +30,72 @@ test('the Home Screen has a Game Card for each Game in Catalog order, and none f
   for (const game of CATALOG) expect(drawn).toContain(game.card.frame);
 });
 
+/** A Result a Round of this Play Style could end in. */
+function resultFor(style: PlayStyle): Result {
+  if (style === 'solo') return { kind: 'solo', score: 1 };
+  if (style === 'cooperative') return { kind: 'cooperative', success: true };
+  return { kind: 'win', winners: [0] };
+}
+
+for (const { game, style, name } of EVERY_STYLE) {
+  test(`${name}: a second Result reported for the same Round is not accepted: Stars are awarded once`, async ({
+    arcade,
+  }) => {
+    const session = sessionFor(game, style);
+    await arcade.call('open', session, SEED);
+    await expect.poll(() => arcade.screen()).toBe(game.id);
+
+    const first = resultFor(style.style);
+    await arcade.call('finish', first);
+    await arcade.call('finish', { kind: 'draw' });
+    await expect.poll(() => arcade.screen()).toBe('result');
+    await arcade.call('finish', { kind: 'draw' });
+
+    const earned = starsEarned(first, session);
+    expect(Object.keys(earned).length).toBeGreaterThan(0);
+    const { mascots, games } = await arcade.call('save');
+    expect(mascots).toEqual(
+      Object.fromEntries(Object.entries(earned).map(([mascot, stars]) => [mascot, { stars }])),
+    );
+    expect(games[game.id]).toEqual({ roundsPlayed: 1 });
+    expect((await arcade.snapshot()).state).toMatchObject({ result: first });
+  });
+}
+
 for (const game of CATALOG) {
   test(`${game.id}: tapping its Game Card opens its lobby`, async ({ arcade }) => {
     await arcade.tap(game.id);
     await expect.poll(() => arcade.screen()).toBe('lobby');
     expect((await arcade.snapshot()).state).toMatchObject({ game: game.id });
+  });
+}
+
+for (const game of CATALOG) {
+  test(`${game.id}: after a Round, its lobby shows each Mascot’s saved Stars in bitmap digits`, async ({
+    arcade,
+  }) => {
+    test.slow();
+    await arcade.call('open', sessionFor(game, game.playStyles[0]!), SEED);
+    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await playToResult(arcade, game.id);
+    await expect.poll(() => arcade.screen()).toBe('result');
+    await arcade.tap('home');
+    await expect.poll(() => arcade.screen()).toBe('home');
+    await arcade.tap(game.id);
+    await expect.poll(() => arcade.screen()).toBe('lobby');
+
+    const { mascots } = await arcade.call('save');
+    expect(Object.keys(mascots).length).toBeGreaterThan(0);
+    const { stars } = (await arcade.snapshot()).state as {
+      stars: Record<MascotId, { text: string; glyphs: { char: string; width: number }[] }>;
+    };
+    expect(Object.keys(stars)).toEqual([...MASCOTS]);
+    for (const mascot of MASCOTS) {
+      const drawn = stars[mascot]!;
+      expect(Number(drawn.text), mascot).toBe(mascots[mascot]?.stars ?? 0);
+      expect(drawn.glyphs.map(({ char }) => char).join(''), mascot).toBe(drawn.text);
+      for (const glyph of drawn.glyphs) expect(glyph.width, mascot).toBeGreaterThan(0);
+    }
   });
 }
 
@@ -86,6 +149,38 @@ for (const { game, style, name } of EVERY_STYLE) {
     expect(keys.textures.filter(owned)).toEqual([]);
     expect(keys.sounds.filter(owned)).toEqual([]);
     expect(await arcade.counts()).toEqual(before);
+  });
+
+  test(`${name}: a Result raises each Player’s saved Stars by the Star rule, the Result screen reports them, and the Round is counted`, async ({
+    arcade,
+  }) => {
+    test.slow();
+    const session = sessionFor(game, style);
+    const before = await arcade.call('save');
+    await arcade.call('open', session, SEED);
+    await expect.poll(() => arcade.screen()).toBe(game.id);
+    await playToResult(arcade, game.id);
+    await expect.poll(() => arcade.screen()).toBe('result');
+
+    const shown = (await arcade.snapshot()).state as {
+      result: Result;
+      celebrated: MascotId[];
+      stars: Record<MascotId, number>;
+    };
+    const earned = starsEarned(shown.result, session);
+    const after = await arcade.call('save');
+    const players = session.seats.flatMap(({ occupant }) =>
+      occupant.kind === 'player' ? [occupant.mascot] : [],
+    );
+    expect(Object.keys(earned).sort()).toEqual([...players].sort());
+    for (const mascot of players) {
+      const was = before.mascots[mascot]?.stars ?? 0;
+      expect(after.mascots[mascot]?.stars, mascot).toBe(was + earned[mascot]!);
+    }
+    expect(shown.stars).toEqual(
+      Object.fromEntries(shown.celebrated.map((mascot) => [mascot, earned[mascot]])),
+    );
+    expect(after.games[game.id]?.roundsPlayed).toBe((before.games[game.id]?.roundsPlayed ?? 0) + 1);
   });
 
   test(`${name}: the same seed and the same touches give the same Round states`, async ({

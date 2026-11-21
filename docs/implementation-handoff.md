@@ -36,7 +36,13 @@ For the next Claude Code session. It says where the project stands, what to do f
   - A Scene that resumes forgets its touches (`onTouchesReset` in `src/kit/touches.ts`), because it heard no finger lift while paused.
   - There was no rotate picture before this slice. It is the `rotate` Scene (`src/arcade/rotate-screen.ts`). When the canvas is taller than wide, the Arcade pauses every running Scene beneath it and holds every screen change until the screen is back on its side. The `e14e3f5` workaround is untouched. The layout tests' "narrow window" is now 1100 × 1000, which is still narrower than the design frame but no longer upright.
   - The bridge's `round()` reports the Round's Scene clock as `time` and its `zones`, which stay empty until slice 4b (#17). The pause control's placement test (`tests/e2e/pause.spec.ts`) iterates them.
-- **Next:** `/zsl:tdd 14` or `/zsl:tdd 15`, then the other `[AFK]` slices one at a time in the order of the table below. Read each slice's body and its agent brief before building it.
+- **Phase 1 slice 2c is built (#14, 2026-11-20).** A Mascot collects Stars for playing, and the Arcade keeps them.
+  - The Star rule is `starsEarned(result, session)` in `src/arcade/progress.ts`, pure and tested in Node; `recordRound` adds a Round's Stars into the save document and counts the Round against its Game.
+  - `SaveStore` (`src/platform/save-store.ts`) keeps one JSON document, version 1, under `whimigo:save`: `mascots` (Stars per Mascot) and `games` (Rounds played per Game). Settings and remembered choices join it in later slices. `createSaveStore` takes anything with `getItem` and `setItem`, and is tested against an in-memory store. It does not yet handle a corrupt, newer, missing or throwing store: that is slice 6 (#22).
+  - `GameHost` awards and writes Stars synchronously when a Round finishes, once per Round, and hands them to the Result screen. Its snapshot gains `stars` for the celebrated Mascots. Leaving from the pause screen earns nothing.
+  - The lobby draws each Mascot's Stars beneath it with `drawStarCount` (`src/arcade/star-count.ts`), the new `arcade/star` picture and the bitmap digits. Its snapshot reports each count as the digits drew it.
+  - The test bridge gains `save()`, and `finish(result)`, which reports a Result to the open Round's host exactly as its Game would, so a test can report a second one.
+- **Next:** `/zsl:tdd 15` or `/zsl:tdd 16`, then the other `[AFK]` slices one at a time in the order of the table below. Read each slice's body and its agent brief before building it.
 
 ## Read these first
 

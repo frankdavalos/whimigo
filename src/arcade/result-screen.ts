@@ -4,8 +4,10 @@ import { picture } from '@/kit/atlas';
 import { createStage, type Stage } from '@/kit/stage';
 import { tapButton } from '@/kit/tap-button';
 import { colors, sizes } from '@/kit/theme';
+import type { Stars } from './progress';
 import { mascotFrame } from './mascots';
 import type { ArcadeScreen, ScreenData } from './screen';
+import { drawStarCount } from './star-count';
 
 /** The Result screen's key. */
 export const RESULT = 'result';
@@ -13,6 +15,8 @@ export const RESULT = 'result';
 export interface ResultData extends ScreenData {
   readonly result: Result;
   readonly session: Session;
+  /** The Stars each Player's Mascot earned from the Round. */
+  readonly stars: Stars;
   readonly replay: () => void;
   readonly home: () => void;
 }
@@ -35,10 +39,10 @@ export function celebrated(result: Result, session: Session): MascotId[] {
  */
 export class ResultScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
-  private state: { result: Result; celebrated: MascotId[] } | null = null;
+  private state: { result: Result; celebrated: MascotId[]; stars: Stars } | null = null;
   private targets: Record<string, SnapshotTarget> = {};
 
-  create({ arcade, result, session, replay, home }: ResultData): void {
+  create({ arcade, result, session, stars, replay, home }: ResultData): void {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
     const { safe } = this.stage;
     const middle = { x: safe.x + safe.width / 2, y: safe.y + safe.height / 2 };
@@ -50,9 +54,14 @@ export class ResultScreen extends Phaser.Scene implements ArcadeScreen {
       const x = middle.x + (index - (mascots.length - 1) / 2) * spacing;
       picture(this, x, middle.y - 280, 'arcade/sun').setScale(0.6);
       picture(this, x, middle.y - 200, mascotFrame(mascot));
+      drawStarCount(this, x, middle.y + 70, stars[mascot] ?? 0);
     });
 
-    this.state = { result, celebrated: mascots };
+    this.state = {
+      result,
+      celebrated: mascots,
+      stars: Object.fromEntries(mascots.map((mascot) => [mascot, stars[mascot] ?? 0])),
+    };
     this.targets = {
       replay: tapButton(this, {
         x: middle.x - spacing,

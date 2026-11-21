@@ -69,10 +69,11 @@ for (const { game, style, name } of EVERY_STYLE) {
     await expect.poll(() => arcade.screen()).toBe('result');
   });
 
-  test(`${name}: home on the pause screen closes the Game with no Result, leaving nothing behind`, async ({
+  test(`${name}: home on the pause screen closes the Game with no Result and no Stars, leaving nothing behind`, async ({
     arcade,
   }) => {
     const before = await arcade.counts();
+    const saved = await arcade.call('save');
     await arcade.call('open', sessionFor(game, style), SEED);
     await expect.poll(() => arcade.screen()).toBe(game.id);
     await pause(arcade);
@@ -87,6 +88,9 @@ for (const { game, style, name } of EVERY_STYLE) {
     expect(await arcade.round()).toBeNull();
     expect(await arcade.call('inputScenes')).toEqual(['home']);
     expect(await arcade.counts()).toEqual(before);
+    expect(await arcade.call('save'), 'no Mascot’s Stars and no count of Rounds played').toEqual(
+      saved,
+    );
   });
 
   test(`${name}: while paused, touches where the Round's targets are change nothing and request no sound`, async ({

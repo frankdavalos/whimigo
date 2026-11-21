@@ -79,6 +79,7 @@ A canvas has no buttons for a test to find. The Arcade exposes a small object on
 | `conformance()` | Loads every Game's module and runs the module conformance checks |
 | `counts()` | Numbers of Scenes, textures and cached sounds; `keys()` names them |
 | `save()` | The current save document |
+| `finish(result)` | Reports a Result for the open Round, exactly as its Game would; a test uses it to report a second Result |
 | `offlineReady()` | Whether the service worker has finished caching every file |
 | `updateWaiting()` | Whether a newer version has been downloaded and waits for the next cold start |
 
