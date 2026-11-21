@@ -80,6 +80,26 @@ const BANNED_OBJECTS = [
 const GAME_SYNTAX = [
   ...BANNED_OBJECTS,
   {
+    selector:
+      "CallExpression[callee.object.property.name='scene'][callee.property.name=/^(add|launch|run|start|switch|remove|stop|sleep|wake|restart|moveAbove|moveBelow|bringToTop|sendToBack)$/]",
+    message: 'A Game has one Scene; the Arcade adds, starts and removes it (ADR-0004).',
+  },
+  {
+    selector:
+      "CallExpression[callee.object.property.name='cameras'][callee.property.name=/^(add|addExisting|remove)$/]",
+    message: 'A Game uses the one camera the kit owns (ADR-0003).',
+  },
+  {
+    selector:
+      'CallExpression[callee.object.property.name=/^(add|make)$/][callee.property.name=/^(dom|video|iframe)$/]',
+    message: 'A Game creates no HTML elements (ADR-0005).',
+  },
+  {
+    selector:
+      'CallExpression[callee.property.name=/^(createElement|createElementNS|insertAdjacentHTML)$/]',
+    message: 'A Game creates no HTML elements (ADR-0005).',
+  },
+  {
     selector: 'ImportExpression[source.value=/^@\\u002F(arcade|platform|games)(\\u002F|$)/]',
     message: 'A Game imports only its own code, @/contract and @/kit.',
   },

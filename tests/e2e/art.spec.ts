@@ -1,4 +1,5 @@
 import { expect, test } from './arcade';
+import { CATALOG } from './play';
 
 /** A frame Phaser cannot find is drawn as the whole texture, under the name `__BASE`. */
 const fromArcadeAtlas = (image: { texture: string; frame: string }) =>
@@ -19,10 +20,8 @@ test('the tap-to-start screen and the Home Screen draw their pictures from the A
   for (const frame of [
     'arcade/sun',
     'arcade/card',
-    'arcade/check-touch',
-    'arcade/check-sound',
-    'arcade/check-performance',
-    'arcade/check-blank',
+    'arcade/grown-ups',
+    ...CATALOG.map((game) => game.card.frame),
   ]) {
     expect(home.images).toContainEqual({ texture: 'arcade', frame });
   }

@@ -70,10 +70,14 @@ A canvas has no buttons for a test to find. The Arcade exposes a small object on
 
 | Call | Returns or does |
 |---|---|
-| `screen()` | Which Arcade screen is showing, and the `GameHost` state |
+| `screen()` | `{ id, host }`: which screen is showing (an Arcade screen, a check screen or a Game's id), and the `GameHost` state |
 | `open(session, seed)` | Starts a Session directly, skipping the Home Screen and lobby |
-| `round()` | The current Round's snapshot from `round.expose`: its state, and its named targets converted to page coordinates |
-| `counts()` | Numbers of Scenes, textures and cached sounds |
+| `round()` | The current Round's snapshot from `round.expose`: its Session, seed and number, its state, and its named targets converted to page coordinates. Null when no Game is open |
+| `sounds()` | Every sound the Round has requested since it began, with its key and Scene time |
+| `hostStates()` | The last few states the `GameHost` has been in, oldest first |
+| `inputScenes()` | The Scenes accepting input now; exactly one whenever a screen shows |
+| `conformance()` | Loads every Game's module and runs the module conformance checks |
+| `counts()` | Numbers of Scenes, textures and cached sounds; `keys()` names them |
 | `save()` | The current save document |
 | `offlineReady()` | Whether the service worker has finished caching every file |
 | `updateWaiting()` | Whether a newer version has been downloaded and waits for the next cold start |

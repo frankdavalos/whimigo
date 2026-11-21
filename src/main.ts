@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { Arcade } from '@/arcade/arcade';
 import { checkScreens } from '@/arcade/checks';
 import { installTestBridge } from '@/arcade/test-bridge';
+import { CATALOG } from '@/games/catalog';
 import { DESIGN_FRAME } from '@/kit/frame';
 import { renderScaleFor } from '@/kit/render-scale';
 import { resetTouches } from '@/kit/touches';
@@ -75,6 +76,7 @@ const arcade = new Arcade(
     screen,
   },
   checkScreens({ e2e }),
+  CATALOG,
 );
 // Touches that were down while the page was hidden may never be reported lifting.
 onPageShown(document, () => resetTouches(game));

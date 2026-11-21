@@ -52,7 +52,8 @@ function fill(page: HTMLElement, readings: StatusReadings): void {
 /**
  * The adult status page, the seed of the Grown-Ups Area. Its words are plain HTML over the whole
  * screen (ADR-0005); its Scene draws only a backdrop and has nothing to touch, so while the page
- * shows the canvas takes no touches. Back returns to the Home Screen.
+ * shows the canvas takes no touches. It lists the check screens, each a button that opens it.
+ * Back returns to the Home Screen.
  */
 export class GrownUpsScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
@@ -76,11 +77,24 @@ export class GrownUpsScreen extends Phaser.Scene implements ArcadeScreen {
     const stopWatching = services.updates.onChange(show);
     const stopMeasuring = services.screen.onChange(show);
     this.scale.on('resize', show);
-    const back = page.querySelector('button');
+    const back = page.querySelector('[data-action="back"]');
     const goHome = () => arcade.show('home');
     back?.addEventListener('click', goHome);
+    const checks = page.querySelector('[data-checks]');
+    checks?.replaceChildren(
+      ...arcade.checks.map((check) => {
+        const item = page.ownerDocument.createElement('li');
+        const button = item.appendChild(page.ownerDocument.createElement('button'));
+        button.type = 'button';
+        button.textContent = check.title;
+        button.dataset.check = check.id;
+        button.addEventListener('click', () => arcade.show(check.id));
+        return item;
+      }),
+    );
     page.hidden = false;
     this.events.once('shutdown', () => {
+      checks?.replaceChildren();
       page.hidden = true;
       stopWatching();
       stopMeasuring();

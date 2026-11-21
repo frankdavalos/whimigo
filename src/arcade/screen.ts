@@ -1,9 +1,8 @@
 import type * as Phaser from 'phaser';
-import type { ScreenSnapshot } from '@/contract';
-import type { Stage } from '@/kit/stage';
+import type { ScreenSnapshot, Stage } from '@/contract';
 import type { Arcade } from './arcade';
 
-/** Identifies an Arcade screen: 'start', 'home', or a check screen's id. */
+/** Identifies a screen: an Arcade screen's key, a check screen's id, or a Game's id. */
 export type ScreenId = string;
 
 /** Every Arcade screen is a Scene that can describe itself to the test bridge. */
@@ -12,15 +11,25 @@ export interface ArcadeScreen extends Phaser.Scene {
   snapshot(): ScreenSnapshot;
 }
 
-/** What every screen is started with. */
+/** What is on show: an Arcade screen, or a Game's Scene playing a Round. */
+export interface Shown {
+  readonly id: ScreenId;
+  readonly scene: Phaser.Scene;
+  readonly stage: Stage;
+  snapshot(): ScreenSnapshot;
+}
+
+/** What every Arcade screen is started with. Some screens are given more. */
 export interface ScreenData {
   readonly arcade: Arcade;
 }
 
-/** A check screen: a tool for grown-ups, listed on the Home Screen. */
+/** A check screen: a tool for grown-ups, opened from their status page. */
 export interface CheckScreen {
   readonly id: ScreenId;
+  /** Its name on the status page. */
+  readonly title: string;
   readonly scene: new () => ArcadeScreen;
-  /** The frame in the Arcade's atlas drawn on its control on the Home Screen. */
+  /** A frame in the Arcade's atlas that pictures it. */
   readonly icon: string;
 }

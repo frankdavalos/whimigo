@@ -80,7 +80,7 @@ test('the Touch Check opens from the Home Screen and counts a tap in a Zone @smo
   // Single touches only: WebKit has no DevTools protocol to send several.
   await arcade.open();
   await arcade.start();
-  await arcade.tap(TOUCH);
+  await arcade.openCheck(TOUCH);
   await expect.poll(() => arcade.screen()).toBe(TOUCH);
   expect((await state(arcade)).zones).toHaveLength(4);
 

@@ -2,7 +2,7 @@
 
 What a Game must provide to the Arcade, what the Arcade provides to a Game, and the rules that keep Games independent of one another. Terms in **bold** are defined in [CONTEXT.md](../../CONTEXT.md). The reasons behind these shapes are in [overview.md](overview.md) and the [ADRs](../adr/).
 
-These are design contracts. The TypeScript below fixes names, shapes and responsibilities; it is not yet code, and small details may move when the first Game is built against it. A change to anything in [The contract](#the-contract) after Phase 1 should be treated as a decision, because every Game depends on it.
+These are design contracts. The TypeScript below fixes names, shapes and responsibilities. Since the first Game (issue #12, 2026-11-20) it is also code: `src/contract.ts` holds the types, and where building Tic-Tac-Toe settled a detail, this document was revised to match. Parts that later slices build are marked with the slice that brings them. A change to anything in [The contract](#the-contract) after Phase 1 should be treated as a decision, because every Game depends on it.
 
 ## The idea in one paragraph
 
@@ -23,11 +23,12 @@ src/
       index.ts           GameModule; the lazily loaded entry point
       logic/             pure TypeScript: rules, Computer Player, tests
       scene/             the Phaser Scene and its view code
-      art/               SVG sources, packed into one atlas at build time
+      art/               SVG sources, packed into one atlas keyed with the Game's id
+      card.svg           the Game Card, packed into the Arcade's atlas as arcade/game-card/<id>
       sounds.ts          this Game's sound recipes
 ```
 
-Adding a Game means adding one folder under `games/` and one line in `catalog.ts`. If adding a Game requires editing anything else, the contract has a gap and the gap is fixed in the contract, not worked around in the Game.
+Adding a Game means adding one folder under `games/` and one line in `catalog.ts`. The asset build finds the folder's `art/` and `card.svg` by itself. If adding a Game requires editing anything else, the contract has a gap and the gap is fixed in the contract, not worked around in the Game.
 
 ## Dependency rules
 
@@ -80,8 +81,8 @@ export interface Rect {
   readonly height: number;
 }
 
-/** What a backdrop is filled with: a theme colour token, or a tiling frame from the Game's atlas. */
-export type BackdropFill = { readonly color: string } | { readonly frame: string };
+/** What a backdrop is filled with: a theme colour (a 0xRRGGBB number from the kit's theme). */
+export type BackdropFill = { readonly color: number };
 
 export type MotionPreset = 'pop' | 'bounce' | 'wiggle' | 'slide';
 ```
@@ -106,8 +107,8 @@ export interface GameManifest {
   /** False for a Game where Difficulty means nothing; the lobby then hides the choice. */
   readonly usesDifficulty: boolean;
 
-  /** Game Card artwork: a frame in the Arcade's own atlas (so `arcade/…`), and a theme colour token. */
-  readonly card: { readonly frame: string; readonly color: string };
+  /** The Game Card: a frame in the Arcade's own atlas (`arcade/game-card/<id>`) and a theme colour. */
+  readonly card: { readonly frame: string; readonly color: number };
 
   /** Loads the module. Must be a literal dynamic import so the bundler makes one chunk per Game. */
   readonly load: () => Promise<{ default: GameModule }>;
@@ -139,7 +140,7 @@ export const manifest: GameManifest = {
     { style: 'versus-computer', players: { min: 1, max: 1 }, computerPlayers: 1, zoned: false },
     { style: 'turn-based',      players: { min: 2, max: 2 }, computerPlayers: 0, zoned: false },
   ],
-  card: { frame: 'arcade/card/tic-tac-toe', color: 'sky' },
+  card: { frame: 'arcade/game-card/tic-tac-toe', color: colors.sky },
   load: () => import('./index'),
 };
 ```
@@ -155,7 +156,7 @@ export interface GameModule {
    * exactly; every other key must start with `${id}/`. See "Asset keys" below.
    * The Arcade loads the pack before the first Round and removes it when the Session ends.
    */
-  readonly pack: Phaser.Types.Loader.FileTypes.PackFileSection;
+  readonly pack: GamePack;
 
   /**
    * The Game's own sounds, as synthesis recipes. Keys must start with `${id}/`.
@@ -167,6 +168,21 @@ export interface GameModule {
   readonly scene: new () => Phaser.Scene;
 }
 ```
+
+```ts
+/** One file of a Game's pack, as Phaser's loader takes it. */
+export interface PackFile {
+  readonly type: string;
+  readonly key: string;
+  readonly [setting: string]: unknown;
+}
+
+export interface GamePack {
+  readonly files: readonly PackFile[];
+}
+```
+
+The pack has a type of its own because Phaser's `PackFileSection` demands loader internals that a Game should not have to fill in (settled 2026-11-20). The GameHost hands it to Phaser as a pack section keyed with the Game's id.
 
 A Game has exactly one Scene registered with the Arcade. A Game that wants internal screens builds them inside that Scene. This is deliberate: only one Scene at a time may receive touches (see [ADR-0004](../adr/0004-one-input-scene-at-a-time.md)).
 
@@ -199,9 +215,9 @@ export interface Seat {
   readonly occupant:
     | { readonly kind: 'player'; readonly mascot: MascotId }
     | { readonly kind: 'computer' };
-  /** Theme token for this Seat's colour. Always paired with the Seat's shape; never colour alone. */
-  readonly color: string;
-  /** Frame name of this Seat's shape marker, for Players who cannot tell the colours apart. */
+  /** This Seat's colour, from the kit's theme. Always paired with the Seat's shape; never colour alone. */
+  readonly color: number;
+  /** Frame of this Seat's shape marker (`arcade/seat-…`), for Players who cannot tell the colours apart. */
   readonly shape: string;
 }
 ```
@@ -216,8 +232,18 @@ export interface RoundStart {
   readonly session: Session;
   /** Seed for this Round. Replaying gives a new seed; a test can fix it. */
   readonly seed: number;
+  /** Which Round of the Session this is, counting from 0. Tic-Tac-Toe alternates who moves first by it. */
+  readonly number: number;
   /** Opaque handle to the Arcade's services. A Game passes it to openRound and nothing else. */
   readonly host: RoundHost;
+}
+
+/** The Arcade's side of a Round. Only the kit's openRound calls it. */
+export interface RoundHost {
+  insets(): { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number };
+  opened(scene: Phaser.Scene, stage: Stage, describe: () => RoundSnapshot): void;
+  sfx(key: string, time: number): void;
+  finish(result: Result): void;
 }
 
 /** What openRound(scene, start) returns. */
@@ -226,6 +252,9 @@ export interface Round {
   readonly stage: Stage;
   readonly rng: Rng;
   readonly audio: RoundAudio;
+  /** Which Round of the Session this is, counting from 0. */
+  readonly number: number;
+  /** Arrives with slice 3b (#15), with `demo`. */
   readonly motion: Motion;
 
   /**
@@ -257,8 +286,11 @@ export type DemoStep =
 export interface RoundSnapshot {
   /** Whatever the Game's tests want to assert on. Must be plain JSON. */
   readonly state: unknown;
-  /** Named tap targets in design units, e.g. { 'cell-4': { x: 1376, y: 1032 } }. */
-  readonly targets: Readonly<Record<string, { readonly x: number; readonly y: number }>>;
+  /**
+   * Named tap targets in design units: each a centre and the rectangle that accepts the touch,
+   * e.g. { 'cell-4': { x: 1376, y: 1032, rect: { x: 1184, y: 840, width: 384, height: 384 } } }.
+   */
+  readonly targets: Readonly<Record<string, SnapshotTarget>>;
 }
 ```
 
@@ -271,7 +303,12 @@ export class TicTacToeScene extends Phaser.Scene {
   create(start: RoundStart) {
     const round = openRound(this, start);
     const view = new BoardView(this, round);          // this Game's own view code
-    let state = rules.start({ seats: round.session.seats.length, difficulty: round.session.difficulty, seed: start.seed });
+    let state = rules.start({
+      seats: round.session.seats.length,
+      difficulty: round.session.difficulty,
+      seed: start.seed,
+      first: (round.number % round.session.seats.length) as SeatIndex,
+    });
     // ...wire view touches to rules.apply, and when rules.result(state) is non-null:
     // round.finish(result);
   }
@@ -318,7 +355,7 @@ export interface Stage {
    * The backdrop follows the screen if its size changes, so a Game never handles resize.
    */
   backdrop(fill: BackdropFill): void;
-  /** One Zone per Seat for this Session's Seating. Empty unless the Play Style is zoned. */
+  /** One Zone per Seat for this Session's Seating. Empty unless the Play Style is zoned. Slice 4b (#17). */
   readonly zones: readonly Zone[];
   /** A Container placed and rotated for a Seat's Zone. Draw Zone content into it in Zone-local coordinates. */
   zoneContainer(seat: SeatIndex): Phaser.GameObjects.Container;
@@ -347,8 +384,13 @@ Every touch a Game acts on belongs to exactly one **Seat**. There are two rules 
 ```ts
 /** Shared board (not zoned): a touch belongs to the Seat whose Turn it is. */
 export interface TurnGate {
-  /** Wrap a Phaser input handler. The handler runs only if the gate is open and no other guarded touch is down. */
-  guard<A extends unknown[]>(handler: (...args: A) => void): (...args: A) => void;
+  /**
+   * Wrap a Phaser input handler whose first argument is the touch (its Pointer). The handler runs
+   * only if the gate is open and no other guarded touch is down. Act on `pointerdown`.
+   */
+  guard<A extends unknown[]>(
+    handler: (touch: { readonly id: number }, ...args: A) => void,
+  ): (touch: { readonly id: number }, ...args: A) => void;
   /** Close while an animation plays or a Computer Player is thinking; open when a Player may act. */
   close(): void;
   open(): void;
@@ -465,7 +507,8 @@ Not part of the contract. Any Game whose rules are "Seats take **Turns** making 
 
 ```ts
 export interface TurnRules<State, Move> {
-  start(setup: { seats: number; difficulty: Difficulty; seed: number }): State;
+  /** `first` is the Seat that moves first; it alternates from one Round of a Session to the next. */
+  start(setup: { seats: number; difficulty: Difficulty; seed: number; first: SeatIndex }): State;
   /** The Seat whose Turn it is. */
   seatToMove(state: State): SeatIndex;
   legalMoves(state: State): Move[];
@@ -489,14 +532,15 @@ Not visible to Games. Recorded here because it is the other half of the contract
 
 ```ts
 export interface GameHost {
-  /** Load the Game's chunk and pack, add its Scene, start the first Round. */
-  open(session: Session): Promise<void>;
+  /** Load the Game's chunk and pack, add its Scene, start the first Round. A test may fix the seed. */
+  open(session: Session, seed?: number): void;
+  /** Slice 2 (#13). */
   pause(): void;
   resume(): void;
   /** Start a new Round in the same Session with a new seed. */
   replay(): void;
   /** Stop and remove the Scene, remove the pack, return to the Home Screen. */
-  close(): Promise<void>;
+  close(): void;
   readonly state: HostState;
 }
 
@@ -532,6 +576,7 @@ The state machine and failure paths are in [overview.md](overview.md#game-lifecy
 
 Every Game is checked by the same automated tests, described in [testing-strategy.md](../testing-strategy.md):
 
-- A manifest test: unique id, valid Play Style ranges, a card frame that exists.
+- A manifest test, in Node: unique id, valid Play Style ranges, a card frame that exists.
+- A module test, in the browser through the bridge's `conformance()`, because a module imports Phaser: one atlas keyed with the id, every other key prefixed with it, no audio files.
 - For Games following `TurnRules`: a shared property test that plays many seeded random **Rounds** and checks that `apply` never mutates, that a Round always ends, and that the Result is consistent with the final state.
-- A browser smoke test: open the Game with a fixed seed for each Play Style, play to a Result through the test bridge, replay, close, and check that the Game's Scene and textures are gone.
+- A browser smoke test: open the Game with a fixed seed for each Play Style, play to a Result through the test bridge, replay, close, and check that the Game's Scene, textures and sounds are gone. Each Game adds a line to `tests/e2e/play.ts` saying which target to tap next; a Game without one fails these tests.

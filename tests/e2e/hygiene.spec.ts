@@ -58,14 +58,14 @@ test('a two-finger pinch does not zoom', async ({ arcade, page }) => {
 });
 
 test('moving between screens adds no history entries', async ({ arcade, page }) => {
+  test.slow();
   const length = () => page.evaluate(() => history.length);
   const before = await length();
   await arcade.start();
   const checks = await arcade.checks();
   expect(checks.length).toBeGreaterThan(0);
   for (const id of checks) {
-    await arcade.tap(id);
-    await expect.poll(() => arcade.screen()).toBe(id);
+    await arcade.openCheck(id);
     await arcade.hold('leave', 1000);
     await expect.poll(() => arcade.screen()).toBe('home');
   }

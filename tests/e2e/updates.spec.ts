@@ -79,8 +79,7 @@ test('a newer build waits while the page is open; after a reload, the page runs 
 
     await status.getByRole('button', { name: 'Back' }).tap();
     await expect.poll(() => arcade.screen()).toBe('home');
-    await arcade.tap('touch-check');
-    await expect.poll(() => arcade.screen()).toBe('touch-check');
+    await arcade.openCheck('touch-check');
   });
 
   await test.step('a reload applies it once, before the tap-to-start screen shows', async () => {
@@ -88,7 +87,7 @@ test('a newer build waits while the page is open; after a reload, the page runs 
     await page.addInitScript(() => {
       const watch = setInterval(() => {
         const bridge = window.whimigo;
-        if (bridge?.screen() !== 'start') return;
+        if (bridge?.screen().id !== 'start') return;
         clearInterval(watch);
         const shown = JSON.parse(sessionStorage.getItem('test:start-shown') ?? '[]') as string[];
         sessionStorage.setItem('test:start-shown', JSON.stringify([...shown, bridge.buildId]));
@@ -101,7 +100,7 @@ test('a newer build waits while the page is open; after a reload, the page runs 
 
     await page.reload();
     // Polled from inside the page, which survives the page reloading itself.
-    await page.waitForFunction(() => window.whimigo?.screen() === 'start');
+    await page.waitForFunction(() => window.whimigo?.screen().id === 'start');
     expect(await page.evaluate(() => window.whimigo?.buildId)).toBe(newer);
     expect(await arcade.call('updateWaiting')).toBe(false);
     expect(await readBuildJson()).toBe(newer);

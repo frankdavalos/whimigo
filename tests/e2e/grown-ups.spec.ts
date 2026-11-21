@@ -40,12 +40,14 @@ test('the status page opens from the Home Screen as HTML over the whole screen, 
   await arcade.open();
   const status = await openStatusPage(arcade);
   expect(await status.boundingBox()).toEqual({ x: 0, y: 0, ...page.viewportSize()! });
-  await expect(status.getByRole('heading')).toHaveText('For grown-ups');
+  await expect(status.getByRole('heading', { level: 1 })).toHaveText('For grown-ups');
 
   const touches = await countCanvasTouches(page);
   const { width, height } = page.viewportSize()!;
+  // Over the page's words and margins, never on one of its buttons.
+  const heading = (await status.getByRole('heading', { level: 1 }).boundingBox())!;
   for (const [x, y] of [
-    [width / 2, height / 2],
+    [heading.x + heading.width / 2, heading.y + heading.height / 2],
     [width - 20, height - 20],
     [20, 20],
   ] as const) {

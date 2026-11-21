@@ -38,6 +38,7 @@ class BlankCheckScreen extends Phaser.Scene implements ArcadeScreen {
 
 export const blankCheck: CheckScreen = {
   id: 'blank-check',
+  title: 'Blank check (for tests)',
   scene: BlankCheckScreen,
   icon: 'arcade/check-blank',
 };

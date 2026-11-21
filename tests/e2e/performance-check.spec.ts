@@ -47,7 +47,7 @@ test('the Performance check opens from the Home Screen and moves its standard lo
 }) => {
   await arcade.open();
   await arcade.start();
-  await arcade.tap(PERFORMANCE);
+  await arcade.openCheck(PERFORMANCE);
   await expect.poll(() => arcade.screen()).toBe(PERFORMANCE);
 
   const { load } = await state(arcade);
@@ -183,7 +183,7 @@ test.describe('the add-and-remove loop (story 20)', () => {
     await arcade.open();
     await arcade.start();
     const home = await arcade.counts();
-    await arcade.tap(PERFORMANCE);
+    await arcade.openCheck(PERFORMANCE);
     await expect.poll(() => arcade.screen()).toBe(PERFORMANCE);
 
     await arcade.tap('loop');

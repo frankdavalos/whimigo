@@ -50,18 +50,25 @@ export class Arcade {
     ) as Promise<ReturnType<Methods[K]>>;
   }
 
-  screen = () => this.call('screen');
+  /** The screen showing, by id, or null while the Arcade is changing screen. */
+  screen = async () => (await this.call('screen')).id;
+  /** The GameHost's state. */
+  host = async () => (await this.call('screen')).host;
+  round = () => this.call('round');
   snapshot = () => this.call('snapshot');
   counts = () => this.call('counts');
   audio = () => this.call('audio');
   layout = () => this.call('layout');
 
-  /**
-   * The check screens the Home Screen lists, in order, read while it shows. Its controls are
-   * named by the screen they open; the one that opens the status page is not a check screen.
-   */
-  async checks(): Promise<string[]> {
-    return ((await this.snapshot()).state as { checks: string[] }).checks;
+  /** The check screens the status page lists, in order. */
+  checks = () => this.call('checks');
+
+  /** From the Home Screen, opens the status page and taps a check screen's button there. */
+  async openCheck(id: string): Promise<void> {
+    await this.tap('grown-ups');
+    await expect.poll(() => this.screen()).toBe('grown-ups');
+    await this.page.locator(`#grown-ups [data-check="${id}"]`).tap();
+    await expect.poll(() => this.screen()).toBe(id);
   }
 
   async target(name: string): Promise<Point & { rect: Rect }> {
@@ -75,6 +82,14 @@ export class Arcade {
   async tap(name: string): Promise<void> {
     const { x, y } = await this.target(name);
     await this.page.touchscreen.tap(x, y);
+  }
+
+  /** A real tap at the centre of a target the Round names. */
+  async tapRound(name: string): Promise<void> {
+    const round = await this.round();
+    const target = round?.targets[name];
+    if (!target) throw new Error(`No Round target "${name}" in ${JSON.stringify(round)}`);
+    await this.page.touchscreen.tap(target.x, target.y);
   }
 
   /** Converts a point in design units to the page, in CSS pixels. */

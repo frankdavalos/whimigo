@@ -5,15 +5,19 @@ import { createStage, type Stage } from '@/kit/stage';
 import { tapButton } from '@/kit/tap-button';
 import { colors, sizes } from '@/kit/theme';
 import { GROWN_UPS } from './grown-ups';
-import type { ArcadeScreen, ScreenData, ScreenId } from './screen';
+import { LOBBY, type LobbyData } from './lobby/lobby-screen';
+import type { ArcadeScreen, ScreenData } from './screen';
+
+/** A Game Card's size in design units, from its art. */
+const CARD = 560;
 
 /**
- * The placeholder Home Screen: one control per registered check screen, and in the corner one
- * that opens the status page for grown-ups. Game Cards arrive with the first Game.
+ * The Home Screen: one Game Card per Game in the Catalog, in Catalog order, each opening that
+ * Game's lobby; and in the corner the control that opens the status page for grown-ups.
  */
 export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
-  private checks: ScreenId[] = [];
+  private games: string[] = [];
   private targets: Record<string, SnapshotTarget> = {};
 
   create({ arcade }: ScreenData): void {
@@ -22,40 +26,40 @@ export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
     const { safe } = this.stage;
     picture(this, safe.x + 160, safe.y + 160, 'arcade/sun');
 
-    const size = sizes.button;
-    const spacing = size + sizes.gap * 2;
-    const firstX = safe.x + safe.width / 2 - ((arcade.checks.length - 1) * spacing) / 2;
+    const spacing = CARD + sizes.gap * 2;
+    const firstX = safe.x + safe.width / 2 - ((arcade.catalog.length - 1) * spacing) / 2;
     const y = safe.y + safe.height / 2;
-    this.checks = arcade.checks.map((check) => check.id);
+    this.games = arcade.catalog.map((game) => game.id);
     this.targets = {};
-    arcade.checks.forEach((check, index) => {
+    arcade.catalog.forEach((game, index) => {
       const x = firstX + index * spacing;
-      picture(this, x, y, 'arcade/card');
-      picture(this, x, y, check.icon);
+      picture(this, x, y, game.card.frame);
       this.add
-        .rectangle(x, y, size, size)
+        .rectangle(x, y, CARD, CARD)
         .setInteractive()
         .on('pointerup', (pointer: Phaser.Input.Pointer) => {
-          if (!pointer.wasCanceled) arcade.show(check.id);
+          if (pointer.wasCanceled) return;
+          const data: Omit<LobbyData, 'arcade'> = { game };
+          arcade.show(LOBBY, data);
         });
-      this.targets[check.id] = {
+      this.targets[game.id] = {
         x,
         y,
-        rect: { x: x - size / 2, y: y - size / 2, width: size, height: size },
+        rect: { x: x - CARD / 2, y: y - CARD / 2, width: CARD, height: CARD },
       };
     });
-    // The Grown-Up Gate will guard this control (Phase 1).
+    // The Grown-Up Gate will guard this control (slice 5d).
     this.targets[GROWN_UPS] = tapButton(this, {
-      x: safe.x + safe.width - size / 2,
-      y: safe.y + safe.height - size / 2,
+      x: safe.x + safe.width - sizes.button / 2,
+      y: safe.y + safe.height - sizes.button / 2,
       icon: 'arcade/grown-ups',
       onTap: () => arcade.show(GROWN_UPS),
     }).target;
     arcade.shown(this);
   }
 
-  /** The state names the check screens, in order; a target is named by the screen it opens. */
+  /** The state names the Games, in Catalog order; a Game Card's target is named by its Game. */
   snapshot(): ScreenSnapshot {
-    return { state: { checks: this.checks }, targets: this.targets };
+    return { state: { games: this.games }, targets: this.targets };
   }
 }

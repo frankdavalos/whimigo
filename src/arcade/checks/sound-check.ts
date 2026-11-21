@@ -119,6 +119,7 @@ class SoundCheckScreen extends Phaser.Scene implements ArcadeScreen {
 
 export const soundCheck: CheckScreen = {
   id: 'sound-check',
+  title: 'Sound check',
   scene: SoundCheckScreen,
   icon: 'arcade/check-sound',
 };

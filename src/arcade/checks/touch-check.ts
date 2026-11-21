@@ -250,6 +250,7 @@ class TouchCheckScreen extends Phaser.Scene implements ArcadeScreen {
 
 export const touchCheck: CheckScreen = {
   id: 'touch-check',
+  title: 'Touch Check',
   scene: TouchCheckScreen,
   icon: 'arcade/check-touch',
 };

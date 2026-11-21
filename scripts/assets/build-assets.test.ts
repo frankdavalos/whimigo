@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ASSETS, buildAssets } from './build-assets';
+import { ASSETS, assetSets, buildAssets, frameNames } from './build-assets';
 
 const temporary: string[] = [];
 afterEach(() => {
@@ -170,22 +170,26 @@ describe('the Arcade’s own assets', () => {
       atlasDir: join(out, 'atlases'),
       iconDir: join(out, 'icons'),
     });
-    expect(plans.map((plan) => plan.setId)).toEqual(['arcade', 'standin']);
+    expect(plans.map((plan) => plan.setId)).toEqual(ASSETS.sets.map((set) => set.id));
 
     for (const [index, set] of ASSETS.sets.entries()) {
       const plan = plans[index]!;
-      const files = readdirSync(join(root, set.dir), { recursive: true, encoding: 'utf8' })
-        .filter((file) => file.endsWith('.svg'))
-        .sort();
+      const files = [
+        ...readdirSync(join(root, set.dir), { recursive: true, encoding: 'utf8' })
+          .filter((file) => file.endsWith('.svg'))
+          .map((file) => ({
+            key: `${set.id}/${file.replace(/\.svg$/, '')}`,
+            path: join(set.dir, file),
+          })),
+        ...(set.extras ?? []).map(({ name, file }) => ({ key: `${set.id}/${name}`, path: file })),
+      ].sort((a, b) => a.key.localeCompare(b.key));
       expect(files.length, set.id).toBeGreaterThan(0);
       const frames = new Map(plan.frames.map((frame) => [frame.key, frame]));
-      expect([...frames.keys()].sort()).toEqual(
-        files.map((file) => `${set.id}/${file.replace(/\.svg$/, '')}`),
-      );
-      for (const file of files) {
-        const { width, height } = await sharp(join(root, set.dir, file)).metadata();
-        const frame = frames.get(`${set.id}/${file.replace(/\.svg$/, '')}`)!;
-        expect({ width: frame.width, height: frame.height }, file).toEqual({ width, height });
+      expect([...frames.keys()].sort()).toEqual(files.map(({ key }) => key));
+      for (const { key, path } of files) {
+        const { width, height } = await sharp(join(root, path)).metadata();
+        const frame = frames.get(key)!;
+        expect({ width: frame.width, height: frame.height }, key).toEqual({ width, height });
       }
       expect(plan.width).toBeLessThanOrEqual(4096);
       expect(plan.height).toBeLessThanOrEqual(4096);
@@ -201,5 +205,47 @@ describe('the Arcade’s own assets', () => {
       area += width * height;
     }
     expect(area).toBeGreaterThanOrEqual(2752 * 2064);
+  });
+});
+
+describe('the sets of art', () => {
+  it('are the Arcade’s, the stand-in’s, and one for each Game that has art, keyed by its folder', () => {
+    const root = project({
+      'src/games/tic-tac-toe/art/board.svg': square(10, 10, '#000000'),
+      'src/games/tic-tac-toe/card.svg': square(10, 10, '#000000'),
+      'src/games/no-art-yet/manifest.ts': '',
+      'src/games/catalog.ts': '',
+    });
+    expect(assetSets(root)).toEqual([
+      {
+        id: 'arcade',
+        dir: 'src/arcade/art',
+        extras: [{ name: 'game-card/tic-tac-toe', file: 'src/games/tic-tac-toe/card.svg' }],
+      },
+      { id: 'standin', dir: 'src/arcade/checks/standin-art' },
+      { id: 'tic-tac-toe', dir: 'src/games/tic-tac-toe/art' },
+    ]);
+  });
+
+  it('pack each Game’s Game Card into the Arcade’s atlas under arcade/game-card/<id>', async () => {
+    const root = project({
+      'src/arcade/art/sun.svg': square(20, 20, '#ffc94a'),
+      'src/arcade/checks/standin-art/token.svg': square(20, 20, '#ffc94a'),
+      'src/games/fox-run/art/fox.svg': square(30, 30, '#ff8a73'),
+      'src/games/fox-run/card.svg': square(40, 40, '#ff8a73'),
+      'icon.svg': ICON,
+    });
+    const sets = assetSets(root);
+    await buildAssets({ root, sets, icon: 'icon.svg', atlasDir: 'out', iconDir: 'icons' });
+    const arcade = JSON.parse(readFileSync(join(root, 'out/arcade.json'), 'utf8')) as Table;
+    expect(Object.keys(arcade.frames).sort()).toEqual(['arcade/game-card/fox-run', 'arcade/sun']);
+    const game = JSON.parse(readFileSync(join(root, 'out/fox-run.json'), 'utf8')) as Table;
+    expect(Object.keys(game.frames)).toEqual(['fox-run/fox']);
+    expect(await frameNames(root, sets[0]!)).toEqual(['arcade/game-card/fox-run', 'arcade/sun']);
+  });
+
+  it('include this repository’s own Games', () => {
+    const ids = ASSETS.sets.map((set) => set.id);
+    expect(ids).toContain('tic-tac-toe');
   });
 });

@@ -36,7 +36,7 @@ async function openWithSound(arcade: Arcade) {
   await arcade.open();
   await arcade.start();
   await expect.poll(() => arcade.audio()).toBe('running');
-  await arcade.tap(SOUND);
+  await arcade.openCheck(SOUND);
   await expect.poll(() => arcade.screen()).toBe(SOUND);
 }
 
@@ -45,7 +45,7 @@ test('the Sound check opens from the Home Screen with one control for each sound
 }) => {
   await arcade.open();
   await arcade.start();
-  await arcade.tap(SOUND);
+  await arcade.openCheck(SOUND);
   await expect.poll(() => arcade.screen()).toBe(SOUND);
   const { targets, state } = await arcade.snapshot();
   expect(Object.keys(targets).sort()).toEqual([...SOUNDS, 'leave'].sort());

@@ -214,6 +214,7 @@ class PerformanceCheckScreen extends Phaser.Scene implements ArcadeScreen {
 
 export const performanceCheck: CheckScreen = {
   id: 'performance-check',
+  title: 'Performance check',
   scene: PerformanceCheckScreen,
   icon: 'arcade/check-performance',
 };

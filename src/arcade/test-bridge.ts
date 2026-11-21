@@ -1,10 +1,12 @@
 import * as Phaser from 'phaser';
-import type { Rect, SnapshotTarget } from '@/contract';
+import type { Rect, ScreenSnapshot, Session, SnapshotTarget } from '@/contract';
 import { DESIGN_FRAME, frameOnCanvas } from '@/kit/frame';
 import { renderScaleOf } from '@/kit/render-scale';
 import type { AudioState } from '@/platform/audio';
 import type { Arcade } from './arcade';
+import { checkModule } from './conformance';
 import { type Counts, countsOf } from './counts';
+import type { HostState, RequestedSound } from './game-host';
 import type { ScreenId } from './screen';
 
 /** A screen's snapshot with every target converted to page coordinates (CSS pixels). */
@@ -37,11 +39,30 @@ export interface TestBridge {
   offlineReady(): boolean;
   /** Whether a newer version has been downloaded and waits for the next cold start. */
   updateWaiting(): boolean;
-  /** The screen showing, or null while the Arcade is changing screen. */
-  screen(): ScreenId | null;
+  /** The screen showing, or null while the Arcade is changing screen, and the GameHost's state. */
+  screen(): { readonly id: ScreenId | null; readonly host: HostState };
   snapshot(): PageSnapshot;
+  /** Starts a Session directly, skipping the Home Screen and the lobby. */
+  open(session: Session, seed: number): void;
+  /**
+   * The Round being played, or whose Result shows: its seed, its number in the Session, its state
+   * and its named targets in page coordinates. Null when no Game is open.
+   */
+  round(): RoundPage | null;
+  /** The last few states the GameHost has been in, oldest first. */
+  hostStates(): HostState[];
+  /** Every sound the Round has requested since it began, with its key and Scene time. */
+  sounds(): readonly RequestedSound[];
+  /** The Scenes that accept input now, by key. Exactly one, whenever a screen shows. */
+  inputScenes(): string[];
+  /** The ids of the check screens, in the order the status page lists them. */
+  checks(): string[];
+  /** Loads every Game's module and runs the module conformance checks; empty when all pass. */
+  conformance(): Promise<string[]>;
   layout(): PageLayout;
   counts(): Counts;
+  /** What `counts()` counts, by key: Scenes, textures and cached sounds. */
+  keys(): { readonly scenes: string[]; readonly textures: string[]; readonly sounds: string[] };
   /** What the showing screen draws: each image's texture and frame, and how many drawn shapes. */
   pictures(): Pictures;
   /** Opens a check screen directly, skipping the Home Screen. */
@@ -55,6 +76,12 @@ export interface TestBridge {
   throwInUpdate(): void;
   /** Leaves a rejected promise unhandled. */
   rejectUnhandled(): void;
+}
+
+export interface RoundPage extends PageSnapshot {
+  readonly session: Session;
+  readonly seed: number;
+  readonly number: number;
 }
 
 export interface Pictures {
@@ -95,19 +122,45 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     return screen;
   };
 
+  const onPage = ({ state, targets }: ScreenSnapshot): PageSnapshot => {
+    const converted: Record<string, SnapshotTarget> = {};
+    for (const [name, target] of Object.entries(targets)) {
+      const centre = toPage({ x: target.x, y: target.y, width: 0, height: 0 });
+      converted[name] = { x: centre.x, y: centre.y, rect: toPage(target.rect) };
+    }
+    return JSON.parse(JSON.stringify({ state, targets: converted })) as PageSnapshot;
+  };
+
   win.whimigo = {
     buildId: services.buildId,
     offlineReady: () => services.updates.state().offlineReady,
     updateWaiting: () => services.updates.state().updateWaiting,
-    screen: () => arcade.screen?.scene.key ?? null,
-    snapshot() {
-      const { state, targets } = showing().snapshot();
-      const onPage: Record<string, SnapshotTarget> = {};
-      for (const [name, target] of Object.entries(targets)) {
-        const centre = toPage({ x: target.x, y: target.y, width: 0, height: 0 });
-        onPage[name] = { x: centre.x, y: centre.y, rect: toPage(target.rect) };
-      }
-      return JSON.parse(JSON.stringify({ state, targets: onPage })) as PageSnapshot;
+    screen: () => ({ id: arcade.screen?.id ?? null, host: arcade.host.state }),
+    snapshot: () => onPage(showing().snapshot()),
+    open: (session, seed) => arcade.host.open(session, seed),
+    round() {
+      const round = arcade.host.round();
+      if (!round) return null;
+      const { session, seed, number } = round;
+      return { session, seed, number, ...onPage(round.snapshot) };
+    },
+    hostStates: () => [...arcade.host.history],
+    sounds: () => JSON.parse(JSON.stringify(arcade.host.round()?.sounds ?? [])) as RequestedSound[],
+    inputScenes: () =>
+      game.scene.scenes
+        .filter(
+          (scene) => scene.sys.settings.status >= Phaser.Scenes.START && scene.input?.isActive(),
+        )
+        .map((scene) => scene.sys.settings.key),
+    checks: () => arcade.checks.map((check) => check.id),
+    async conformance() {
+      const modules = await Promise.all(
+        arcade.catalog.map(async (manifest) => ({
+          id: manifest.id,
+          module: (await manifest.load()).default,
+        })),
+      );
+      return modules.flatMap(({ id, module }) => checkModule(id, module));
     },
     layout() {
       const box = game.canvas.getBoundingClientRect();
@@ -122,6 +175,11 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
       };
     },
     counts: () => countsOf(game),
+    keys: () => ({
+      scenes: game.scene.scenes.map((scene) => scene.sys.settings.key),
+      textures: game.textures.getTextureKeys(),
+      sounds: game.cache.audio.getKeys(),
+    }),
     pictures() {
       const images: { texture: string; frame: string }[] = [];
       let shapes = 0;
@@ -137,7 +195,7 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
           shapes += 1;
         }
       };
-      showing().children.list.forEach(visit);
+      showing().scene.children.list.forEach(visit);
       return { images, shapes };
     },
     openCheck(id) {
@@ -152,7 +210,7 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     },
     frames: () => game.loop.frame,
     throwInUpdate() {
-      showing().events.once('update', () => {
+      showing().scene.events.once('update', () => {
         throw new Error('Thrown on purpose by the test bridge');
       });
     },

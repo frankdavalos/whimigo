@@ -46,6 +46,16 @@ const expected: Record<string, string[]> = {
 
   // Objects with open defects in Phaser 4.2.1 are not created anywhere.
   'src/games/fixture-bad/scene/creates-text.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/creates-render-texture.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/creates-dynamic-texture.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/creates-shader.ts': [SYNTAX],
+
+  // A Game has one Scene and one camera, which the Arcade and the kit own, and no HTML.
+  'src/games/fixture-bad/scene/adds-a-scene.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/launches-a-scene.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/adds-a-camera.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/creates-a-dom-element.ts': [SYNTAX],
+  'src/games/fixture-bad/scene/creates-an-html-element.ts': [SYNTAX],
   'src/arcade/creates-render-texture.ts': [SYNTAX],
 
   // The platform services know nothing of the kit, the Arcade or Games.

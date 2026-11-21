@@ -1,19 +1,10 @@
 import type * as Phaser from 'phaser';
-import type { Rect } from '@/contract';
+import type { Stage } from '@/contract';
 import { DESIGN_FRAME, safeRect, type Insets } from './frame';
 import { renderScaleOf } from './render-scale';
 import { cssColor } from './theme';
 
-/** A theme colour for the backdrop. Tiling frames arrive with the atlas. */
-export type BackdropFill = { readonly color: number };
-
-/** The screen, in design units. A screen never reads the window size or the pixel ratio. */
-export interface Stage {
-  /** The design frame inset by the larger of the reported safe-area inset and 88 units. */
-  readonly safe: Rect;
-  /** Fill everything visible, including the extra width or height beyond the design frame. */
-  backdrop(fill: BackdropFill): void;
-}
+export type { BackdropFill, Stage } from '@/contract';
 
 /**
  * Points the Scene's one camera at the design frame, zoomed to the render scale, and keeps it

@@ -3,8 +3,10 @@
  * them into one atlas page per set, and rasterises the app icons. Run by the Vite plugin in
  * vite.config.ts before the development server and the production build. Needs no network.
  */
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { frameTable, planAtlas, type AtlasPlan, type Source } from './atlas.ts';
 
@@ -13,6 +15,8 @@ export interface AtlasSet {
   readonly id: string;
   /** Relative to the project root. */
   readonly dir: string;
+  /** SVG files kept elsewhere that join the set, each as the frame `${id}/<name>`. */
+  readonly extras?: readonly { readonly name: string; readonly file: string }[];
 }
 
 export interface BuildOptions {
@@ -26,21 +30,60 @@ export interface BuildOptions {
   readonly iconDir: string;
 }
 
+const GAMES = 'src/games';
+
+/**
+ * The sets of art in a project. The Arcade's own set also holds each Game's Game Card, which is
+ * kept with the Game as `card.svg` and becomes the frame `arcade/game-card/<id>`. Each Game with
+ * an `art/` folder has a set of its own, keyed by the Game's folder, which is its id (game
+ * contract, Asset keys). So adding a Game needs no change here.
+ */
+export function assetSets(root: string): AtlasSet[] {
+  const games = existsSync(join(root, GAMES))
+    ? readdirSync(join(root, GAMES), { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort()
+    : [];
+  const has = (id: string, path: string) => existsSync(join(root, GAMES, id, path));
+  const cards = games
+    .filter((id) => has(id, 'card.svg'))
+    .map((id) => ({ name: `game-card/${id}`, file: `${GAMES}/${id}/card.svg` }));
+  return [
+    { id: 'arcade', dir: 'src/arcade/art', ...(cards.length > 0 ? { extras: cards } : {}) },
+    // A Game-sized set that the Performance check loads as a pack.
+    { id: 'standin', dir: 'src/arcade/checks/standin-art' },
+    ...games.filter((id) => has(id, 'art')).map((id) => ({ id, dir: `${GAMES}/${id}/art` })),
+  ];
+}
+
 /**
  * The Arcade's assets. Atlases are imported by the code that loads them, so the bundler gives
  * them content-hashed names; icons are public files with fixed names. Both folders are ignored
  * by git.
  */
 export const ASSETS = {
-  sets: [
-    { id: 'arcade', dir: 'src/arcade/art' },
-    // Stands in for a Game's art until one exists; the Performance check loads it as a pack.
-    { id: 'standin', dir: 'src/arcade/checks/standin-art' },
-  ],
+  sets: assetSets(fileURLToPath(new URL('../..', import.meta.url))),
   icon: 'src/arcade/app-icon.svg',
   atlasDir: 'src/generated/atlases',
   iconDir: 'public/icons',
 } as const satisfies Omit<BuildOptions, 'root'>;
+
+/** Every frame key a set will have, without building it. */
+export async function frameNames(root: string, set: AtlasSet): Promise<string[]> {
+  return (await readSet(root, set)).map(({ name }) => `${set.id}/${name}`).sort();
+}
+
+/** A set's sources: its folder's SVGs and its extras. */
+async function readSet(root: string, set: AtlasSet): Promise<Source[]> {
+  const extras = await Promise.all(
+    (set.extras ?? []).map(async ({ name, file }) => ({
+      name,
+      svg: await readFile(join(root, file), 'utf8'),
+    })),
+  );
+  return [...(await readSources(join(root, set.dir))), ...extras];
+}
 
 /**
  * Plans every set before writing anything, so a set that does not fit fails the build with
@@ -50,7 +93,7 @@ export async function buildAssets(options: BuildOptions): Promise<AtlasPlan[]> {
   const { root } = options;
   const planned = await Promise.all(
     options.sets.map(async (set) => {
-      const sources = await readSources(join(root, set.dir));
+      const sources = await readSet(root, set);
       return { plan: planAtlas(set.id, sources), sources };
     }),
   );
