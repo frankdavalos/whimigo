@@ -80,6 +80,8 @@ test.beforeEach(async ({ arcade }) => {
 test('Color Echo is on the Home Screen after Tic-Tac-Toe, and a Player plays a Solo Round to a Result through the lobby @smoke', async ({
   arcade,
 }) => {
+  // A whole Round, in the slow Round time of a software-rendered page.
+  test.slow();
   const ids = CATALOG.map((game) => game.id);
   expect(ids.indexOf('color-echo')).toBe(ids.indexOf('tic-tac-toe') + 1);
 
