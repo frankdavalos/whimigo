@@ -29,9 +29,10 @@ const job = (name: string) => block(name, 2);
 
 /**
  * How many jobs share each Chromium project's tests. With three Games every project's tests took
- * nearly 30 minutes in one job (slice 4b, #17), and each Game adds to them.
+ * nearly 30 minutes in one job (slice 4b, #17), and each Game adds to them. Four jobs were not
+ * enough once Reaction Rush's Rounds, which wait for signals in slow Round time, were among them.
  */
-const SHARDS = 4;
+const SHARDS = 6;
 const shardsOf = (project: string) =>
   Array.from({ length: SHARDS }, (_, i) => ({
     name: `${project}-${i + 1}-of-${SHARDS}`,

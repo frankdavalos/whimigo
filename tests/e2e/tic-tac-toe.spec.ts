@@ -66,7 +66,8 @@ test('two Players go from the Home Screen through the lobby to a finished Round 
   // The first Seat takes the top row while the second plays the middle row.
   for (const cell of [0, 3, 1, 4, 2]) await arcade.tapRound(`cell-${cell}`);
   await expect.poll(() => arcade.host()).toBe('showing-result');
-  expect(await arcade.screen()).toBe('result');
+  // The host shows a Result a frame before its screen does.
+  await expect.poll(() => arcade.screen()).toBe('result');
   expect((await arcade.snapshot()).state).toEqual({
     result: { kind: 'win', winners: [0] },
     celebrated: ['fox'],

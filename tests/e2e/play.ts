@@ -8,7 +8,7 @@ import type {
 import { buildSession } from '../../src/arcade/lobby/rules';
 import { MASCOTS } from '../../src/arcade/mascots';
 import { CATALOG } from '../../src/games/catalog';
-import { expect, type Arcade } from './arcade';
+import { expect, test, type Arcade } from './arcade';
 
 export { CATALOG };
 
@@ -93,16 +93,28 @@ async function changed(arcade: Arcade, seen: string): Promise<Changed> {
       return over ? { round: null, over } : false;
     },
     seen,
-    // Round time moves slowly while a software-rendered page draws few frames.
-    { timeout: 60_000 },
+    // Reaction Rush waits up to 3.5 s of Round time for its signal.
+    { timeout: 2 * 60_000 },
   );
   return (await handle.jsonValue()) as Changed;
 }
 
-/** Taps the Round's targets until the host shows a Result; returns the Round's state after each tap. */
+/**
+ * The time a Round may take, added to its test's own. Phaser counts a frame slower than a fifth of a
+ * second as a 60th of one, and a software-rendered page under load draws three or four frames a
+ * second, so Round time runs at a fifteenth of wall time there. A Round of Reaction Rush, nearly 11
+ * seconds of signals and waits, then takes three minutes.
+ */
+const A_ROUND = 5 * 60_000;
+
+/**
+ * Taps the Round's targets until the host shows a Result; returns the Round's state after each
+ * tap. The test is given A_ROUND more to finish in.
+ */
 export async function playToResult(arcade: Arcade, gameId: string): Promise<unknown[]> {
   const next = NEXT_TAP[gameId];
   if (!next) throw new Error(`tests/e2e/play.ts does not know how to play ${gameId}`);
+  test.setTimeout(test.info().timeout + A_ROUND);
   const states: unknown[] = [];
   if ((await arcade.host()) === 'showing-result') return states;
   let round = await arcade.round();

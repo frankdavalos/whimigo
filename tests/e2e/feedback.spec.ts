@@ -44,7 +44,8 @@ const settledEcho = (state: unknown) => {
 /** Waits until the Player may repeat Color Echo's sequence. */
 async function untilRepeating(arcade: Arcade) {
   await expect
-    .poll(async () => echo(await arcade.round()).phase, { timeout: 30_000 })
+    // Round time moves slowly while a software-rendered page draws few frames.
+    .poll(async () => echo(await arcade.round()).phase, { timeout: 60_000 })
     .toBe('repeating');
 }
 

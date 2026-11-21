@@ -113,6 +113,8 @@ for (const game of CATALOG) {
   test(`${game.id}: the Play Styles offered follow from who sat down, and start is unavailable when none fits`, async ({
     arcade,
   }) => {
+    // Five seatings, each checked picture by picture.
+    test.slow();
     await openLobby(arcade, game);
     for (const players of [0, 1, 2, 3, 4]) {
       if (players > 0) await tapMascots(arcade, [MASCOTS[players - 1]!]);

@@ -31,8 +31,8 @@ jobs:
 
   # The browser tests draw a 2752 x 2064 canvas in software, so they run in jobs side by side, each
   # making its own production build and testing it. Each Chromium project's tests are shared among
-  # four jobs (Playwright's --shard): in one job each, they took nearly 30 minutes once there were
-  # three Games, and every Game adds to them. WebKit's smoke tests have a job of their own. Each
+  # six jobs (Playwright's --shard): in one job each, they took nearly 30 minutes once there were
+  # three Games, and every Game adds to them, Reaction Rush's waits most of all. WebKit's smoke tests have a job of their own. Each
   # Chromium project's tests that open the Performance check run in one more job. Its standard load
   # needs the browser to draw steadily: a frame rate, 50 add-and-remove cycles in time, a short
   # press that stays short. Beside other browser tests those tests were starved of CPU, so they run
@@ -48,42 +48,60 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - job: chromium-tablet-4x3-1-of-4
+          - job: chromium-tablet-4x3-1-of-6
             browser: chromium
-            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=1/4
-          - job: chromium-tablet-4x3-2-of-4
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=1/6
+          - job: chromium-tablet-4x3-2-of-6
             browser: chromium
-            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=2/4
-          - job: chromium-tablet-4x3-3-of-4
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=2/6
+          - job: chromium-tablet-4x3-3-of-6
             browser: chromium
-            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=3/4
-          - job: chromium-tablet-4x3-4-of-4
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=3/6
+          - job: chromium-tablet-4x3-4-of-6
             browser: chromium
-            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=4/4
-          - job: chromium-small-tablet-1-of-4
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=4/6
+          - job: chromium-tablet-4x3-5-of-6
             browser: chromium
-            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=1/4
-          - job: chromium-small-tablet-2-of-4
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=5/6
+          - job: chromium-tablet-4x3-6-of-6
             browser: chromium
-            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=2/4
-          - job: chromium-small-tablet-3-of-4
+            args: --project=chromium-tablet-4x3 --grep-invert="$ISOLATED" --shard=6/6
+          - job: chromium-small-tablet-1-of-6
             browser: chromium
-            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=3/4
-          - job: chromium-small-tablet-4-of-4
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=1/6
+          - job: chromium-small-tablet-2-of-6
             browser: chromium
-            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=4/4
-          - job: chromium-tablet-16x10-1-of-4
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=2/6
+          - job: chromium-small-tablet-3-of-6
             browser: chromium
-            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=1/4
-          - job: chromium-tablet-16x10-2-of-4
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=3/6
+          - job: chromium-small-tablet-4-of-6
             browser: chromium
-            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=2/4
-          - job: chromium-tablet-16x10-3-of-4
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=4/6
+          - job: chromium-small-tablet-5-of-6
             browser: chromium
-            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=3/4
-          - job: chromium-tablet-16x10-4-of-4
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=5/6
+          - job: chromium-small-tablet-6-of-6
             browser: chromium
-            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=4/4
+            args: --project=chromium-small-tablet --grep-invert="$ISOLATED" --shard=6/6
+          - job: chromium-tablet-16x10-1-of-6
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=1/6
+          - job: chromium-tablet-16x10-2-of-6
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=2/6
+          - job: chromium-tablet-16x10-3-of-6
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=3/6
+          - job: chromium-tablet-16x10-4-of-6
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=4/6
+          - job: chromium-tablet-16x10-5-of-6
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=5/6
+          - job: chromium-tablet-16x10-6-of-6
+            browser: chromium
+            args: --project=chromium-tablet-16x10 --grep-invert="$ISOLATED" --shard=6/6
           - job: webkit-smoke
             browser: webkit
             args: --project=webkit-smoke
@@ -116,7 +134,7 @@ jobs:
           path: build-checksums.txt
           retention-days: 1
       - name: Keep the tested build for GitHub Pages
-        if: github.ref == 'refs/heads/main' && matrix.job == 'chromium-tablet-4x3-1-of-4'
+        if: github.ref == 'refs/heads/main' && matrix.job == 'chromium-tablet-4x3-1-of-6'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist/
@@ -144,8 +162,8 @@ jobs:
           set -eu
           lists=$(find checksums -name build-checksums.txt | sort)
           count=$(printf '%s\n' "$lists" | wc -l)
-          if [ "$count" -ne 16 ]; then
-            echo "::error::expected a checksum list from each of the 16 browser-test jobs, found ${count}"
+          if [ "$count" -ne 22 ]; then
+            echo "::error::expected a checksum list from each of the 22 browser-test jobs, found ${count}"
             exit 1
           fi
           first=$(printf '%s\n' "$lists" | head -n 1)
