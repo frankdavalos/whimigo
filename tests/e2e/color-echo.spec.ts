@@ -1,9 +1,11 @@
-import type { Difficulty } from '../../src/contract';
+import type { Difficulty, Seating } from '../../src/contract';
+import { MASCOTS } from '../../src/arcade/mascots';
 import { expect, test, type Arcade } from './arcade';
-import { CATALOG, openSession, sessionFor } from './play';
+import { CATALOG, openSession, playToResult, sessionFor } from './play';
 
 const GAME = CATALOG.find((game) => game.id === 'color-echo')!;
 const SOLO = GAME.playStyles.find((style) => style.style === 'solo')!;
+const TURN_BASED = GAME.playStyles.find((style) => style.style === 'turn-based')!;
 
 interface Echo {
   phase: 'playing' | 'repeating' | 'over';
@@ -182,3 +184,91 @@ test('each pad’s tone is requested at the same Scene time as its pad lights, w
   frames.push(...pressed);
   expect(check(false), 'the pressed pad lit').toBe(1);
 });
+
+/** What Color Echo's snapshot says about a Turn-Based Round. */
+interface Turns {
+  phase: 'playing' | 'repeating' | 'over';
+  length: number;
+  entered: number;
+  toMove: number;
+  pads: string[];
+  sequence: number[];
+  lives: { seat: number; lives: number }[];
+  pointer: { seat: number };
+}
+const turns = async (arcade: Arcade) => (await arcade.round())!.state as Turns;
+
+for (const players of [2, 3, 4]) {
+  test(`${players} Players start a Turn-Based Session from Color Echo’s lobby and play it to a Result`, async ({
+    arcade,
+  }) => {
+    // Several Turns, each played by the Arcade first, in the slow Round time of a software-rendered page.
+    test.slow();
+    await arcade.tap('color-echo');
+    await expect.poll(() => arcade.screen()).toBe('lobby');
+    for (const mascot of MASCOTS.slice(0, players)) await arcade.tap(`mascot-${mascot}`);
+    await arcade.tap('start');
+    await expect.poll(() => arcade.screen()).toBe('color-echo');
+    await arcade.skipDemo();
+    const round = (await arcade.round())!;
+    expect(round.session.playStyle).toBe('turn-based');
+    expect(round.session.seats).toHaveLength(players);
+    expect(await turns(arcade)).toMatchObject({
+      toMove: 0,
+      lives: Array.from({ length: players }, (_, seat) => ({ seat, lives: 3 })),
+    });
+
+    // Every Seat slips every Turn, so the first loses its last life first.
+    await playToResult(arcade, 'color-echo');
+    await expect.poll(() => arcade.screen()).toBe('result');
+    const others = Array.from({ length: players - 1 }, (_, index) => index + 1);
+    expect((await arcade.snapshot()).state).toMatchObject({
+      result: { kind: 'win', winners: others },
+    });
+  });
+}
+
+for (const seating of ['side-by-side', 'around-the-table'] as const satisfies Seating[]) {
+  test(`in Turn-Based, every press counts for the Seat whose Turn it is, and the Turn pointer is at that Seat’s edge, ${seating}`, async ({
+    arcade,
+  }) => {
+    test.slow();
+    await openSession(arcade, sessionFor(GAME, TURN_BASED, seating), 2);
+    const pointer = async () => (await arcade.round())!.targets['turn-pointer']!;
+    const { canvas } = await arcade.layout();
+    const middle = { x: canvas.x + canvas.width / 2, y: canvas.y + canvas.height / 2 };
+
+    await expect
+      .poll(async () => (await turns(arcade)).phase, { timeout: 60_000 })
+      .toBe('repeating');
+    const first = await pointer();
+    const before = await turns(arcade);
+    expect(before).toMatchObject({ toMove: 0, pointer: { seat: 0 } });
+    const wrong = (before.sequence[0]! + 1) % before.pads.length;
+    await arcade.tapRound(`pad-${before.pads[wrong]}`);
+    await expect.poll(async () => (await turns(arcade)).toMove).toBe(1);
+    const after = await turns(arcade);
+    expect(after.lives.map(({ lives }) => lives)).toEqual([2, 3]);
+    expect(after).toMatchObject({ phase: 'playing', pointer: { seat: 1 } });
+    const second = await pointer();
+
+    if (seating === 'side-by-side') {
+      expect(first.x).toBeLessThan(middle.x);
+      expect(second.x).toBeGreaterThan(middle.x);
+      expect(second.y).toBeCloseTo(first.y, 3);
+      expect(first.y).toBeGreaterThan(middle.y);
+    } else {
+      expect(first.y).toBeGreaterThan(middle.y);
+      expect(second.y).toBeLessThan(middle.y);
+    }
+
+    // The second Seat's right pad counts for it: its one-step Turn ends with no life lost.
+    await expect
+      .poll(async () => (await turns(arcade)).phase, { timeout: 60_000 })
+      .toBe('repeating');
+    const { pads, sequence } = await turns(arcade);
+    await arcade.tapRound(`pad-${pads[sequence[0]!]}`);
+    await expect.poll(async () => (await turns(arcade)).toMove).toBe(0);
+    expect((await turns(arcade)).lives.map(({ lives }) => lives)).toEqual([2, 3]);
+  });
+}

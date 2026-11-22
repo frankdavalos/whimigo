@@ -58,18 +58,20 @@ const NEXT_TAP: Readonly<Record<string, (round: RoundPage) => string | null>> = 
     const cell = [0, 3, 1, 4, 2, 5, 6, 7, 8].find((index) => board[index] === null);
     return `cell-${cell}`;
   },
-  // Repeats the first sequence, then presses a wrong pad.
+  // Solo repeats the first sequence, then presses a wrong pad. In Turn-Based every Seat presses a
+  // wrong pad every Turn, so the Seat with the first Turn loses its last life first.
   'color-echo': (round) => {
-    const { phase, pads, sequence, entered, completed } = round.state as {
+    const { phase, pads, sequence, entered, completed, lives } = round.state as {
       phase: string;
       pads: string[];
       sequence: number[];
       entered: number;
-      completed: number;
+      completed?: number;
+      lives?: unknown;
     };
     if (phase !== 'repeating') return null;
     const right = sequence[entered]!;
-    const pad = completed < 1 ? right : (right + 1) % pads.length;
+    const pad = completed === 0 && !lives ? right : (right + 1) % pads.length;
     return `pad-${pads[pad]}`;
   },
   // The first Seat presses as soon as the signal shows; the others never do.

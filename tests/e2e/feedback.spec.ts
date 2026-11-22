@@ -43,12 +43,26 @@ const settledEcho = (state: unknown) => {
   return { length, entered, completed };
 };
 
+/** What Color Echo's snapshot adds when Seats take Turns. */
+interface TurnTaking {
+  toMove: number;
+  lives: { seat: number; lives: number }[];
+}
+
 /** Waits until the Player may repeat Color Echo's sequence. */
 async function untilRepeating(arcade: Arcade) {
   await expect
     // Round time moves slowly while a software-rendered page draws few frames.
     .poll(async () => echo(await arcade.round()).phase, { timeout: 60_000 })
     .toBe('repeating');
+}
+
+/** Once Color Echo's first sequence has played, exactly its own tones were requested: one a step. */
+async function soundsOnlyTheSequence(arcade: Arcade) {
+  await untilRepeating(arcade);
+  const { pads, sequence } = echo(await arcade.round());
+  const keys = (await arcade.call('sounds')).map(({ key }) => key);
+  expect(keys).toEqual(sequence.map((pad) => `color-echo/tone-${pads[pad]}`));
 }
 
 /** What Reaction Rush's snapshot says about its rules. */
@@ -72,7 +86,7 @@ interface Board {
 }
 const board = (round: RoundPage | null) => round!.state as Board;
 
-/** Touches that must be ignored. #19 adds a pad out of Turn. */
+/** Touches that must be ignored. */
 const IGNORED: readonly Case[] = [
   {
     name: 'a taken cell',
@@ -117,13 +131,27 @@ const IGNORED: readonly Case[] = [
       return `pad-${state.pads[0]}`;
     },
     settled: settledEcho,
-    async silent(arcade) {
-      // Once the sequence has played, exactly its own tones were requested: one for each step.
-      await untilRepeating(arcade);
-      const { pads, sequence } = echo(await arcade.round());
-      const keys = (await arcade.call('sounds')).map(({ key }) => key);
-      expect(keys).toEqual(sequence.map((pad) => `color-echo/tone-${pads[pad]}`));
+    silent: soundsOnlyTheSequence,
+  },
+  {
+    // On a shared board a press is no Seat's while the Arcade plays the sequence for the Seat whose
+    // Turn it is. The Round's first sequence is pressed into: it plays in full once the Demo is
+    // skipped, while a later Turn's starts as the touch that ends the one before lands, and the
+    // test cannot touch again soon enough to be sure of reaching it.
+    name: 'a pad pressed out of Turn, while the sequence plays for the Seat whose Turn it is',
+    game: 'color-echo',
+    style: 'turn-based',
+    difficulty: 'hard',
+    async prepare(arcade) {
+      const state = echo(await arcade.round());
+      expect(state.phase).toBe('playing');
+      return `pad-${state.pads[0]}`;
     },
+    settled: (state) => {
+      const { length, entered, toMove, lives } = state as Echo & TurnTaking;
+      return { length, entered, toMove, lives };
+    },
+    silent: soundsOnlyTheSequence,
   },
   {
     name: 'a press by a Seat that pressed too early, before the next point',

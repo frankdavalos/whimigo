@@ -75,7 +75,10 @@ export interface Playing {
 }
 
 /** Where the playing has reached at `now`, from the elapsed Round time alone. */
-export function playingAt(echo: Echo, now: number): Playing {
+export function playingAt(
+  echo: Pick<Echo, 'difficulty' | 'sequence' | 'length' | 'since'>,
+  now: number,
+): Playing {
   const gap = gapFor(echo.difficulty, echo.length);
   const elapsed = now - echo.since - LEAD;
   const done = elapsed >= echo.length * gap;
@@ -92,8 +95,9 @@ export function advance(echo: Echo, now: number): Echo {
 
 /**
  * What a pressed pad did: nothing while the Arcade plays or once the Round is over; the next pad
- * of the sequence; the last one, so the next sequence plays; a wrong pad, which ends the Round; or
- * the last pad of the longest sequence, which ends it too.
+ * of the sequence; the last one, so the sequence plays again; a wrong pad, which ends the Round in
+ * Solo and the Turn when Seats take Turns; or, in Solo, the last pad of the longest sequence, which
+ * ends the Round too.
  */
 export type Outcome = 'ignored' | 'correct' | 'repeated' | 'wrong' | 'finished';
 
