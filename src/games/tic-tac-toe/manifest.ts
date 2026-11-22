@@ -13,6 +13,13 @@ export const manifest: GameManifest = {
       zoned: false,
       usesDifficulty: false,
     },
+    {
+      style: 'versus-computer',
+      players: { min: 1, max: 1 },
+      computerPlayers: 1,
+      zoned: false,
+      usesDifficulty: true,
+    },
   ],
   card: { frame: 'arcade/game-card/tic-tac-toe', color: colors.sky },
   load: () => import('./index'),

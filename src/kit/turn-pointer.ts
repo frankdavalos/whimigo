@@ -33,6 +33,11 @@ export interface TurnPointer {
   point(seat: SeatIndex, shape: string): void;
   /** Where it stands now. */
   target(): SnapshotTarget;
+  /**
+   * The pointer's picture, for a Game to refuse a touch made out of Turn with. It sits at the centre
+   * of what `point` moves, so a motion on it may play while the Turn passes.
+   */
+  readonly image: Phaser.GameObjects.Image;
 }
 
 /**
@@ -46,12 +51,17 @@ export function turnPointer(
   seating: Seating,
 ): TurnPointer {
   const image = picture(scene, 0, 0, 'arcade/play');
+  // A motion puts its target back where it stood when the motion began; moving the picture's
+  // holder instead lets the pointer pass the Turn in the middle of a motion on the picture.
+  const holder = scene.add.container(0, 0, [image]);
   let rect: Rect = { x: 0, y: 0, width: 0, height: 0 };
   return {
     point(seat, shape) {
       rect = turnPointerRect(safe, seats as ZonedSeats, seating, seat);
-      image.setFrame(shape).setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      image.setFrame(shape);
+      holder.setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2);
     },
     target: () => ({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, rect }),
+    image,
   };
 }

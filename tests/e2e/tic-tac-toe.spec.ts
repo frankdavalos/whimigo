@@ -1,15 +1,18 @@
 import type { Seating } from '../../src/contract';
 import { seats as SEAT_LOOKS } from '../../src/kit/theme';
 import { expect, test, type Arcade } from './arcade';
-import { CATALOG, openSession, sessionFor } from './play';
+import { CATALOG, openSession, playToResult, sessionFor } from './play';
 
 const GAME = CATALOG.find((game) => game.id === 'tic-tac-toe')!;
 const TURN_BASED = GAME.playStyles.find((style) => style.style === 'turn-based')!;
+const VERSUS_COMPUTER = GAME.playStyles.find((style) => style.style === 'versus-computer')!;
 
 interface Board {
   board: (number | null)[];
   toMove: number;
   marks: ({ seat: number; shape: string; color: number } | null)[];
+  computer: 'choosing' | 'placing' | null;
+  pointer: { seat: number; at: { x: number; y: number } };
 }
 const board = async (arcade: Arcade) => (await arcade.round())!.state as Board;
 
@@ -79,6 +82,194 @@ test('two Players go from the Home Screen through the lobby to a finished Round 
   await expect.poll(() => arcade.screen()).toBe('home');
   expect(await arcade.host()).toBe('idle');
   expect(await arcade.counts()).toEqual(before);
+});
+
+for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+  test(`one Player in the lobby plays Versus Computer on ${difficulty} to a Result (story 16)`, async ({
+    arcade,
+  }) => {
+    test.slow();
+    await arcade.tap('tic-tac-toe');
+    await expect.poll(() => arcade.screen()).toBe('lobby');
+    await arcade.tap('mascot-fox');
+    await expect
+      .poll(async () => (await arcade.snapshot()).state)
+      .toMatchObject({ style: 'versus-computer' });
+    await arcade.tap(`difficulty-${difficulty}`);
+    await expect.poll(async () => (await arcade.snapshot()).state).toMatchObject({ difficulty });
+    await arcade.tap('start');
+    await expect.poll(() => arcade.screen()).toBe('tic-tac-toe');
+    await arcade.skipDemo();
+    const { session } = (await arcade.round())!;
+    expect(session).toMatchObject({ playStyle: 'versus-computer', difficulty });
+    expect(session.seats.map((seat) => seat.occupant)).toEqual([
+      { kind: 'player', mascot: 'fox' },
+      { kind: 'computer' },
+    ]);
+
+    await playToResult(arcade, GAME.id);
+    await expect.poll(() => arcade.screen()).toBe('result');
+    const cells = (await board(arcade)).board;
+    expect(cells.filter((seat) => seat === 1).length, 'the Computer Player moved').toBeGreaterThan(
+      0,
+    );
+  });
+}
+
+/** Opens a Versus Computer Session, skips its Demo, and makes the Player's first Move. */
+async function openVersusComputer(arcade: Arcade) {
+  await openSession(arcade, sessionFor(GAME, VERSUS_COMPUTER), 1);
+  await mark(arcade, 4);
+}
+
+type Point = { readonly x: number; readonly y: number };
+
+/** One step of what `inPage` does, frame by frame, inside the page. */
+type Step =
+  /** Touches a point and lifts at once, as the browser's own touch events. */
+  | { readonly tap: Point }
+  /** Waits until the Computer Player is in this phase. */
+  | { readonly until: Board['computer'] }
+  /** Touches a point once a frame for as long as the Computer Player is in this phase. */
+  | { readonly tap: Point; readonly while: Board['computer'] }
+  /** Hides the page, as the home gesture would. */
+  | 'hide';
+
+/**
+ * Plays `steps` inside the page, checking the Round once a frame, so that nothing the Round does
+ * comes between a step and the next, however slowly the page draws. A touch sent from the test
+ * arrives frames later, and a busy page counts each frame up to 200 ms in full.
+ */
+async function inPage(arcade: Arcade, steps: readonly Step[]) {
+  await arcade.page.evaluate(
+    (steps) =>
+      new Promise<void>((resolve) => {
+        const round = () => window.whimigo!.round()!;
+        const phase = () => (round().state as { computer: unknown }).computer;
+        const canvas = document.querySelector('canvas')!;
+        const tap = ({ x, y }: { x: number; y: number }) => {
+          const finger = new Touch({
+            identifier: 1,
+            target: canvas,
+            clientX: x,
+            clientY: y,
+            pageX: x,
+            pageY: y,
+          });
+          for (const [type, touches] of [
+            ['touchstart', [finger]],
+            ['touchend', []],
+          ] as const) {
+            canvas.dispatchEvent(
+              new TouchEvent(type, {
+                touches: [...touches],
+                targetTouches: [...touches],
+                changedTouches: [finger],
+                bubbles: true,
+                cancelable: true,
+              }),
+            );
+          }
+        };
+        let next = 0;
+        const look = () => {
+          while (next < steps.length) {
+            const step = steps[next]!;
+            if (step === 'hide') {
+              Object.defineProperty(document, 'visibilityState', {
+                configurable: true,
+                get: () => 'hidden',
+              });
+              Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+              document.dispatchEvent(new Event('visibilitychange'));
+            } else if ('while' in step) {
+              if (phase() === step.while) {
+                tap(step.tap);
+                break;
+              }
+            } else if ('tap' in step) {
+              tap(step.tap);
+            } else if (phase() !== step.until) {
+              break;
+            }
+            next += 1;
+          }
+          if (next < steps.length) requestAnimationFrame(look);
+          else resolve();
+        };
+        look();
+      }),
+    steps,
+  );
+}
+
+test('while the Computer Player’s mark is placed, a tap on an empty cell makes no Move, and play goes on after it (story 16)', async ({
+  arcade,
+}) => {
+  await openVersusComputer(arcade);
+  const { targets } = (await arcade.round())!;
+  await inPage(arcade, [{ until: 'placing' }, { tap: targets['cell-0']! }]);
+  await expect.poll(async () => (await board(arcade)).computer).toBeNull();
+  const { board: cells, toMove } = await board(arcade);
+  expect(
+    cells.filter((seat) => seat === 0),
+    'the Player’s one mark',
+  ).toHaveLength(1);
+  expect(
+    cells.filter((seat) => seat === 1),
+    'the Computer Player’s one mark',
+  ).toHaveLength(1);
+  expect(toMove).toBe(0);
+  expect((await arcade.round())!.refusals).toBe(1);
+  const empty = cells.findIndex((seat) => seat === null);
+  await mark(arcade, empty);
+});
+
+test('a touch refused while the Computer Player chooses does not keep the Turn pointer at its edge once the Turn passes', async ({
+  arcade,
+}) => {
+  await openSession(arcade, sessionFor(GAME, VERSUS_COMPUTER), 1);
+  const { targets } = (await arcade.round())!;
+  // A touch every frame of the Computer Player's choosing is refused every frame, so the pointer's
+  // wiggle, about half a second, is still playing when the Turn passes, however slow the frames.
+  await inPage(arcade, [
+    { tap: targets['cell-4']! },
+    { tap: targets['cell-0']!, while: 'choosing' },
+  ]);
+  await expect.poll(async () => (await board(arcade)).computer).toBeNull();
+  // Long enough for any wiggle to have ended.
+  await arcade.page.waitForTimeout(1000);
+  const round = (await arcade.round())!;
+  expect(round.refusals).toBeGreaterThan(0);
+  const drawn = await arcade.toPage((round.state as Board).pointer.at);
+  const target = round.targets['turn-pointer']!;
+  expect(drawn.x).toBeCloseTo(target.x, 0);
+  expect(drawn.y).toBeCloseTo(target.y, 0);
+});
+
+test('the Computer Player never moves while the Round is paused, and moves once play resumes (story 16)', async ({
+  arcade,
+  page,
+}) => {
+  await openVersusComputer(arcade);
+  // The page hides in the very frame the Computer Player is seen choosing.
+  await inPage(arcade, [{ until: 'choosing' }, 'hide']);
+  await expect.poll(() => arcade.host()).toBe('paused');
+  const paused = (await arcade.round())!;
+  await page.waitForTimeout(3000);
+  const later = (await arcade.round())!;
+  expect(later.now).toBe(paused.now);
+  expect(later.state).toEqual(paused.state);
+  expect((later.state as Board).computer).toBe('choosing');
+  expect((later.state as Board).board.filter((seat) => seat === 1)).toHaveLength(0);
+
+  await arcade.show();
+  await expect.poll(() => arcade.screen()).toBe('pause');
+  await arcade.tap('play');
+  await expect.poll(() => arcade.screen()).toBe('tic-tac-toe');
+  await expect
+    .poll(async () => (await board(arcade)).board.filter((seat) => seat === 1))
+    .toHaveLength(1);
 });
 
 test('a tap on an empty cell places the mark of the Seat to move and passes the Turn; a taken cell does nothing', async ({

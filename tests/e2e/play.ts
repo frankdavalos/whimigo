@@ -50,9 +50,11 @@ type RoundPage = NonNullable<Awaited<ReturnType<Arcade['round']>>>;
  * with these, so a Game added to the Catalog without one fails them.
  */
 const NEXT_TAP: Readonly<Record<string, (round: RoundPage) => string | null>> = {
-  // The first Seat to move takes the top row while the other takes the middle row.
+  // The first Seat to move takes the top row while the other takes the middle row. A Computer
+  // Player's Turn is waited out.
   'tic-tac-toe': (round) => {
-    const board = (round.state as { board: (number | null)[] }).board;
+    const { board, computer } = round.state as { board: (number | null)[]; computer: unknown };
+    if (computer) return null;
     const cell = [0, 3, 1, 4, 2, 5, 6, 7, 8].find((index) => board[index] === null);
     return `cell-${cell}`;
   },

@@ -140,8 +140,8 @@ export const manifest: GameManifest = {
   title: 'Tic-Tac-Toe',
   minAge: 4,
   playStyles: [
-    { style: 'versus-computer', players: { min: 1, max: 1 }, computerPlayers: 1, zoned: false, usesDifficulty: true },
     { style: 'turn-based',      players: { min: 2, max: 2 }, computerPlayers: 0, zoned: false, usesDifficulty: false },
+    { style: 'versus-computer', players: { min: 1, max: 1 }, computerPlayers: 1, zoned: false, usesDifficulty: true },
   ],
   card: { frame: 'arcade/game-card/tic-tac-toe', color: colors.sky },
   load: () => import('./index'),
@@ -589,6 +589,8 @@ export type ComputerPlayer<State, Move> = (state: State, difficulty: Difficulty,
 Simultaneous Games (Reaction Rush, Hungry Critters) do not fit this and are not forced to. They keep their scoring and round rules in pure functions in `logic/` and let the Scene own motion.
 
 The shared game-tree search does not exist until Four in a Row needs it. Tic-Tac-Toe carries its own small search, written against `TurnRules` so that extraction is a move and not a rewrite.
+
+Built in slice 5a ([#18](https://github.com/frankdavalos/whimigo/issues/18), 2026-11-21): the search is `src/games/tic-tac-toe/logic/search.ts` and imports nothing of Tic-Tac-Toe. On a Computer Player's Turn the Scene closes the `TurnGate`, waits on the Round's own time (`round.now()`), so the Move never comes while the Round is paused or its Demo plays, and opens the gate once the mark has been placed. A touch on the board while the gate is closed is refused on the Turn pointer, whose picture the kit's `TurnPointer` exposes as `image`.
 
 ## The Arcade's side: GameHost
 

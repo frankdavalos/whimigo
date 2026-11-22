@@ -1,4 +1,4 @@
-import type { Difficulty } from '../../src/contract';
+import type { Difficulty, PlayStyle } from '../../src/contract';
 import type { RequestedSound } from '../../src/arcade/game-host';
 import { expect, test, type Arcade } from './arcade';
 import { CATALOG, openSession, sessionFor } from './play';
@@ -21,6 +21,8 @@ interface Echo {
 interface Case {
   readonly name: string;
   readonly game: string;
+  /** The Play Style, when not the Game's first. */
+  readonly style?: PlayStyle;
   readonly difficulty?: Difficulty;
   /** The Round's seed, when the case needs a particular one. */
   readonly seed?: number;
@@ -63,7 +65,14 @@ async function untilPhase(arcade: Arcade, phase: Rush['phase']) {
   await expect.poll(async () => rush(await arcade.round()).phase, { timeout: 90_000 }).toBe(phase);
 }
 
-/** Touches that must be ignored. #18 adds the Computer Player's choosing; #19 a pad out of Turn. */
+/** What Tic-Tac-Toe's snapshot says about its rules. */
+interface Board {
+  board: (number | null)[];
+  computer: 'choosing' | 'placing' | null;
+}
+const board = (round: RoundPage | null) => round!.state as Board;
+
+/** Touches that must be ignored. #19 adds a pad out of Turn. */
 const IGNORED: readonly Case[] = [
   {
     name: 'a taken cell',
@@ -74,6 +83,28 @@ const IGNORED: readonly Case[] = [
         .poll(async () => ((await arcade.round())!.state as { board: unknown[] }).board[4])
         .not.toBeNull();
       return 'cell-4';
+    },
+  },
+  {
+    name: 'an empty cell while the Computer Player is choosing',
+    game: 'tic-tac-toe',
+    style: 'versus-computer',
+    async prepare(arcade) {
+      await arcade.tapRound('cell-4');
+      // Frame by frame: the Computer Player chooses for only 600 ms of the Round's time.
+      await arcade.page.waitForFunction(
+        () => (window.whimigo!.round()!.state as Board).computer === 'choosing',
+        undefined,
+        { polling: 'raf' },
+      );
+      return 'cell-0';
+    },
+    // The Computer Player goes on to move by itself; only the Player's marks are the touch's.
+    settled: (state) => (state as Board).board.map((seat) => seat === 0),
+    async silent(arcade, before) {
+      await expect.poll(async () => board(await arcade.round()).computer).toBeNull();
+      const added = (await arcade.call('sounds')).slice(before.length).map(({ key }) => key);
+      expect(added, 'the Computer Player’s Move alone').toEqual(['tic-tac-toe/place']);
     },
   },
   {
@@ -154,10 +185,11 @@ test('every Game in the Catalog has a case of an ignored touch and of an accepte
   }
 });
 
-/** Opens the case's Game in its first Play Style, past the Demo. */
+/** Opens the case's Game in its Play Style, past the Demo. */
 async function openCase(arcade: Arcade, c: Case) {
   const game = CATALOG.find((candidate) => candidate.id === c.game)!;
-  const session = sessionFor(game, game.playStyles[0]!, 'side-by-side', undefined, c.difficulty);
+  const style = game.playStyles.find((option) => option.style === c.style) ?? game.playStyles[0]!;
+  const session = sessionFor(game, style, 'side-by-side', undefined, c.difficulty);
   await openSession(arcade, session, c.seed ?? SEED);
 }
 
