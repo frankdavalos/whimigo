@@ -1,9 +1,12 @@
 import type { Difficulty, Result, Rng } from '@/contract';
 
-/** A pad, by its index: 0 to 2 on Easy, 0 to 3 on Medium and Hard. */
+/**
+ * A pad, by its index: 0 to 2 on Easy, 0 to 3 on Medium and Hard; when the Seats play together
+ * the number follows the Seats instead.
+ */
 export type Pad = number;
 
-/** The longest sequence: repeating one this long ends the Round. */
+/** The longest sequence: repeating one this long ends the Round, if nothing has ended it sooner. */
 export const LONGEST = 12;
 
 const PADS: Readonly<Record<Difficulty, number>> = { easy: 3, medium: 4, hard: 4 };
@@ -28,10 +31,18 @@ export interface Echo {
   readonly completed: number;
 }
 
-/** A new Round: the whole sequence drawn from `rng`, and the Arcade playing its first steps. */
-export function start(setup: { difficulty: Difficulty; rng: Rng; at: number }): Echo {
-  const { difficulty, rng, at } = setup;
-  const sequence = Array.from({ length: LONGEST }, () => rng.int(0, PADS[difficulty] - 1));
+/**
+ * A new Round: the whole sequence drawn from `rng` over `pads` pads (by default the Difficulty's),
+ * and the Arcade playing its first steps.
+ */
+export function start(setup: {
+  difficulty: Difficulty;
+  rng: Rng;
+  at: number;
+  pads?: number;
+}): Echo {
+  const { difficulty, rng, at, pads = PADS[difficulty] } = setup;
+  const sequence = Array.from({ length: LONGEST }, () => rng.int(0, pads - 1));
   return {
     difficulty,
     sequence,
@@ -88,7 +99,7 @@ export function playingAt(
 }
 
 /** Moves the Round on to `now`: once the Arcade has played the sequence, the Player repeats it. */
-export function advance(echo: Echo, now: number): Echo {
+export function advance<E extends Echo>(echo: E, now: number): E {
   if (echo.phase !== 'playing' || !playingAt(echo, now).done) return echo;
   return { ...echo, phase: 'repeating', entered: 0 };
 }
@@ -96,8 +107,9 @@ export function advance(echo: Echo, now: number): Echo {
 /**
  * What a pressed pad did: nothing while the Arcade plays or once the Round is over; the next pad
  * of the sequence; the last one, so the sequence plays again; a wrong pad, which ends the Round in
- * Solo and the Turn when Seats take Turns; or, in Solo, the last pad of the longest sequence, which
- * ends the Round too.
+ * Solo, the Turn when Seats take Turns, and costs a shared life when they play together; or the
+ * last pad of the last sequence (the longest in Solo, the target length together), which ends the
+ * Round too.
  */
 export type Outcome = 'ignored' | 'correct' | 'repeated' | 'wrong' | 'finished';
 

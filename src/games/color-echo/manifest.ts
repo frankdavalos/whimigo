@@ -5,7 +5,6 @@ export const manifest: GameManifest = {
   id: 'color-echo',
   title: 'Color Echo',
   minAge: 4,
-  // Cooperative (#20) follows.
   playStyles: [
     {
       style: 'solo',
@@ -19,6 +18,13 @@ export const manifest: GameManifest = {
       players: { min: 2, max: 4 },
       computerPlayers: 0,
       zoned: false,
+      usesDifficulty: true,
+    },
+    {
+      style: 'cooperative',
+      players: { min: 2, max: 4 },
+      computerPlayers: 0,
+      zoned: true,
       usesDifficulty: true,
     },
   ],

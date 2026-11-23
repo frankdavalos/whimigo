@@ -59,7 +59,8 @@ const NEXT_TAP: Readonly<Record<string, (round: RoundPage) => string | null>> = 
     return `cell-${cell}`;
   },
   // Solo repeats the first sequence, then presses a wrong pad. In Turn-Based every Seat presses a
-  // wrong pad every Turn, so the Seat with the first Turn loses its last life first.
+  // wrong pad every Turn, so the Seat with the first Turn loses its last life first; in Cooperative
+  // the Seats press a wrong pad every time, and the lives they share run out.
   'color-echo': (round) => {
     const { phase, pads, sequence, entered, completed, lives } = round.state as {
       phase: string;

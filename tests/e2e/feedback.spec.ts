@@ -154,6 +154,23 @@ const IGNORED: readonly Case[] = [
     silent: soundsOnlyTheSequence,
   },
   {
+    // Playing together, a press reaches the pad through its Seat's Zone, and is ignored the same.
+    name: 'a pad pressed by the Seat that owns it while the sequence plays',
+    game: 'color-echo',
+    style: 'cooperative',
+    difficulty: 'hard',
+    async prepare(arcade) {
+      const state = echo(await arcade.round());
+      expect(state.phase).toBe('playing');
+      return `pad-${state.pads[0]}`;
+    },
+    settled: (state) => {
+      const { length, entered, lives } = state as Echo & { lives: number };
+      return { length, entered, lives };
+    },
+    silent: soundsOnlyTheSequence,
+  },
+  {
     name: 'a press by a Seat that pressed too early, before the next point',
     game: 'reaction-rush',
     async prepare(arcade) {
