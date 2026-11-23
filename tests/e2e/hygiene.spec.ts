@@ -67,10 +67,8 @@ test('moving between screens adds no history entries', async ({ arcade, page }) 
   for (const id of checks) {
     await arcade.openCheck(id);
     await arcade.hold('leave', 1000);
-    await expect.poll(() => arcade.screen()).toBe('home');
+    await expect.poll(() => arcade.screen()).toBe('grown-ups');
   }
-  await arcade.tap('grown-ups');
-  await expect.poll(() => arcade.screen()).toBe('grown-ups');
   await page.getByRole('button', { name: 'Back' }).tap();
   await expect.poll(() => arcade.screen()).toBe('home');
   expect(await length()).toBe(before);

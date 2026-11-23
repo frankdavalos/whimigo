@@ -4,6 +4,7 @@ import { drawNumber, type DrawnNumber } from '@/kit/digits';
 import { holdButton } from '@/kit/controls';
 import { createStage, type Stage } from '@/kit/stage';
 import { colors, sizes } from '@/kit/theme';
+import { GROWN_UPS } from '../grown-ups';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 
 /**
@@ -24,7 +25,7 @@ class BlankCheckScreen extends Phaser.Scene implements ArcadeScreen {
       x: safe.x + sizes.button / 2,
       y: safe.y + safe.height / 2,
       icon: 'arcade/home',
-      onHold: () => arcade.show('home'),
+      onHold: () => arcade.show(GROWN_UPS),
     }).target;
     // Every digit once, so a test can see each glyph drawn.
     this.number = drawNumber(this, safe.x + safe.width / 2, safe.y + safe.height / 2, 1234567890);

@@ -24,10 +24,10 @@ export interface ScreenData {
   readonly arcade: Arcade;
 }
 
-/** A check screen: a tool for grown-ups, opened from their status page. */
+/** A check screen: a tool for grown-ups, opened from the Grown-Ups Area. */
 export interface CheckScreen {
   readonly id: ScreenId;
-  /** Its name on the status page. */
+  /** Its name in the Grown-Ups Area. */
   readonly title: string;
   readonly scene: new () => ArcadeScreen;
   /** A frame in the Arcade's atlas that pictures it. */

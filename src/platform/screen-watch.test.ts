@@ -89,7 +89,7 @@ describe('the screen watch', () => {
     expect(kept.at(-1)!.window.width).toBe(1019);
   });
 
-  it('describes a measurement for the status page', () => {
+  it('describes a measurement for the Grown-Ups Area', () => {
     const fake = fakeWindow();
     const [start] = watchScreen(fake.win, fake.box).changes();
     expect(describeScreen(start!)).toEqual([

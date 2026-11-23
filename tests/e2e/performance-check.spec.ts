@@ -176,13 +176,14 @@ test.describe('the add-and-remove loop (story 20)', () => {
     expect(done.inputScenes).toEqual([PERFORMANCE]);
   });
 
-  test('leaving while the loop runs goes home, and leaves nothing of the stand-in behind', async ({
+  test('leaving while the loop runs returns to the Grown-Ups Area, and leaves nothing of the stand-in behind', async ({
     arcade,
     page,
   }) => {
     await arcade.open();
     await arcade.start();
-    const home = await arcade.counts();
+    await arcade.openGrownUps();
+    const area = await arcade.counts();
     await arcade.openCheck(PERFORMANCE);
     await expect.poll(() => arcade.screen()).toBe(PERFORMANCE);
 
@@ -190,10 +191,10 @@ test.describe('the add-and-remove loop (story 20)', () => {
     await expect.poll(async () => (await loop(arcade)).cycles).toBeGreaterThan(0);
     expect((await loop(arcade)).state).toBe('running');
     await arcade.hold('leave', 1000);
-    await expect.poll(() => arcade.screen()).toBe('home');
-    expect(await arcade.counts()).toEqual(home);
+    await expect.poll(() => arcade.screen()).toBe('grown-ups');
+    expect(await arcade.counts()).toEqual(area);
     // Nothing the stand-in was still loading turns up later.
     await page.waitForTimeout(2000);
-    expect(await arcade.counts()).toEqual(home);
+    expect(await arcade.counts()).toEqual(area);
   });
 });

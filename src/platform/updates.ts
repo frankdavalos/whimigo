@@ -28,6 +28,11 @@ export interface Updates {
    */
   start(): Promise<void>;
   state(): UpdateState;
+  /**
+   * "Update now", pressed in the Grown-Ups Area: activates the version that waits and reloads the
+   * page into it. Does nothing when none waits.
+   */
+  applyNow(): Promise<void>;
   /** Calls `listener` with the new state each time it changes. */
   onChange(listener: (state: UpdateState) => void): Unsubscribe;
 }
@@ -72,7 +77,7 @@ export function createUpdates(win: Window, options: UpdatesOptions): Updates {
     for (const listener of listeners) listener(state());
   };
 
-  /** Whether the page is reloading to run a version that was waiting. */
+  /** Whether the page is reloading to run a version that was waiting, at a cold start. */
   async function applyWaitingVersion(workers: ServiceWorkerContainer): Promise<boolean> {
     const session = sessionOf(win);
     if (session && session.getItem(APPLYING) !== null) {
@@ -80,6 +85,15 @@ export function createUpdates(win: Window, options: UpdatesOptions): Updates {
       session.removeItem(APPLYING);
       return false;
     }
+    return activateAndReload(workers);
+  }
+
+  /**
+   * Whether the page is reloading to run the version that waits. The mark in the tab's session
+   * keeps the load this starts from applying a version in its turn.
+   */
+  async function activateAndReload(workers: ServiceWorkerContainer): Promise<boolean> {
+    const session = sessionOf(win);
     const waiting = (await workers.getRegistration(options.scope))?.waiting;
     if (!waiting) return false;
     session?.setItem(APPLYING, waiting.scriptURL);
@@ -130,6 +144,13 @@ export function createUpdates(win: Window, options: UpdatesOptions): Updates {
       });
     },
     state,
+    async applyNow() {
+      try {
+        if (container) await activateAndReload(container);
+      } catch {
+        // The version stays waiting, and the next cold start applies it.
+      }
+    },
     onChange(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

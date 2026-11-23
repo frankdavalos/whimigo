@@ -43,20 +43,30 @@ export interface Audio {
   load(key: string, recipe: SoundRecipe): void;
   unload(key: string): void;
   /**
-   * Starts a loaded sound and says whether it started. Unless sound is running it returns at
-   * once and plays nothing, then or later.
+   * Starts a loaded sound and says whether it started. Unless sound is running and switched on, it
+   * returns at once and plays nothing, then or later.
    */
   play(key: string): boolean;
+  /** How many sounds have started since the page loaded. */
+  started(): number;
   /** The keys of the loaded sounds playing now. */
   playing(): string[];
 }
 
-/** `phaser` is null when Phaser has no Web Audio sound manager: sound is then off. */
-export function createAudio(doc: Document, phaser: PhaserAudio | null): Audio {
+/**
+ * `phaser` is null when Phaser has no Web Audio sound manager: sound is then off. `switchedOn` is
+ * the grown-ups' sound setting, asked at every request.
+ */
+export function createAudio(
+  doc: Document,
+  phaser: PhaserAudio | null,
+  switchedOn: () => boolean = () => true,
+): Audio {
   const context = phaser?.manager.context ?? null;
   const sounds = new Map<string, Phaser.Sound.BaseSound>();
   const listeners = new Set<(state: AudioState) => void>();
   let unlocked = false;
+  let started = 0;
 
   const state = (): AudioState => {
     if (!context || context.state === 'closed') return 'off';
@@ -115,10 +125,12 @@ export function createAudio(doc: Document, phaser: PhaserAudio | null): Audio {
     },
     play(key) {
       const sound = sounds.get(key);
-      if (!sound || state() !== 'running') return false;
+      if (!sound || state() !== 'running' || !switchedOn()) return false;
       sound.play();
+      if (sound.isPlaying) started += 1;
       return sound.isPlaying;
     },
+    started: () => started,
     playing: () => [...sounds].filter(([, sound]) => sound.isPlaying).map(([key]) => key),
   };
 }

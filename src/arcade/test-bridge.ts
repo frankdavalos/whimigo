@@ -70,8 +70,13 @@ export interface TestBridge {
   sounds(): readonly RequestedSound[];
   /** The Scenes that accept input now, by key. Exactly one, whenever a screen shows. */
   inputScenes(): string[];
-  /** The ids of the check screens, in the order the status page lists them. */
+  /** The ids of the check screens, in the order the Grown-Ups Area lists them. */
   checks(): string[];
+  /**
+   * Opens the Grown-Ups Area as the Grown-Up Gate does, skipping the hold: nothing happens unless
+   * the GameHost is idle.
+   */
+  openGrownUps(): void;
   /** Loads every Game's module and runs the module conformance checks; empty when all pass. */
   conformance(): Promise<string[]>;
   layout(): PageLayout;
@@ -85,6 +90,8 @@ export interface TestBridge {
   audio(): AudioState;
   /** Asks the audio service to play a loaded sound: whether it started, and how long the call took. */
   playSound(key: string): { started: boolean; ms: number };
+  /** How many sounds have started anywhere in the Arcade since the page loaded. */
+  soundsStarted(): number;
   /** How many frames Phaser's loop has stepped. */
   frames(): number;
   /** Throws from inside the showing screen's next update, in Phaser's frame loop. */
@@ -205,6 +212,7 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
         )
         .map((scene) => scene.sys.settings.key),
     checks: () => arcade.checks.map((check) => check.id),
+    openGrownUps: () => arcade.openGrownUps(),
     async conformance() {
       const modules = await Promise.all(
         arcade.catalog.map(async (manifest) => ({
@@ -260,6 +268,7 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
       const started = services.audio.play(key);
       return { started, ms: win.performance.now() - start };
     },
+    soundsStarted: () => services.audio.started(),
     frames: () => game.loop.frame,
     throwInUpdate() {
       showing().scene.events.once('update', () => {

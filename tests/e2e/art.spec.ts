@@ -16,11 +16,12 @@ test('the tap-to-start screen and the Home Screen draw their pictures from the A
 
   await arcade.start();
   const home = await arcade.call('pictures');
-  expect(home.shapes).toBe(0);
+  // The Grown-Up Gate's ring, drawn only while it is held.
+  expect(home.shapes).toBe(1);
   for (const frame of [
     'arcade/sun',
-    'arcade/card',
     'arcade/grown-ups',
+    'arcade/hold',
     ...CATALOG.map((game) => game.card.frame),
   ]) {
     expect(home.images).toContainEqual({ texture: 'arcade', frame });

@@ -5,6 +5,7 @@ import { drawNumber, type DrawnNumber } from '@/kit/digits';
 import { createStage, type Stage } from '@/kit/stage';
 import { holdButton, iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
+import { GROWN_UPS } from '../grown-ups';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 import { createFrameMeter, type FrameMeter } from './frame-meter';
 import { SceneCycles, STANDIN_ID } from './scene-cycles';
@@ -78,7 +79,7 @@ class PerformanceCheckScreen extends Phaser.Scene implements ArcadeScreen {
         x: safe.x + sizes.button / 2,
         y: safe.y + safe.height / 2,
         icon: 'arcade/home',
-        onHold: () => arcade.show('home'),
+        onHold: () => arcade.show(GROWN_UPS),
       }).target,
     };
 

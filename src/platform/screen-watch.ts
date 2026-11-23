@@ -37,7 +37,7 @@ export const SETTLE_MS = 1000;
 const round = (value: number) => Math.round(value * 10) / 10;
 const size = (of: Size) => `${round(of.width)} × ${round(of.height)}`;
 
-/** The measurement as lines of text, for the status page. */
+/** The measurement as lines of text, for the Grown-Ups Area. */
 export function describeScreen(m: ScreenMeasurement): string[] {
   return [
     `Window ${size(m.window)}`,
@@ -78,7 +78,7 @@ export interface ScreenWatch {
 
 /**
  * Measures the screen from the page's start and each time the window, the visible area or the
- * orientation changes, and again a second later. The grown-ups' status page shows the result, so
+ * orientation changes, and again a second later. The Grown-Ups Area shows the result, so
  * a fault seen only on a tablet can be read off it. Kept in memory only, and sent nowhere.
  */
 export function watchScreen(win: Window, box: HTMLElement): ScreenWatch {

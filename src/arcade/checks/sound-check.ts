@@ -6,6 +6,7 @@ import { holdButton, iconButton } from '@/kit/controls';
 import { colors, sizes } from '@/kit/theme';
 import type { Audio, AudioState } from '@/platform/audio';
 import { onPageHidden, onPageShown } from '@/platform/lifecycle';
+import { GROWN_UPS } from '../grown-ups';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 import { type CheckSound, checkSounds } from './sound-check-sounds';
 import { LOG_CAP, logEvent, type SoundLog, type SoundLogEntry } from './sound-log';
@@ -73,7 +74,7 @@ class SoundCheckScreen extends Phaser.Scene implements ArcadeScreen {
         x: safe.x + sizes.button / 2,
         y: middle.y,
         icon: 'arcade/home',
-        onHold: () => arcade.show('home'),
+        onHold: () => arcade.show(GROWN_UPS),
       }).target,
     };
     ROWS.forEach((row, rowIndex) => {

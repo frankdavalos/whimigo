@@ -215,3 +215,20 @@ describe('the audio service', () => {
     expect(heard).toEqual(['running', 'suspended', 'running']);
   });
 });
+
+describe('the sound setting', () => {
+  it('while sound is switched off, a request plays nothing; switched on again, a request plays', () => {
+    const { phaser, started } = fakePhaser();
+    let on = false;
+    const audio = createAudio(fakeDocument().doc, phaser, () => on);
+    audio.load('check/beep', beep);
+    audio.unlock();
+    expect(audio.play('check/beep')).toBe(false);
+    expect(started).toEqual([]);
+    expect(audio.started()).toBe(0);
+    on = true;
+    expect(audio.play('check/beep')).toBe(true);
+    expect(started).toEqual(['check/beep']);
+    expect(audio.started()).toBe(1);
+  });
+});

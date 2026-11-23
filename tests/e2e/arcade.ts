@@ -78,14 +78,40 @@ export class Arcade {
   audio = () => this.call('audio');
   layout = () => this.call('layout');
 
-  /** The check screens the status page lists, in order. */
+  /** The check screens the Grown-Ups Area lists, in order. */
   checks = () => this.call('checks');
 
-  /** From the Home Screen, opens the status page and taps a check screen's button there. */
+  /** The Grown-Ups Area's markup. */
+  grownUps = () => this.page.locator('#grown-ups');
+
+  /**
+   * From the Home Screen, holds the Grown-Up Gate until the Grown-Ups Area opens, then lifts the
+   * finger; returns how long it was down, in milliseconds. Scene time never runs faster than the
+   * clock, so a hold that opens the Area has lasted at least as long as the Gate asks. Only Chromium
+   * can hold a touch down, so elsewhere the Gate is held with the mouse button.
+   */
+  async openGrownUps(): Promise<number> {
+    const { x, y } = await this.target('grown-ups');
+    const touches = this.page.context().browser()?.browserType().name() === 'chromium';
+    const began = Date.now();
+    if (touches) await this.touch('touchStart', [{ x, y }]);
+    else {
+      await this.page.mouse.move(x, y);
+      await this.page.mouse.down();
+    }
+    // A software-rendered page may count frames short, stretching the hold.
+    await expect.poll(() => this.screen(), { timeout: 60_000 }).toBe('grown-ups');
+    const held = Date.now() - began;
+    if (touches) await this.touch('touchEnd', []);
+    else await this.page.mouse.up();
+    await expect(this.grownUps()).toBeVisible();
+    return held;
+  }
+
+  /** Taps a check screen's button in the Grown-Ups Area, opening the Area first from the Home Screen. */
   async openCheck(id: string): Promise<void> {
-    await this.tap('grown-ups');
-    await expect.poll(() => this.screen()).toBe('grown-ups');
-    await this.page.locator(`#grown-ups [data-check="${id}"]`).tap();
+    if ((await this.screen()) !== 'grown-ups') await this.openGrownUps();
+    await this.grownUps().locator(`[data-check="${id}"]`).tap();
     await expect.poll(() => this.screen()).toBe(id);
   }
 

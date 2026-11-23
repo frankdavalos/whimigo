@@ -74,7 +74,7 @@
         height: 60%;
       }
 
-      /* The status page, the seed of the Grown-Ups Area (ADR-0005): real text, for adults only. */
+      /* The Grown-Ups Area (ADR-0005): real text in the device's typeface, for adults only. */
       #grown-ups {
         position: fixed;
         inset: 0;
@@ -115,9 +115,90 @@
         white-space: pre-line;
         font-size: 16px;
       }
+      #grown-ups header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin: 0 0 16px;
+      }
+      #grown-ups header h1 {
+        margin: 0;
+      }
+      #grown-ups section > section {
+        margin: 0 0 32px;
+      }
       #grown-ups h2 {
         margin: 0 0 12px;
         font-size: 24px;
+      }
+      #grown-ups h3 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      #grown-ups p {
+        margin: 0 0 12px;
+      }
+      #grown-ups fieldset {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 32px;
+        margin: 0;
+        border: none;
+        padding: 0;
+      }
+      #grown-ups legend {
+        padding: 0;
+        margin: 0 0 8px;
+        font-weight: bold;
+      }
+      #grown-ups label.choice {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      #grown-ups input {
+        width: 32px;
+        height: 32px;
+        margin: 0;
+        accent-color: #2f3a56;
+      }
+      #grown-ups .confirm {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px;
+        margin: 16px 0 0;
+      }
+      #grown-ups .confirm p {
+        flex-basis: 100%;
+        font-weight: bold;
+      }
+      #grown-ups [hidden] {
+        display: none;
+      }
+      #grown-ups ol.install {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      #grown-ups ol.install li {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 160px;
+        text-align: center;
+      }
+      #grown-ups ol.install svg {
+        width: 96px;
+        height: 96px;
       }
       #grown-ups ul.checks {
         display: flex;
@@ -164,26 +245,192 @@
       </button>
     </div>
     <section id="grown-ups" hidden aria-labelledby="grown-ups-title">
-      <h1 id="grown-ups-title">For grown-ups</h1>
-      <dl>
-        <dt>Version</dt>
-        <dd data-reading="build"></dd>
-        <dt>Offline</dt>
-        <dd data-reading="offline"></dd>
-        <dt>Updates</dt>
-        <dd data-reading="update"></dd>
-        <dt>Running as</dt>
-        <dd data-reading="running-as"></dd>
-        <dt>Safe-area insets</dt>
-        <dd data-reading="insets"></dd>
-        <dt>Screen</dt>
-        <dd data-reading="screen" class="lines"></dd>
-        <dt>Screen changes</dt>
-        <dd data-reading="screen-changes" class="lines"></dd>
-      </dl>
-      <h2>Check screens</h2>
-      <ul class="checks" data-checks></ul>
-      <button type="button" data-action="back">Back</button>
+      <header>
+        <h1 id="grown-ups-title">For grown-ups</h1>
+        <button type="button" data-action="back">Back</button>
+      </header>
+      <section aria-labelledby="grown-ups-sound">
+        <h2 id="grown-ups-sound">Sound</h2>
+        <label class="choice"><input type="checkbox" data-setting="sound" /> Sound on</label>
+        <p>The tablet’s silent mode also silences the Arcade.</p>
+      </section>
+      <section aria-labelledby="grown-ups-motion">
+        <h2 id="grown-ups-motion">Motion</h2>
+        <fieldset>
+          <legend>Reduce motion</legend>
+          <label class="choice"
+            ><input type="radio" name="motion" value="system" data-setting="motion" /> As the tablet
+            asks</label
+          >
+          <label class="choice"
+            ><input type="radio" name="motion" value="on" data-setting="motion" /> On</label
+          >
+          <label class="choice"
+            ><input type="radio" name="motion" value="off" data-setting="motion" /> Off</label
+          >
+        </fieldset>
+      </section>
+      <section aria-labelledby="grown-ups-updates">
+        <h2 id="grown-ups-updates">Updates</h2>
+        <p data-reading="update"></p>
+        <button type="button" data-action="update" hidden>Update now</button>
+      </section>
+      <section aria-labelledby="grown-ups-progress">
+        <h2 id="grown-ups-progress">Progress</h2>
+        <p>
+          Resetting Progress removes every Mascot’s Stars and every Game’s remembered choices.
+          Sound, motion and Seating stay as they are.
+        </p>
+        <button type="button" data-action="reset">Reset Progress</button>
+        <div class="confirm" data-confirm hidden>
+          <p data-question></p>
+          <button type="button" data-action="confirm">Yes, reset</button>
+          <button type="button" data-action="decline">No, keep Progress</button>
+        </div>
+        <p role="status" data-reset-done></p>
+      </section>
+      <section aria-labelledby="grown-ups-status">
+        <h2 id="grown-ups-status">Status</h2>
+        <dl>
+          <dt>Version</dt>
+          <dd data-reading="build"></dd>
+          <dt>Offline</dt>
+          <dd data-reading="offline"></dd>
+          <dt>Running as</dt>
+          <dd data-reading="running-as"></dd>
+          <dt>Storage</dt>
+          <dd data-reading="storage"></dd>
+          <dt>Safe-area insets</dt>
+          <dd data-reading="insets"></dd>
+          <dt>Screen</dt>
+          <dd data-reading="screen" class="lines"></dd>
+          <dt>Screen changes</dt>
+          <dd data-reading="screen-changes" class="lines"></dd>
+          <dt>Recent errors</dt>
+          <dd data-reading="errors" class="lines"></dd>
+        </dl>
+        <div data-install>
+          <h3>Installing the Arcade</h3>
+          <p>
+            In a browser tab, Safari may clear Progress after a week without a visit. Installed, the
+            Arcade keeps it. On the iPad:
+          </p>
+          <ol class="install">
+            <li>
+              <svg viewBox="0 0 100 100" role="img" aria-label="The Share button">
+                <rect
+                  x="4"
+                  y="4"
+                  width="92"
+                  height="92"
+                  rx="18"
+                  fill="#fff6e0"
+                  stroke="#2f3a56"
+                  stroke-width="4"
+                />
+                <path
+                  d="M32 44v34h36V44"
+                  fill="none"
+                  stroke="#2f3a56"
+                  stroke-width="6"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M50 64V18M36 32l14-14 14 14"
+                  fill="none"
+                  stroke="#2f3a56"
+                  stroke-width="6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              Tap Share.
+            </li>
+            <li>
+              <svg viewBox="0 0 100 100" role="img" aria-label="Add to Home Screen">
+                <rect
+                  x="4"
+                  y="4"
+                  width="92"
+                  height="92"
+                  rx="18"
+                  fill="#fff6e0"
+                  stroke="#2f3a56"
+                  stroke-width="4"
+                />
+                <rect
+                  x="24"
+                  y="24"
+                  width="52"
+                  height="52"
+                  rx="12"
+                  fill="none"
+                  stroke="#2f3a56"
+                  stroke-width="6"
+                />
+                <path
+                  d="M50 36v28M36 50h28"
+                  stroke="#2f3a56"
+                  stroke-width="6"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Tap Add to Home Screen.
+            </li>
+            <li>
+              <svg viewBox="0 0 100 100" role="img" aria-label="Open as Web App, switched on">
+                <rect
+                  x="4"
+                  y="4"
+                  width="92"
+                  height="92"
+                  rx="18"
+                  fill="#fff6e0"
+                  stroke="#2f3a56"
+                  stroke-width="4"
+                />
+                <rect
+                  x="18"
+                  y="34"
+                  width="64"
+                  height="32"
+                  rx="16"
+                  fill="#b8e6a7"
+                  stroke="#2f3a56"
+                  stroke-width="4"
+                />
+                <circle cx="66" cy="50" r="12" fill="#fff6e0" stroke="#2f3a56" stroke-width="4" />
+              </svg>
+              Leave Open as Web App on, then tap Add.
+            </li>
+            <li>
+              <svg
+                viewBox="0 0 100 100"
+                role="img"
+                aria-label="The Whimigo icon on the Home Screen"
+              >
+                <rect
+                  x="4"
+                  y="4"
+                  width="92"
+                  height="92"
+                  rx="18"
+                  fill="#9ad8f5"
+                  stroke="#2f3a56"
+                  stroke-width="4"
+                />
+                <circle cx="50" cy="50" r="26" fill="#ffc94a" stroke="#2f3a56" stroke-width="4" />
+                <path d="M44 38v24l20-12z" fill="#2f3a56" />
+              </svg>
+              Open Whimigo from the Home Screen.
+            </li>
+          </ol>
+        </div>
+      </section>
+      <section aria-labelledby="grown-ups-checks">
+        <h2 id="grown-ups-checks">Check screens</h2>
+        <ul class="checks" data-checks></ul>
+      </section>
     </section>
     <script type="module" src="./src/main.ts"></script>
   </body>

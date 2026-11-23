@@ -8,6 +8,7 @@ import { holdButton, iconButton, type IconButton } from '@/kit/controls';
 import { colors, seats, sizes } from '@/kit/theme';
 import { onTouchesReset } from '@/kit/touches';
 import { fromZoneLocal } from '@/kit/zones';
+import { GROWN_UPS } from '../grown-ups';
 import type { ArcadeScreen, CheckScreen, ScreenData } from '../screen';
 import {
   forgetTouches,
@@ -94,7 +95,7 @@ class TouchCheckScreen extends Phaser.Scene implements ArcadeScreen {
         x: left,
         y: rows[1]!,
         icon: 'arcade/home',
-        onHold: () => arcade.show('home'),
+        onHold: () => arcade.show(GROWN_UPS),
       }).target,
       reset: holdButton(this, {
         x: left,

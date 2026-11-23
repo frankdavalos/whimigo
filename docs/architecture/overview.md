@@ -255,7 +255,7 @@ These are operating-system behaviours with no web API. The Arcade is designed to
 | A touch limit below 10 | Some budget Android tablets report only 5 | A fifth finger may be dropped, or all touches cancelled | Four Seats at one finger each fit within 5. The Touch Check screen shows what a given tablet really does. Unverified: no Android tablet is available |
 | Edge swipes and OEM three-finger screenshot | Android | Reveals system bars or takes a screenshot | `display: fullscreen` in the manifest; app pinning; switch the OEM gesture off |
 
-The browser reports a fixed "5" for the number of touch points on every iPad, so the Arcade cannot detect a tablet's real limit by asking. The **Touch Check** screen in the Grown-Ups Area (on the placeholder Home Screen until that Area is built) shows every live touch and the highest count reached. It is the Phase 0 measuring tool and it stays in the product for exactly that reason.
+The browser reports a fixed "5" for the number of touch points on every iPad, so the Arcade cannot detect a tablet's real limit by asking. The **Touch Check** screen in the Grown-Ups Area shows every live touch and the highest count reached. It is the Phase 0 measuring tool and it stays in the product for exactly that reason.
 
 ### Seating and Zones
 
@@ -294,18 +294,15 @@ Phaser 4 has no device-pixel-ratio support: the canvas has exactly as many pixel
 ```ts
 interface SaveDocument {
   version: 1;
-  settings: {
-    sound: boolean;
-    reducedMotion: 'system' | 'on' | 'off';
-    seating: Seating;
-  };
   mascots: Record<MascotId, { stars: number }>;
   games: Record<GameId, {
-    playStyle?: PlayStyle;
-    difficulty?: Difficulty;
-    mascots?: MascotId[];
     roundsPlayed: number;
+    choices?: { style: PlayStyle; difficulty: Difficulty; mascots: MascotId[] };
   }>;
+  // The settings: absent until first chosen, then sound is on and motion follows the device.
+  seating?: Seating;
+  sound?: boolean;
+  motion?: 'system' | 'on' | 'off';
 }
 ```
 
@@ -313,7 +310,7 @@ interface SaveDocument {
 - **Durability.** An installed web app on iPadOS is exempt from Safari's seven-day purge of unused site data and keeps its data separately from Safari (confirmed). The Arcade also asks for persistent storage at start-up. In a plain Safari tab the purge does apply, so the Grown-Ups Area says when the Arcade is not installed.
 - **Honesty about loss.** Clearing website data, or clearing Chrome's data on Android, erases Progress. Progress is Stars and stickers; nothing is unrecoverable in a way that matters. Export and import are not built.
 - **Versioning.** The document carries a version. Loading runs migrations up to the current version, validates the result, and falls back to fresh Progress if anything is wrong.
-- **Unavailable storage.** `SaveStore` reports `persistent`, `best-effort` or `memory-only`, and the Arcade works in all three.
+- **Unavailable storage.** The storage state is `persistent`, `best-effort` or `memory-only` (`src/platform/storage-state.ts`), and the Arcade works in all three. When `localStorage` is missing, refuses access, or throws on reading or on every write, `SaveStore` keeps the document in memory for the visit and reports it; the Grown-Ups Area then says that Progress will not be kept. Resetting Progress, in the Grown-Ups Area only, clears Stars, Rounds played and remembered choices and keeps the settings.
 
 ## Offline, installation and updates
 

@@ -3,7 +3,7 @@ import { expect, test } from './arcade';
 /** Long enough to be sure of a full half-second hold even when frames are slow. */
 const FULL_HOLD_MS = 1000;
 const BLANK = 'blank-check';
-/** Every check screen the Home Screen lists when the test bridge is on, in order. */
+/** Every check screen the Grown-Ups Area lists when the test bridge is on, in order. */
 const CHECKS = ['touch-check', 'sound-check', 'performance-check', BLANK];
 /** How many sounds each check screen renders while it is open. */
 const SOUNDS_WHILE_OPEN: Readonly<Record<string, number>> = { 'sound-check': 7 };
@@ -12,27 +12,23 @@ test.beforeEach(async ({ arcade }) => {
   await arcade.open();
 });
 
-test('the status page has one button for each registered check screen, and the Home Screen none', async ({
+test('the Grown-Ups Area has one button for each registered check screen, and the Home Screen none; each check returns to the Area', async ({
   arcade,
-  page,
 }) => {
   test.slow();
   await arcade.start();
   const checks = await arcade.checks();
   expect(checks).toEqual(CHECKS);
   for (const id of checks) expect((await arcade.snapshot()).targets[id]).toBeUndefined();
-  await arcade.tap('grown-ups');
-  await expect.poll(() => arcade.screen()).toBe('grown-ups');
-  const buttons = page.locator('#grown-ups [data-check]');
+  await arcade.openGrownUps();
+  const buttons = arcade.grownUps().locator('[data-check]');
   expect(
     await buttons.evaluateAll((all) => all.map((b) => (b as HTMLElement).dataset.check)),
   ).toEqual(CHECKS);
-  await page.getByRole('button', { name: 'Back' }).tap();
-  await expect.poll(() => arcade.screen()).toBe('home');
   for (const id of checks) {
     await arcade.openCheck(id);
     await arcade.hold('leave', FULL_HOLD_MS);
-    await expect.poll(() => arcade.screen()).toBe('home');
+    await expect.poll(() => arcade.screen()).toBe('grown-ups');
   }
 });
 
@@ -44,7 +40,7 @@ test('a check screen opens directly through the bridge, skipping the Home Screen
 });
 
 for (const id of CHECKS) {
-  test(`${id}: a short tap on the leave control does nothing; a full hold goes home`, async ({
+  test(`${id}: a short tap on the leave control does nothing; a full hold returns to the Grown-Ups Area`, async ({
     arcade,
     page,
   }) => {
@@ -57,7 +53,7 @@ for (const id of CHECKS) {
     expect(await arcade.screen()).toBe(id);
 
     await arcade.hold('leave', FULL_HOLD_MS);
-    await expect.poll(() => arcade.screen()).toBe('home');
+    await expect.poll(() => arcade.screen()).toBe('grown-ups');
   });
 
   test(`${id}: a hold that slides off the leave control does not leave`, async ({
@@ -77,10 +73,11 @@ for (const id of CHECKS) {
     expect(await arcade.screen()).toBe(id);
   });
 
-  test(`${id}: opening and leaving it returns the counts to where they were`, async ({
+  test(`${id}: opened from the Grown-Ups Area and left, it returns there with the counts where they were`, async ({
     arcade,
   }) => {
     await arcade.start();
+    await arcade.openGrownUps();
     const before = await arcade.counts();
     await arcade.openCheck(id);
     expect(await arcade.counts()).toMatchObject({
@@ -88,7 +85,8 @@ for (const id of CHECKS) {
       sounds: before.sounds + (SOUNDS_WHILE_OPEN[id] ?? 0),
     });
     await arcade.hold('leave', FULL_HOLD_MS);
-    await expect.poll(() => arcade.screen()).toBe('home');
+    await expect.poll(() => arcade.screen()).toBe('grown-ups');
+    await expect(arcade.grownUps()).toBeVisible();
     expect(await arcade.counts()).toEqual(before);
   });
 }
@@ -109,15 +107,18 @@ test('the bridge answers in plain JSON', async ({ arcade }) => {
 
 test('a touch at a target’s reported centre activates that control and nothing outside it does', async ({
   arcade,
-  page,
 }) => {
   await arcade.start();
   const { rect } = await arcade.target('grown-ups');
-  // Just outside the control's touch rectangle: nothing happens.
-  await page.touchscreen.tap(rect.x - 4, rect.y + rect.height / 2);
-  await page.touchscreen.tap(rect.x + rect.width / 2, rect.y - 4);
-  await page.waitForTimeout(500);
+  // Held just outside the Gate's touch rectangle: nothing happens.
+  for (const point of [
+    { x: rect.x - 4, y: rect.y + rect.height / 2 },
+    { x: rect.x + rect.width / 2, y: rect.y - 4 },
+  ]) {
+    await arcade.touch('touchStart', [point]);
+    await arcade.page.waitForTimeout(3500);
+    await arcade.touch('touchEnd', []);
+  }
   expect(await arcade.screen()).toBe('home');
-  await arcade.tap('grown-ups');
-  await expect.poll(() => arcade.screen()).toBe('grown-ups');
+  await arcade.openGrownUps();
 });

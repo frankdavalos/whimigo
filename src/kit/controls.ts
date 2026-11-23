@@ -177,21 +177,23 @@ export interface HoldButtonOptions extends Placed {
   readonly icon: string;
   /** Called once each time a finger has stayed on the button for the whole hold. */
   readonly onHold: () => void;
+  /** How long the hold lasts, in milliseconds of scene time. Defaults to `HOLD_MS`. */
+  readonly duration?: number;
 }
 
 /** The face every hold control shares, from the Arcade's atlas, which is loaded at boot. */
 const HOLD_FACE = 'arcade/hold';
 
 /**
- * A control that acts only on a deliberate hold of about half a second, filling a ring while it
- * is held. A short tap or a brush does nothing. Used for pausing a Round, leaving a screen and
- * resetting counters.
+ * A control that acts only on a deliberate hold, of about half a second unless it says otherwise,
+ * filling a ring while it is held. A short tap or a brush does nothing. Used for pausing a Round,
+ * leaving a screen, resetting counters and the Grown-Up Gate.
  */
 export function holdButton(scene: Phaser.Scene, options: HoldButtonOptions): Control {
   const { x, y } = options;
   const size = sizes.button;
   const radius = size / 2;
-  const hold = createHold();
+  const hold = createHold(options.duration);
   const depth = options.depth ?? 0;
   picture(scene, x, y, HOLD_FACE).setDepth(depth);
   picture(scene, x, y, options.icon).setDepth(depth);

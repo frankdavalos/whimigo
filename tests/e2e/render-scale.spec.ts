@@ -90,10 +90,16 @@ async function prepare(arcade: Arcade, screen: string): Promise<void> {
     });
 }
 
-/** One finger down on a point, held, then lifted. */
-async function press(arcade: Arcade, point: Point): Promise<void> {
+/**
+ * One finger down on a target, held, then lifted. The Grown-Up Gate is held until the Grown-Ups
+ * Area shows, since its three seconds are counted in scene time, which a slow frame holds back.
+ */
+async function press(arcade: Arcade, screen: string, name: string, point: Point): Promise<void> {
   await arcade.touch('touchStart', [point]);
   await arcade.page.waitForTimeout(PRESS_MS);
+  if (screen === 'home' && name === 'grown-ups') {
+    await expect.poll(() => arcade.screen(), { timeout: 60_000 }).toBe('grown-ups');
+  }
   await arcade.touch('touchEnd', []);
 }
 
@@ -147,7 +153,7 @@ test('at render scale 0.5 every named target of every screen is in the same plac
         await show(arcade, scale, screen);
         await prepare(arcade, screen);
         const before = await effect(arcade, screen);
-        await press(arcade, target);
+        await press(arcade, screen, name, target);
         await expect.poll(() => effect(arcade, screen), { message: where }).not.toEqual(before);
         // Give anything else the press might set off time to happen, then read what it did.
         await arcade.page.waitForTimeout(300);

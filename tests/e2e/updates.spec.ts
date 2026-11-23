@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
+import type { Page } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import { type BuildServer, startBuildServer } from './build-server';
 import { NEXT_BUILD } from './global-setup';
 import { expect, test as base } from './arcade';
+import { CATALOG, openSession, playToResult, sessionFor } from './play';
 
 /**
  * A new version never arrives under a child's fingers (story 14, ADR-0008). Each test serves the
@@ -65,14 +67,14 @@ test('a newer build waits while the page is open; after a reload, the page runs 
   await arcade.start();
 
   await test.step('the newer build is deployed and found; the page keeps its own version', async () => {
-    await arcade.tap('grown-ups');
-    const status = page.locator('#grown-ups');
+    await arcade.openGrownUps();
+    const status = arcade.grownUps();
     await expect(status.getByText('No update waiting', { exact: true })).toBeVisible();
 
     server.serve(next);
     await arcade.hideAndShow();
     await expect.poll(() => arcade.call('updateWaiting')).toBe(true);
-    await expect(status.getByText(/^An update is waiting\./)).toBeVisible();
+    await expect(status.getByText('A newer version is waiting.', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.whimigo?.buildId)).toBe(current);
     await expect(status.getByText(current, { exact: true })).toBeVisible();
     expect(await readBuildJson(), 'files still come from the running version').toBe(current);
@@ -111,4 +113,65 @@ test('a newer build waits while the page is open; after a reload, the page runs 
       JSON.stringify([newer]),
     );
   });
+});
+
+const buildIdOnPage = (page: Page) => page.evaluate(() => window.whimigo?.buildId);
+
+test('with a newer version waiting, the Grown-Ups Area offers Update now, and pressing it reloads into the new build', async ({
+  arcade,
+  server,
+  next,
+  page,
+}) => {
+  const current = buildIdOf(dist);
+  const newer = buildIdOf(next);
+  await arcade.open();
+  await expect.poll(() => arcade.call('offlineReady')).toBe(true);
+  await arcade.open();
+  await arcade.start();
+  server.serve(next);
+  await arcade.hideAndShow();
+  await expect.poll(() => arcade.call('updateWaiting')).toBe(true);
+
+  await arcade.openGrownUps();
+  const area = arcade.grownUps();
+  await expect(area.getByText('A newer version is waiting.', { exact: true })).toBeVisible();
+  expect(await buildIdOnPage(page)).toBe(current);
+  await area.getByRole('button', { name: 'Update now' }).tap();
+  await page.waitForFunction(() => window.whimigo?.screen().id === 'start');
+  expect(await buildIdOnPage(page)).toBe(newer);
+  expect(await arcade.call('updateWaiting')).toBe(false);
+});
+
+test('with a newer build served while a Session runs, the page keeps its build, the Round plays to a Result, and a Game not yet opened still opens', async ({
+  arcade,
+  server,
+  next,
+  page,
+}) => {
+  test.slow();
+  const current = buildIdOf(dist);
+  const [first, unopened] = [CATALOG[0]!, CATALOG[1]!];
+  await arcade.open();
+  await expect.poll(() => arcade.call('offlineReady')).toBe(true);
+  await arcade.open();
+  await arcade.start();
+  await openSession(arcade, sessionFor(first, first.playStyles[0]!), 7);
+
+  server.serve(next);
+  // The return that looks for a new version pauses the Round.
+  await arcade.hideAndShow();
+  await expect.poll(() => arcade.call('updateWaiting')).toBe(true);
+  await expect.poll(() => arcade.screen()).toBe('pause');
+  await arcade.tap('play');
+  await expect.poll(() => arcade.screen()).toBe(first.id);
+  await playToResult(arcade, first.id);
+  await expect.poll(() => arcade.screen()).toBe('result');
+  expect(await buildIdOnPage(page)).toBe(current);
+
+  await arcade.tap('home');
+  await expect.poll(() => arcade.screen()).toBe('home');
+  await openSession(arcade, sessionFor(unopened, unopened.playStyles[0]!), 7);
+  expect(await arcade.screen()).toBe(unopened.id);
+  expect(await buildIdOnPage(page)).toBe(current);
 });

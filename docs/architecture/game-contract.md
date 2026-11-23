@@ -542,7 +542,7 @@ export interface Motion {
 
 Motion that carries meaning (a disc dropping into a column) still happens when `reduced` is true, shortened to a fade or a direct placement. Motion that only decorates is skipped.
 
-The presets are data in `src/kit/motion-presets.ts`, each a list of tween steps in a full and a reduced form; the reduced form never lasts longer (tested in Node). `bounce` only decorates, so its reduced form is empty. `round.motion.reduced` follows the device's `prefers-reduced-motion`; the Grown-Ups Area's override is slice 5d (#21).
+The presets are data in `src/kit/motion-presets.ts`, each a list of tween steps in a full and a reduced form; the reduced form never lasts longer (tested in Node). `bounce` only decorates, so its reduced form is empty. `round.motion.reduced` follows the Grown-Ups Area's motion setting: on reduces motion, off does not, and system (the default) follows the device's `prefers-reduced-motion`. It is read when each Round opens.
 
 ### Rng
 

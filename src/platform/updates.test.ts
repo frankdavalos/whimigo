@@ -88,3 +88,20 @@ describe('a version left waiting, at a cold start', () => {
     await expect.poll(third.reloads).toBe(1);
   });
 });
+
+describe('Update now', () => {
+  it('activates the version that waits and reloads the page, even in the load that applied the last', async () => {
+    const session = new Map<string, string>();
+    const first = fakePage(session);
+    void createUpdates(first.win, OPTIONS).start();
+    await expect.poll(first.reloads).toBe(1);
+
+    const second = fakePage(session);
+    const updates = createUpdates(second.win, OPTIONS);
+    await updates.start();
+    expect(updates.state().updateWaiting).toBe(true);
+    void updates.applyNow();
+    await expect.poll(second.reloads).toBe(1);
+    expect(second.waiting.messages).toEqual([{ type: 'SKIP_WAITING' }]);
+  });
+});

@@ -3,8 +3,10 @@ import type { GameManifest } from '@/contract';
 import type { ScreenWatch } from '@/platform/screen-watch';
 import type { Audio } from '@/platform/audio';
 import type { RunningAs } from '@/platform/display-mode';
+import type { ErrorLog } from '@/platform/error-log';
 import type { SaveStore } from '@/platform/save-store';
 import type { SafeAreaInsets } from '@/platform/safe-area';
+import type { StorageWatch } from '@/platform/storage-state';
 import type { Updates } from '@/platform/updates';
 import { GameHost } from './game-host';
 import { GROWN_UPS, GrownUpsScreen } from './grown-ups';
@@ -24,14 +26,18 @@ export interface ArcadeServices {
   readonly safeAreaInsets: () => SafeAreaInsets;
   readonly updates: Updates;
   readonly runningAs: () => RunningAs;
-  /** The status page's markup, in index.html. */
+  /** The Grown-Ups Area's markup, in index.html. */
   readonly grownUpsPage: HTMLElement;
   /** The screen as the browser measures it, and its changes since the page started. */
   readonly screen: ScreenWatch;
-  /** Progress, kept between visits. */
+  /** Progress and settings, kept between visits. */
   readonly save: SaveStore;
-  /** True when the device asks for reduced motion. */
+  /** How safely the save document is kept. */
+  readonly storage: StorageWatch;
+  /** True when motion is reduced: as the Grown-Ups Area sets it, or else as the device asks. */
   readonly reducedMotion: () => boolean;
+  /** The last few error messages, held in memory only. */
+  readonly errors: ErrorLog;
 }
 
 /** The Arcade's own screens, added once and kept for the life of the page. */
@@ -85,6 +91,14 @@ export class Arcade {
   /** What is on show, once its Scene has been created. */
   get screen(): Shown | null {
     return this.showing;
+  }
+
+  /**
+   * Opens the Grown-Ups Area, through the Grown-Up Gate or the test bridge; nothing happens while a
+   * Game is open, so the Area never shows over a Session.
+   */
+  openGrownUps(): void {
+    if (this.host.state === 'idle') this.show(GROWN_UPS);
   }
 
   /** Changes screen at the start of the next frame. `data` adds to what the screen is given. */

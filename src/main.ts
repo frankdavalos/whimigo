@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { Arcade } from '@/arcade/arcade';
 import { SHARED_SOUNDS } from '@/arcade/sounds';
 import { checkScreens } from '@/arcade/checks';
+import { motionReduced, settingsOf } from '@/arcade/settings';
 import { installTestBridge } from '@/arcade/test-bridge';
 import { CATALOG } from '@/games/catalog';
 import { DESIGN_FRAME } from '@/kit/frame';
@@ -12,13 +13,16 @@ import { createAudio } from '@/platform/audio';
 import { runningAs } from '@/platform/display-mode';
 import { watchScreen } from '@/platform/screen-watch';
 import { installErrorScreen } from '@/platform/error-screen';
+import { createErrorLog } from '@/platform/error-log';
 import { onPageHidden, onPageShown } from '@/platform/lifecycle';
 import { guardPage } from '@/platform/page';
 import { prefersReducedMotion } from '@/platform/reduced-motion';
 import { readSafeAreaInsets } from '@/platform/safe-area';
-import { createSaveStore } from '@/platform/save-store';
+import { browserStorage, createSaveStore } from '@/platform/save-store';
+import { watchStorage } from '@/platform/storage-state';
 import { createUpdates } from '@/platform/updates';
 
+const errors = createErrorLog(window);
 const errorScreen = document.getElementById('error-screen');
 if (errorScreen) installErrorScreen(window, errorScreen);
 guardPage(document);
@@ -28,7 +32,7 @@ const renderScale = renderScaleFor(window.location.search);
 
 /** The box the canvas fills. */
 const arcadeBox = document.getElementById('arcade')!;
-// Measured from the start, so the grown-ups' status page can show how the screen has changed.
+// Measured from the start, so the Grown-Ups Area can show how the screen has changed.
 const screen = watchScreen(window, arcadeBox);
 
 /** The one Phaser.Game. It is never destroyed (ADR-0002). */
@@ -57,11 +61,17 @@ game.events.once(Phaser.Core.Events.READY, () => {
   }).observe(arcadeBox);
 });
 
+// Progress and settings. Without working storage the Arcade plays on with them in memory.
+const save = createSaveStore(browserStorage(window));
+// Asks the browser, once, to keep Progress even when space runs short.
+const storage = watchStorage(save, navigator.storage);
+
 const audio = createAudio(
   document,
   game.sound instanceof Phaser.Sound.WebAudioSoundManager
     ? { manager: game.sound, cache: game.cache.audio }
     : null,
+  () => settingsOf(save.current()).sound,
 );
 
 // The Arcade's shared sounds stay loaded for the life of the page.
@@ -80,8 +90,11 @@ const arcade = new Arcade(
     runningAs: () => runningAs(window),
     grownUpsPage: document.getElementById('grown-ups')!,
     screen,
-    save: createSaveStore(window.localStorage),
-    reducedMotion: () => prefersReducedMotion(window),
+    save,
+    storage,
+    reducedMotion: () =>
+      motionReduced(settingsOf(save.current()).motion, prefersReducedMotion(window)),
+    errors,
   },
   checkScreens({ e2e }),
   CATALOG,
