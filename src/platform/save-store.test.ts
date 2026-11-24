@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   SAVE_KEY,
+  SET_ASIDE_KEY,
   browserStorage,
   createSaveStore,
   type KeyValueStore,
+  type Migrations,
   type SaveDocument,
 } from './save-store';
 
@@ -57,6 +59,109 @@ describe('the SaveStore', () => {
     store.write(PLAYED);
     expect(store.current()).toEqual(PLAYED);
     expect(createSaveStore(storage).current()).toEqual(PLAYED);
+  });
+});
+
+describe('a saved document the SaveStore cannot use', () => {
+  const cases: [string, string][] = [
+    ['cannot be read', '{"version": 1, "mascots": {'],
+    ['is not an object', '"fox"'],
+    ['has no version', JSON.stringify({ mascots: {}, games: {} })],
+    [
+      'has Stars that are not a count',
+      JSON.stringify({ ...PLAYED, mascots: { fox: { stars: -1 } } }),
+    ],
+    ['has a Game without its Rounds played', JSON.stringify({ ...PLAYED, games: { x: {} } })],
+    [
+      'has remembered choices of an unknown Play Style',
+      JSON.stringify({
+        ...PLAYED,
+        games: {
+          x: { roundsPlayed: 1, choices: { style: 'tag', difficulty: 'easy', mascots: [] } },
+        },
+      }),
+    ],
+    ['has a Seating that does not exist', JSON.stringify({ ...PLAYED, seating: 'stacked' })],
+    ['has a sound setting that is not on or off', JSON.stringify({ ...PLAYED, sound: 'loud' })],
+    ['has an unknown motion setting', JSON.stringify({ ...PLAYED, motion: 'fast' })],
+    ['carries a newer version than is understood', JSON.stringify({ ...PLAYED, version: 2 })],
+  ];
+
+  for (const [name, saved] of cases) {
+    it(`is set aside under a second key when it ${name}, and play starts fresh`, () => {
+      const storage = memoryStore();
+      storage.setItem(SAVE_KEY, saved);
+      const store = createSaveStore(storage);
+      expect(store.current()).toEqual({ version: 1, mascots: {}, games: {} });
+      expect(store.memoryOnly()).toBe(false);
+      expect(SET_ASIDE_KEY.startsWith('whimigo:')).toBe(true);
+      expect(SET_ASIDE_KEY).not.toBe(SAVE_KEY);
+      expect(storage.items.get(SET_ASIDE_KEY)).toBe(saved);
+      expect(storage.items.has(SAVE_KEY)).toBe(false);
+
+      store.write(PLAYED);
+      expect(createSaveStore(storage).current()).toEqual(PLAYED);
+      expect(storage.items.get(SET_ASIDE_KEY)).toBe(saved);
+    });
+  }
+
+  it('reads a document with every setting and remembered choices as it was written', () => {
+    const full: SaveDocument = {
+      ...PLAYED,
+      games: {
+        'color-echo': {
+          roundsPlayed: 4,
+          choices: { style: 'cooperative', difficulty: 'hard', mascots: ['fox', 'owl'] },
+        },
+      },
+      seating: 'around-the-table',
+      sound: false,
+      motion: 'on',
+    };
+    const storage = memoryStore();
+    storage.setItem(SAVE_KEY, JSON.stringify(full));
+    expect(createSaveStore(storage).current()).toEqual(full);
+    expect(storage.items.has(SET_ASIDE_KEY)).toBe(false);
+  });
+});
+
+describe('a saved document of an older version', () => {
+  /** A step from a made-up version 0, which kept each Mascot's Stars as a bare number. */
+  const migrations: Migrations = {
+    0: (old) => ({
+      version: 1,
+      mascots: Object.fromEntries(
+        Object.entries(old['stars'] as Record<string, number>).map(([id, stars]) => [
+          id,
+          { stars },
+        ]),
+      ),
+      games: {},
+    }),
+  };
+  const versionZero = JSON.stringify({ version: 0, stars: { fox: 3, owl: 1 } });
+
+  it('is migrated to the current version on load, and kept as migrated', () => {
+    const storage = memoryStore();
+    storage.setItem(SAVE_KEY, versionZero);
+    const store = createSaveStore(storage, migrations);
+    const migrated = { version: 1, mascots: { fox: { stars: 3 }, owl: { stars: 1 } }, games: {} };
+    expect(store.current()).toEqual(migrated);
+    expect(JSON.parse(storage.items.get(SAVE_KEY)!)).toEqual(migrated);
+    expect(storage.items.has(SET_ASIDE_KEY)).toBe(false);
+  });
+
+  it('is set aside when no step migrates it, or the migrated document fails validation', () => {
+    for (const steps of [{}, { 0: () => ({ version: 1, mascots: 'none', games: {} }) }]) {
+      const storage = memoryStore();
+      storage.setItem(SAVE_KEY, versionZero);
+      expect(createSaveStore(storage, steps).current()).toEqual({
+        version: 1,
+        mascots: {},
+        games: {},
+      });
+      expect(storage.items.get(SET_ASIDE_KEY)).toBe(versionZero);
+    }
   });
 });
 

@@ -1,4 +1,5 @@
 import { type Arcade, OTHER_VIEWPORTS, expect, test } from './arcade';
+import { CATALOG, openSession, playToResult, sessionFor } from './play';
 
 const DESIGN_WIDTH = 2752;
 
@@ -46,6 +47,75 @@ test('an unhandled promise rejection shows the error screen, and its button relo
   await arcade.open();
   await arcade.call('rejectUnhandled');
   await expectErrorScreenThenRecover(arcade);
+});
+
+test('an exception thrown inside a Game’s Scene during a Round shows the error screen, and its button reloads to the Home Screen with the Stars from earlier Rounds intact', async ({
+  arcade,
+  page,
+}) => {
+  test.slow();
+  const game = CATALOG[0]!;
+  await arcade.open();
+  await arcade.start();
+  await openSession(arcade, sessionFor(game, game.playStyles[0]!), 1);
+  await playToResult(arcade, game.id);
+  await expect.poll(() => arcade.screen()).toBe('result');
+  await arcade.tap('replay');
+  await expect.poll(() => arcade.screen()).toBe(game.id);
+  const earned = await arcade.call('save');
+  expect(Object.keys(earned.mascots).length).toBeGreaterThan(0);
+
+  await arcade.call('throwInUpdate');
+  await expect(page.locator('#error-message')).toBeHidden();
+  await expectErrorScreenThenRecover(arcade);
+  expect(await arcade.call('save')).toEqual(earned);
+});
+
+for (const game of CATALOG) {
+  test(`${game.id}: an exception thrown inside its Scene during a Round shows the error screen, and its button reloads to the Home Screen`, async ({
+    arcade,
+  }) => {
+    await arcade.open();
+    await arcade.start();
+    await openSession(arcade, sessionFor(game, game.playStyles[0]!), 1);
+    await expect.poll(() => arcade.screen()).toBe(game.id);
+
+    await arcade.call('throwInUpdate');
+    await expectErrorScreenThenRecover(arcade);
+    await expect.poll(() => arcade.screen()).toBe('home');
+    expect(await arcade.host()).toBe('idle');
+  });
+}
+
+test('a second error within a few seconds of the start the error screen’s button made shows the technical message, and nothing reloads by itself', async ({
+  arcade,
+  page,
+}) => {
+  await arcade.open();
+  await arcade.call('rejectUnhandled');
+  const box = await expectErrorScreen(arcade);
+  await Promise.all([
+    page.waitForEvent('load'),
+    page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2),
+  ]);
+  await page.waitForFunction(() => window.whimigo !== undefined);
+  await arcade.call('rejectUnhandled');
+
+  const message = page.locator('#error-message');
+  await expect(page.locator('#error-screen')).toBeVisible();
+  await expect(message).toBeVisible();
+  await expect(message).toContainText('Rejected on purpose by the test bridge');
+  await page.evaluate(() => Object.assign(window, { stillHere: true }));
+  await page.waitForTimeout(3000);
+  expect(await page.evaluate(() => 'stillHere' in window)).toBe(true);
+  await expect(message).toBeVisible();
+});
+
+test('the friendly error screen shows no technical message', async ({ arcade, page }) => {
+  await arcade.open();
+  await arcade.call('rejectUnhandled');
+  await expectErrorScreen(arcade);
+  await expect(page.locator('#error-message')).toBeHidden();
 });
 
 for (const [shape, viewport] of Object.entries(OTHER_VIEWPORTS)) {

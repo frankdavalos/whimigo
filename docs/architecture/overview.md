@@ -199,11 +199,11 @@ The rule that follows: **at any moment exactly one Scene accepts input.** The pa
 | Failure | Response |
 |---|---|
 | The browser cannot run the Arcade (no WebGL, script failed to load) | The DOM error screen: a picture and one large restart button |
-| A Game fails to load (missing chunk or asset) | `GameHost` returns to `idle`. The Game Card shakes its head; the child is still on the Home Screen |
+| A Game fails to load (missing chunk or asset) | `GameHost` returns to `idle`. The Game Card shakes its head (the Home Screen's snapshot names it as `refused`); the child is still on the Home Screen |
 | An unexpected exception anywhere | The global handler shows the DOM error screen. The restart button reloads the page, which comes back from the service-worker cache in a second or two |
-| Two unexpected errors within a few seconds of starting | The error screen shows the technical message for an adult, with no automatic retry, so the app cannot loop |
+| Two unexpected errors within a few seconds of starting | An error within 10 seconds of a start made by the error screen's button (a mark in the tab's session) shows the technical message for an adult, with no automatic retry, so the app cannot loop |
 | Storage is missing, full or unreadable | The Arcade runs normally with Progress held in memory. The Grown-Ups Area says that Progress will not be kept |
-| A corrupt or newer-than-understood save document | It is set aside under a second key and the Arcade starts with fresh Progress |
+| A corrupt or newer-than-understood save document | It is set aside under `whimigo:save:set-aside` and the Arcade starts with fresh Progress |
 
 Recovery is deliberately coarse. An exception inside Phaser's frame loop stops the loop for good: confirmed on 2026-11-19 in the 4.2.1 source, whose `RequestAnimationFrame` runs the step before it asks for the next frame, so a step that throws never asks. And a paused **Round** is worth at most three minutes of play. Reloading is simpler and more reliable than trying to repair a running game. The last few error messages are kept in memory and shown in the Grown-Ups Area; nothing is sent anywhere.
 

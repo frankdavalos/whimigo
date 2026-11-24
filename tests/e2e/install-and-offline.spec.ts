@@ -2,8 +2,9 @@ import { readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { PRECACHE_BUDGET_BYTES } from '../../scripts/precache';
+import { PRECACHE_BUDGET_BYTES, isGameFile } from '../../scripts/precache';
 import { expect, test } from './arcade';
+import { CATALOG, leaveThroughPause, openSession, playToResult, sessionFor } from './play';
 
 /**
  * Installing and playing offline (stories 11 and 12, ADR-0008). The installability check is the
@@ -120,5 +121,54 @@ test('after one load has finished caching, with the network off, a reload reache
   for (const id of checks) {
     await arcade.call('openCheck', id);
     await expect.poll(() => arcade.screen()).toBe(id);
+  }
+});
+
+test('after one load has finished caching, with the network off, a reload reaches the Home Screen and every Game opens and plays a Round to a Result', async ({
+  arcade,
+  context,
+}) => {
+  test.slow();
+  await arcade.open();
+  await expect.poll(() => arcade.call('offlineReady')).toBe(true);
+  await context.setOffline(true);
+
+  await arcade.page.reload();
+  await expect.poll(() => arcade.screen()).toBe('start');
+  await arcade.start();
+  for (const game of CATALOG) {
+    await openSession(arcade, sessionFor(game, game.playStyles[0]!), 1);
+    await playToResult(arcade, game.id);
+    await expect.poll(() => arcade.screen(), game.id).toBe('result');
+    await arcade.tap('home');
+    await expect.poll(() => arcade.screen()).toBe('home');
+  }
+});
+
+test('the Home Screen loads no Game’s code or atlas, and opening a Game requests only that Game’s', async ({
+  arcade,
+  page,
+}) => {
+  const requested: string[] = [];
+  page.on('request', (request) => {
+    requested.push(new URL(request.url()).pathname.slice(BASE.length));
+  });
+  /** The Games whose own files have been requested since `from`. */
+  const gamesRequested = (from: number) =>
+    CATALOG.filter((game) => requested.slice(from).some((path) => isGameFile(game.id, path))).map(
+      (game) => game.id,
+    );
+
+  await arcade.open();
+  await arcade.start();
+  // Long enough for anything the Home Screen might fetch after it shows.
+  await page.waitForTimeout(1000);
+  expect(gamesRequested(0)).toEqual([]);
+
+  for (const game of CATALOG) {
+    const from = requested.length;
+    await openSession(arcade, sessionFor(game, game.playStyles[0]!), 1);
+    await leaveThroughPause(arcade);
+    expect(gamesRequested(from), `opening ${game.id}`).toEqual([game.id]);
   }
 });

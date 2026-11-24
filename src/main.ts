@@ -24,7 +24,7 @@ import { createUpdates } from '@/platform/updates';
 
 const errors = createErrorLog(window);
 const errorScreen = document.getElementById('error-screen');
-if (errorScreen) installErrorScreen(window, errorScreen);
+if (errorScreen) installErrorScreen(window, errorScreen, errors);
 guardPage(document);
 
 const e2e = new URLSearchParams(window.location.search).get('e2e') === '1';

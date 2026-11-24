@@ -1,7 +1,9 @@
 import type {
   Difficulty,
   GameManifest,
+  PlayStyle,
   PlayStyleOption,
+  Result,
   Seating,
   Session,
 } from '../../src/contract';
@@ -34,11 +36,29 @@ export function sessionFor(
   });
 }
 
+/** A Result a Round of this Play Style could end in. */
+export function resultFor(style: PlayStyle): Result {
+  if (style === 'solo') return { kind: 'solo', score: 1 };
+  if (style === 'cooperative') return { kind: 'cooperative', success: true };
+  return { kind: 'win', winners: [0] };
+}
+
 /** Opens a Session straight into its first Round, and skips the Demo it begins with. */
 export async function openSession(arcade: Arcade, session: Session, seed: number): Promise<void> {
   await arcade.call('open', session, seed);
   await expect.poll(() => arcade.screen()).toBe(session.gameId);
   await arcade.skipDemo();
+}
+
+/**
+ * Leaves the Round being played through the pause screen, reached by putting the tablet down and
+ * picking it up again, which pauses any Round, even during its Demo.
+ */
+export async function leaveThroughPause(arcade: Arcade): Promise<void> {
+  await arcade.hideAndShow();
+  await expect.poll(() => arcade.screen()).toBe('pause');
+  await arcade.tap('home');
+  await expect.poll(() => arcade.screen()).toBe('home');
 }
 
 /** A Round's state and targets as the bridge reports them. */

@@ -49,7 +49,7 @@ Lives beside the code as `*.test.ts`. No DOM, no Phaser.
 - The Star rule: from a Result and a **Session** to the Stars each **Mascot** earns.
 - Sound recipes: every note has a positive duration, a pitch in the audible range and a gain between 0 and 1; no sound runs longer than a few seconds; rendering a recipe gives a buffer of the expected length that is not silent and does not clip.
 - Seat colours: the four stay distinguishable from one another under simulated protanopia, deuteranopia and tritanopia, measured as a computed colour difference above a threshold.
-- `SaveStore`, against an in-memory store: round trip, migration from each older version, a corrupt document set aside, a store that throws on write, a store that is absent.
+- `SaveStore`, against an in-memory store: round trip, migration from an older version (there is none yet, so the test gives its own step), a document that cannot be read, fails validation or is newer set aside under `whimigo:save:set-aside`, a store that throws on write, a store that is absent.
 
 ## Level 2: conformance
 
@@ -80,6 +80,7 @@ A canvas has no buttons for a test to find. The Arcade exposes a small object on
 | `counts()` | Numbers of Scenes, textures and cached sounds; `keys()` names them |
 | `save()` | The current save document |
 | `finish(result)` | Reports a Result for the open Round, exactly as its Game would; a test uses it to report a second Result |
+| `roundAudit()` | Watched in every frame drawn while a Round plays, since its Game last opened: the textures its pictures came from, the most pictures and cameras at once, any banned object or new dynamic texture, and any HTML element added to the page |
 | `offlineReady()` | Whether the service worker has finished caching every file |
 | `updateWaiting()` | Whether a newer version has been downloaded and waits for the next cold start |
 
@@ -110,8 +111,10 @@ Playwright's WebKit is not Safari and does not behave like an iPad. It catches g
 - Hold-to-pause: a short tap does not pause, a full hold does; resume continues; exit returns home.
 - Hiding the page pauses a running Round; returning shows the pause screen.
 - A timed Game does not advance while paused.
-- Open and close every Game 20 times: `counts()` returns to its starting values. This is the automated memory-leak guard.
-- A Game whose chunk fails to load leaves the child on the Home Screen.
+- Leaving a Game from the Result screen, the pause screen or during its Demo leaves nothing under its id.
+- Open and close every Game 20 times, each way out in turn: `counts()` returns to its starting values. This is the automated memory-leak guard. It runs in the main project only.
+- A Game whose chunk or atlas fails to load leaves the child on the Home Screen, its Game Card refusing, and another Game still opens and plays.
+- A second error within ten seconds of a start made by the error screen's button shows the technical message, and nothing reloads by itself.
 - An exception thrown in a Scene shows the error screen, and its button reloads to the Home Screen.
 
 **Multitouch**
@@ -130,7 +133,7 @@ Playwright's own touchscreen is single-point. Multi-finger tests use the Chromiu
 
 - Stars and remembered choices survive a reload.
 - With `localStorage` disabled, the Arcade plays normally and reports memory-only storage.
-- A corrupt save document yields fresh Progress and no error screen.
+- A save document that cannot be read, or is newer than understood, is set aside; play starts with fresh Progress and no error screen.
 
 **Offline and updates**
 

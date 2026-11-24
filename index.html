@@ -73,6 +73,23 @@
         width: 60%;
         height: 60%;
       }
+      /* Shown only when an error repeats soon after the button's reload: words for a grown-up. */
+      #error-message {
+        max-width: 80vw;
+        max-height: 20vh;
+        overflow: auto;
+        margin: 0;
+        font:
+          2.4vmin/1.4 ui-monospace,
+          monospace;
+        color: #2f3a56;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        user-select: text;
+      }
+      #error-message[hidden] {
+        display: none;
+      }
 
       /* The Grown-Ups Area (ADR-0005): real text in the device's typeface, for adults only. */
       #grown-ups {
@@ -243,6 +260,7 @@
           <path d="M84 14v26H58z" fill="#2f3a56" />
         </svg>
       </button>
+      <p id="error-message" hidden></p>
     </div>
     <section id="grown-ups" hidden aria-labelledby="grown-ups-title">
       <header>

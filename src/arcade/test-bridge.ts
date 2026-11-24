@@ -94,6 +94,11 @@ export interface TestBridge {
   soundsStarted(): number;
   /** How many frames Phaser's loop has stepped. */
   frames(): number;
+  /**
+   * What the frames drawn while a Round plays have held, since its Game last opened: the gates'
+   * limits and the Game contract's rules, watched frame by frame.
+   */
+  roundAudit(): RoundAudit;
   /** Throws from inside the showing screen's next update, in Phaser's frame loop. */
   throwInUpdate(): void;
   /** Leaves a rejected promise unhandled. */
@@ -119,6 +124,110 @@ export interface RoundPage extends PageSnapshot {
   readonly motion: 'full' | 'reduced';
 }
 
+export interface RoundAudit {
+  /** How many frames were drawn while the Round played. */
+  readonly frames: number;
+  /** Every texture a picture drawn in the Round came from. */
+  readonly textures: readonly string[];
+  /** The most pictures drawn in any one frame. */
+  readonly mostPictures: number;
+  /** The most cameras the Game's Scene had in any one frame. */
+  readonly mostCameras: number;
+  /** Each object the Game contract bans that was there while the Round played, by its kind. */
+  readonly banned: readonly string[];
+  /** Each HTML element added to the page while the Round played, by its tag. */
+  readonly elementsAdded: readonly string[];
+}
+
+/** The objects a Game may not create (game contract), by the name the audit reports. */
+const BANNED_OBJECTS: readonly [string, abstract new (...args: never[]) => object][] = [
+  ['RenderTexture', Phaser.GameObjects.RenderTexture],
+  ['Text', Phaser.GameObjects.Text],
+  ['Shader', Phaser.GameObjects.Shader],
+  ['DOMElement', Phaser.GameObjects.DOMElement],
+];
+
+/**
+ * Watches every frame drawn while a Round plays (story 33): the pictures it draws and where they
+ * come from, the cameras, banned objects and dynamic textures, and HTML elements added to the page.
+ * Starts afresh each time a Game opens, which gives its Scene anew.
+ */
+function auditRounds(win: Window, arcade: Arcade): () => RoundAudit {
+  const { game } = arcade;
+  const dynamic = () =>
+    Object.values(game.textures.list)
+      .filter((texture) => texture instanceof Phaser.Textures.DynamicTexture)
+      .map((texture) => texture.key);
+  const dynamicBefore = new Set(dynamic());
+  let audited: Phaser.Scene | null = null;
+  let frames = 0;
+  let textures = new Set<string>();
+  let mostPictures = 0;
+  let mostCameras = 0;
+  let banned = new Set<string>();
+  let elementsAdded: string[] = [];
+
+  /** The Game's Scene, when a Round of it is playing and showing. */
+  const playing = (): Phaser.Scene | null => {
+    const shown = arcade.screen;
+    const isGame = shown && arcade.catalog.some((manifest) => manifest.id === shown.id);
+    return arcade.host.state === 'playing' && isGame ? shown.scene : null;
+  };
+
+  game.events.on(Phaser.Core.Events.POST_RENDER, () => {
+    const scene = playing();
+    if (!scene) return;
+    if (scene !== audited) {
+      audited = scene;
+      frames = 0;
+      textures = new Set();
+      mostPictures = 0;
+      mostCameras = 0;
+      banned = new Set();
+      elementsAdded = [];
+    }
+    frames += 1;
+    const camera = scene.cameras.main;
+    let pictures = 0;
+    const visit = (object: Phaser.GameObjects.GameObject) => {
+      for (const [kind, type] of BANNED_OBJECTS) if (object instanceof type) banned.add(kind);
+      if (object instanceof Phaser.GameObjects.Container) {
+        if (object.visible) object.list.forEach(visit);
+        return;
+      }
+      const shape =
+        object instanceof Phaser.GameObjects.Shape || object instanceof Phaser.GameObjects.Graphics;
+      const texture = (object as { texture?: unknown }).texture;
+      if (shape || !(texture instanceof Phaser.Textures.Texture)) return;
+      if (!object.willRender(camera)) return;
+      pictures += 1;
+      textures.add(texture.key);
+    };
+    scene.children.list.forEach(visit);
+    mostPictures = Math.max(mostPictures, pictures);
+    mostCameras = Math.max(mostCameras, scene.cameras.cameras.length);
+    for (const key of dynamic()) if (!dynamicBefore.has(key)) banned.add(`DynamicTexture ${key}`);
+  });
+
+  new MutationObserver((records) => {
+    if (!playing()) return;
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) elementsAdded.push(node.nodeName.toLowerCase());
+      }
+    }
+  }).observe(win.document.documentElement, { childList: true, subtree: true });
+
+  return () => ({
+    frames,
+    textures: [...textures],
+    mostPictures,
+    mostCameras,
+    banned: [...banned],
+    elementsAdded: [...elementsAdded],
+  });
+}
+
 export interface Pictures {
   readonly images: readonly { readonly texture: string; readonly frame: string }[];
   /** Graphics objects, and shape objects with a fill or an outline. */
@@ -134,6 +243,7 @@ declare global {
 export function installTestBridge(win: Window, arcade: Arcade): void {
   const { game, services } = arcade;
   const renderScale = renderScaleOf(game);
+  const roundAudit = auditRounds(win, arcade);
 
   const toPage = (rect: Rect): Rect => {
     const canvas = game.canvas;
@@ -270,6 +380,7 @@ export function installTestBridge(win: Window, arcade: Arcade): void {
     },
     soundsStarted: () => services.audio.started(),
     frames: () => game.loop.frame,
+    roundAudit,
     throwInUpdate() {
       showing().scene.events.once('update', () => {
         throw new Error('Thrown on purpose by the test bridge');

@@ -1,5 +1,6 @@
 import type { Rect } from '../../src/contract';
 import { type Arcade, type Point, expect, test } from './arcade';
+import { CATALOG, openSession, playToResult, sessionFor } from './play';
 
 /**
  * The hidden render scale (story 21, gate G8, ADR-0003). At half scale the canvas has half the
@@ -107,6 +108,19 @@ const near = (a: number, b: number) => Math.abs(a - b) <= 1;
 
 type Targets = Awaited<ReturnType<Arcade['snapshot']>>['targets'];
 
+/** The same targets, each within one CSS pixel of its place and size at full scale. */
+function expectSamePlaces(full: Targets, half: Targets, screen: string): void {
+  expect(Object.keys(half), screen).toEqual(Object.keys(full));
+  for (const [name, target] of Object.entries(full)) {
+    const other = half[name]!;
+    const where = `${screen}/${name}: full ${JSON.stringify(target)}, half ${JSON.stringify(other)}`;
+    expect(near(other.x, target.x) && near(other.y, target.y), where).toBe(true);
+    for (const side of ['x', 'y', 'width', 'height'] as const) {
+      expect(near(other.rect[side], target.rect[side]), where).toBe(true);
+    }
+  }
+}
+
 test('at render scale 0.5 the canvas has half the pixels each way', async ({ arcade }) => {
   await arcade.open();
   const full = await arcade.layout();
@@ -163,17 +177,7 @@ test('at render scale 0.5 every named target of every screen is in the same plac
       }
     }
 
-    const full = placed[1]!;
-    const half = placed[0.5]!;
-    expect(Object.keys(half), screen).toEqual(Object.keys(full));
-    for (const [name, target] of Object.entries(full)) {
-      const other = half[name]!;
-      const where = `${screen}/${name}: full ${JSON.stringify(target)}, half ${JSON.stringify(other)}`;
-      expect(near(other.x, target.x) && near(other.y, target.y), where).toBe(true);
-      for (const side of ['x', 'y', 'width', 'height'] as const) {
-        expect(near(other.rect[side], target.rect[side]), where).toBe(true);
-      }
-    }
+    expectSamePlaces(placed[1]!, placed[0.5]!, screen);
     expect(outcomes[0.5], screen).toEqual(outcomes[1]);
   }
 });
@@ -206,3 +210,27 @@ test('at render scale 0.5 four touches in four Zones of the Touch Check count on
     expect(Math.abs(zone.lastTouch!.y - local.y), `Zone ${JSON.stringify(zone)}`).toBeLessThan(4);
   }
 });
+
+for (const game of CATALOG) {
+  test(`${game.id}: at render scale 0.5 every named target of a Round is in the same place on the page, and a Round plays to a Result`, async ({
+    arcade,
+  }) => {
+    test.slow();
+    const session = sessionFor(game, game.playStyles[0]!);
+    const placed: Partial<Record<Scale, Targets>> = {};
+    for (const scale of [1, 0.5] as const) {
+      await arcade.open(query(scale));
+      await arcade.start();
+      await openSession(arcade, session, 1);
+      placed[scale] = (await arcade.round())!.targets;
+      expect((await arcade.layout()).renderScale).toBe(scale);
+    }
+
+    expect(Object.keys(placed[1]!).length).toBeGreaterThan(0);
+    expectSamePlaces(placed[1]!, placed[0.5]!, game.id);
+
+    await playToResult(arcade, game.id);
+    await expect.poll(() => arcade.screen()).toBe('result');
+    expect((await arcade.layout()).renderScale).toBe(0.5);
+  });
+}

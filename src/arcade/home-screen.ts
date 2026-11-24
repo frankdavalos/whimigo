@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser';
-import type { ScreenSnapshot, SnapshotTarget } from '@/contract';
+import type { GameId, ScreenSnapshot, SnapshotTarget } from '@/contract';
 import { picture } from '@/kit/atlas';
 import { createStage, type Stage } from '@/kit/stage';
 import { holdButton } from '@/kit/controls';
+import { createMotion } from '@/kit/motion';
 import { colors, sizes } from '@/kit/theme';
 import { GROWN_UPS } from './grown-ups';
 import { LOBBY, type LobbyData } from './lobby/lobby-screen';
@@ -14,6 +15,11 @@ const CARD = 560;
 /** The Grown-Up Gate's hold, in milliseconds: long enough that a small child will not make it by accident. */
 const GATE_MS = 3000;
 
+export interface HomeData extends ScreenData {
+  /** A Game that has just failed to load: its Game Card shakes its head. */
+  readonly refused?: GameId;
+}
+
 /**
  * The Home Screen: one Game Card per Game in the Catalog, in Catalog order, each opening that
  * Game's lobby; and in the corner the Grown-Up Gate, a three-second hold that opens the Grown-Ups
@@ -22,9 +28,10 @@ const GATE_MS = 3000;
 export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
   stage!: Stage;
   private games: string[] = [];
+  private refused: GameId | null = null;
   private targets: Record<string, SnapshotTarget> = {};
 
-  create({ arcade }: ScreenData): void {
+  create({ arcade, refused }: HomeData): void {
     this.stage = createStage(this, arcade.services.safeAreaInsets());
     this.stage.backdrop({ color: colors.meadow });
     const { safe } = this.stage;
@@ -34,10 +41,13 @@ export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
     const firstX = safe.x + safe.width / 2 - ((arcade.catalog.length - 1) * spacing) / 2;
     const y = safe.y + safe.height / 2;
     this.games = arcade.catalog.map((game) => game.id);
+    this.refused = refused ?? null;
     this.targets = {};
+    const motion = createMotion(this, arcade.services.reducedMotion());
     arcade.catalog.forEach((game, index) => {
       const x = firstX + index * spacing;
-      picture(this, x, y, game.card.frame);
+      const card = picture(this, x, y, game.card.frame);
+      if (game.id === refused) void motion.play(card, 'wiggle');
       this.add
         .rectangle(x, y, CARD, CARD)
         .setInteractive()
@@ -62,8 +72,11 @@ export class HomeScreen extends Phaser.Scene implements ArcadeScreen {
     arcade.shown(this);
   }
 
-  /** The state names the Games, in Catalog order; a Game Card's target is named by its Game. */
+  /**
+   * The state names the Games, in Catalog order, and the Game that has just refused to load, or
+   * null; a Game Card's target is named by its Game.
+   */
   snapshot(): ScreenSnapshot {
-    return { state: { games: this.games }, targets: this.targets };
+    return { state: { games: this.games, refused: this.refused }, targets: this.targets };
   }
 }

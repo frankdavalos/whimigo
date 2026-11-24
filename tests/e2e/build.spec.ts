@@ -1,6 +1,9 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveBuildId } from '../../scripts/build-id';
+import { budgetProblems } from '../../scripts/precache';
+import { CATALOG } from '../../src/games/catalog';
 import { expect, test } from './arcade';
 
 const dist = fileURLToPath(new URL('../../dist', import.meta.url));
@@ -25,6 +28,21 @@ test('the build output contains no audio file', () => {
   expect(files.length).toBeGreaterThan(0);
   expect(
     files.filter((file) => /\.(mp3|ogg|oga|wav|m4a|aac|flac|opus|weba|webm)$/i.test(file)),
+  ).toEqual([]);
+});
+
+test('each Game’s own files come to at most 5 MB, and everything precached to at most 60 MB', () => {
+  // The service worker's own script is kept by the browser with its registration, not cached.
+  const precached = readdirSync(dist, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name))
+    .map((file) => ({ path: relative(dist, file).split(sep).join('/'), size: statSync(file).size }))
+    .filter(({ path }) => path !== 'sw.js');
+  expect(
+    budgetProblems(
+      precached,
+      CATALOG.map((game) => game.id),
+    ),
   ).toEqual([]);
 });
 

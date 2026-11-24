@@ -1,9 +1,9 @@
-import type { MascotId, PlayStyle, Rect, Result } from '../../src/contract';
+import type { MascotId, Rect, Result } from '../../src/contract';
 import { MASCOTS } from '../../src/arcade/mascots';
 import { starsEarned } from '../../src/arcade/progress';
 import { seats as SEAT_LOOKS } from '../../src/kit/theme';
 import { expect, test } from './arcade';
-import { CATALOG, EVERY_STYLE, openSession, playToResult, sessionFor } from './play';
+import { CATALOG, EVERY_STYLE, openSession, playToResult, resultFor, sessionFor } from './play';
 
 const SEED = 7;
 
@@ -23,20 +23,13 @@ test('the Home Screen has a Game Card for each Game in Catalog order, and none f
 }) => {
   const ids = CATALOG.map((game) => game.id);
   const snapshot = await arcade.snapshot();
-  expect(snapshot.state).toEqual({ games: ids });
+  expect(snapshot.state).toEqual({ games: ids, refused: null });
   expect(Object.keys(snapshot.targets)).toEqual([...ids, 'grown-ups']);
   for (const check of await arcade.checks()) expect(snapshot.targets[check]).toBeUndefined();
 
   const drawn = (await arcade.call('pictures')).images.map(({ frame }) => frame);
   for (const game of CATALOG) expect(drawn).toContain(game.card.frame);
 });
-
-/** A Result a Round of this Play Style could end in. */
-function resultFor(style: PlayStyle): Result {
-  if (style === 'solo') return { kind: 'solo', score: 1 };
-  if (style === 'cooperative') return { kind: 'cooperative', success: true };
-  return { kind: 'win', winners: [0] };
-}
 
 for (const { game, style, name } of EVERY_STYLE) {
   test(`${name}: a second Result reported for the same Round is not accepted: Stars are awarded once`, async ({

@@ -15,6 +15,7 @@ import { createRng } from '@/kit/rng';
 import type { Arcade } from './arcade';
 import { recordRound, starsEarned } from './progress';
 import { nextHostState, type HostEvent, type HostState } from './host-state';
+import type { HomeData } from './home-screen';
 import { LOADING, type LoadingData } from './loading-screen';
 import { PAUSE, type PauseData } from './pause-screen';
 import { RESULT, type ResultData } from './result-screen';
@@ -238,10 +239,13 @@ export class GameHost {
     });
   }
 
+  /** The Game's files failed to load: back to the Home Screen, where its Game Card refuses. */
   private failed(): void {
+    const refused = this.game!.manifest.id;
     this.game = null;
     this.step('failed');
-    this.arcade.show('home');
+    const data: Omit<HomeData, 'arcade'> = { refused };
+    this.arcade.show('home', data);
   }
 
   /** Starts (or restarts) the Game's Scene with a fresh Round. At the start of a frame only. */
